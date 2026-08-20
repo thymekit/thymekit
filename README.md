@@ -45,8 +45,9 @@ Pages become declarations in Java. You touch templates and CSS when you build a 
 hardly ever again.
 
 Every number above is produced by the build and published to
-[thymekit.github.io/thymekit](https://thymekit.github.io/thymekit/) — tests, coverage, the mutation
-report and the API docs, with nothing in between.
+[thymekit.github.io/thymekit](https://thymekit.github.io/thymekit/) — together with
+[the showcase itself](https://thymekit.github.io/thymekit/showcase/), rendered at build time, so you
+can see what the kit produces before adding a line of it to your project.
 
 ## Getting started
 

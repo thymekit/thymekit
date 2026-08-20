@@ -49,7 +49,26 @@ def badge(name: str, label: str, message: str, colour: str) -> None:
 instr, branch = coverage()
 killed, mutants = mutation()
 total, failed, seconds = tests()
+def showcase() -> bool:
+    """The showcase rendered at build time: real output of the engine, served as a static page.
+
+    Its stylesheets are linked absolutely (that is how a consumer would serve them), so the assets go
+    next to the page and the two links are pointed at them.
+    """
+    page = root / "build/showcase/index.html"
+    if not page.exists():
+        return False
+    (site / "showcase").mkdir(parents=True)
+    shutil.copytree(root / "src/main/resources/static/thymekit", site / "showcase" / "assets")
+    html = page.read_text(encoding="utf-8")
+    for name in ("ui.css", "demo.css"):
+        html = html.replace(f'href="/thymekit/{name}"', f'href="assets/{name}"')
+    (site / "showcase" / "index.html").write_text(html, encoding="utf-8")
+    return True
+
+
 have = {
+    "showcase": showcase(),
     "tests": copy("build/reports/tests/test", "tests"),
     "coverage": copy("build/reports/jacoco/test/html", "coverage"),
     "mutation": copy("build/reports/pitest", "mutation"),
@@ -61,6 +80,7 @@ badge("mutation", "mutation", f"{100 * killed // mutants}%", "3d5c3a" if killed 
 badge("tests", "tests", f"{total} passing" if not failed else f"{failed} failing", "3d5c3a" if not failed else "a33")
 
 cards = [
+    ("Showcase", "live", "the kit as it renders itself", "showcase/index.html", have["showcase"]),
     ("Tests", f"{total}", f"all passing in {seconds:.1f}s" if not failed else f"{failed} failing", "tests/index.html", have["tests"]),
     ("Coverage", f"{instr:.1f}%", f"instructions · {branch:.1f}% branches", "coverage/index.html", have["coverage"]),
     ("Mutation", f"{100 * killed // mutants}%", f"{killed} of {mutants} mutants killed", "mutation/index.html", have["mutation"]),
