@@ -1,0 +1,27 @@
+name: New element
+description: Propose an element for the kit.
+labels: [element]
+body:
+  - type: textarea
+    id: concept
+    attributes:
+      label: The concept it owns
+      description: >
+        What idea would this element own, so that everything with that idea composes it instead of
+        writing its own markup? An element earns its place by owning a concept, not by being useful once.
+    validations: { required: true }
+  - type: textarea
+    id: api
+    attributes:
+      label: How it would read
+      description: The factory call as you would write it in a page declaration.
+      render: java
+    validations: { required: true }
+  - type: textarea
+    id: domain
+    attributes:
+      label: Why it is domain-empty
+      description: >
+        The kit takes nothing that knows about your business. If the shape of this element is decided
+        by your product rather than by HTML, it belongs in your own code — say why this one does not.
+    validations: { required: true }

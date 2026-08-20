@@ -1,0 +1,35 @@
+<!--/* This Source Code Form is subject to the terms of the Mozilla Public
+       License, v. 2.0. If a copy of the MPL was not distributed with this
+       file, You can obtain one at https://mozilla.org/MPL/2.0/. */-->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+
+<!--/*
+    The single element dispatcher (the template half of Element<K> in Java). A descriptor carries the
+    adapter address plus data, so the dispatcher itself knows no list of bricks — the address is
+    computed by preprocessing.
+
+      render(e)        one element, ONE tag and null-safe: e == null renders nothing, which is why
+                       adapters never wrap nested elements in th:if
+      renderAll(items) a flow in collection order; th:each over null iterates zero times
+      slot(e, name)    a named slot (note SpEL: map[ident] reads the identifier as a literal key,
+                       hence .get(name))
+      scripts(items)   behaviour scripts, called without arguments
+
+    The one-tag form is deliberate: it removes both Thymeleaf traps at once — "th:if under th:replace"
+    and "th:each under th:replace" — and with them the wrappers that used to leave blank lines behind.
+*/-->
+<th:block th:fragment="nothing(e)"></th:block>
+
+<th:block th:fragment="render(e)" th:replace="__${e == null ? 'fragments/thymekit/element :: nothing' : e['template'] + ' :: ' + e['fragment']}__(${e})"></th:block>
+
+<th:block th:fragment="renderAll(items)"><th:block th:each="i : ${items}">
+<th:block th:replace="~{fragments/thymekit/element :: render(${i})}"></th:block></th:block></th:block>
+
+<th:block th:fragment="slot(e, slotName)" th:replace="~{fragments/thymekit/element :: renderAll(${e['slots'] == null ? null : e['slots'].get(slotName)})}"></th:block>
+
+<th:block th:fragment="scripts(items)"><th:block th:each="s : ${items}"><th:block th:replace="__${s['template']}__ :: __${s['fragment']}__"></th:block></th:block></th:block>
+
+</body>
+</html>

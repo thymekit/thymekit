@@ -1,0 +1,118 @@
+name: build
+
+on:
+  push:
+  workflow_dispatch:
+
+# A new push to the same branch cancels the previous run: the result of an outdated commit
+# is of no interest to anyone.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Build and test
+        run: ./gradlew build
+      # The reports travel to the publishing job as artefacts rather than being produced twice.
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: reports-build
+          include-hidden-files: true
+          path: |
+            build/reports/tests/
+            build/reports/jacoco/
+            build/test-results/
+            build/showcase/
+            build/docs/
+          retention-days: 7
+
+  mutation:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Mutation gate
+        run: ./gradlew pitest
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: reports-mutation
+          path: build/reports/pitest/
+          retention-days: 7
+
+  # Every commit publishes a site of its own: main at /main/, anything else at /<sha>/. A change is
+  # easier to judge as a page than as a diff — and the numbers stand next to it.
+  publish:
+    needs: [build, mutation]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    # Publishing rewrites one branch, so runs queue instead of racing each other.
+    concurrency:
+      group: publish-pages
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+      # Two artefacts, two destinations: an artefact built from a single path has that path as its
+      # root, so it has to be unpacked back into the place the site assembler expects.
+      - uses: actions/download-artifact@v7
+        with:
+          name: reports-build
+          path: build
+      - uses: actions/download-artifact@v7
+        with:
+          name: reports-mutation
+          path: build/reports/pitest
+
+      # The API docs are published for the trunk only: 4.8 MB of the 6.4, and they hardly differ
+      # between commits of the same day. `gradlew build` produces them anyway (withJavadocJar), so
+      # the choice is made here rather than by skipping the task.
+      - name: Trim the API docs on branches
+        if: github.ref != 'refs/heads/main'
+        run: rm -rf build/docs
+      - name: Assemble the site
+        run: python3 .github/site/build-site.py
+      - name: Publish to gh-pages
+        env:
+          # On a pull_request event GITHUB_SHA is a synthetic merge commit; a snapshot has to be
+          # labelled with the commit a person actually pushed.
+          BRANCH: ${{ github.head_ref || github.ref_name }}
+          SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          SUBJECT: ${{ github.event.pull_request.title || github.event.head_commit.message }}
+        run: |
+          # --global: the commit is made in a temporary directory with a configuration of its own
+          git config --global user.name thymekit
+          git config --global user.email 318698958+thymekit@users.noreply.github.com
+          rm -rf /tmp/gh && mkdir /tmp/gh
+          if git ls-remote --exit-code origin gh-pages >/dev/null 2>&1; then
+            git fetch -q --depth=1 origin gh-pages
+            git --work-tree=/tmp/gh checkout -q FETCH_HEAD -- .
+          fi
+          python3 .github/site/publish.py /tmp/gh "$SHA" "$BRANCH" "$(printf '%s' "$SUBJECT" | head -1)"
+          cd /tmp/gh
+          git init -q -b gh-pages
+          git add -A
+          git commit -qm "site: $BRANCH ${SHA:0:8}"
+          # one commit, always: the branch carries content, not a history of publications
+          git push -qf "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" gh-pages

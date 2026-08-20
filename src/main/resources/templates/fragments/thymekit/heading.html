@@ -1,0 +1,22 @@
+<!--/* This Source Code Form is subject to the terms of the Mozilla Public
+       License, v. 2.0. If a copy of the MPL was not distributed with this
+       file, You can obtain one at https://mozilla.org/MPL/2.0/. */-->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+
+<!--/* heading h1..h6: the level modifier is always present; id is an anchor, href turns the heading
+       into a link, srOnly clips it visually. Stock look is the browser's own. */-->
+<th:block th:fragment="headingEl(e)"
+          th:with="cls=${'tk-heading tk-heading--' + e['level'] + (e['srOnly'] == true ? ' tk-sr-only' : '')}"
+          th:switch="${e['level']}">
+    <h1 th:case="1" th:class="${cls}" th:id="${e['id']}"><a th:if="${e['href'] != null}" th:href="@{${e['href']}}" th:text="${e['text']}"></a><th:block th:if="${e['href'] == null}" th:text="${e['text']}"/></h1>
+    <h2 th:case="2" th:class="${cls}" th:id="${e['id']}"><a th:if="${e['href'] != null}" th:href="@{${e['href']}}" th:text="${e['text']}"></a><th:block th:if="${e['href'] == null}" th:text="${e['text']}"/></h2>
+    <h3 th:case="3" th:class="${cls}" th:id="${e['id']}"><a th:if="${e['href'] != null}" th:href="@{${e['href']}}" th:text="${e['text']}"></a><th:block th:if="${e['href'] == null}" th:text="${e['text']}"/></h3>
+    <h4 th:case="4" th:class="${cls}" th:id="${e['id']}"><a th:if="${e['href'] != null}" th:href="@{${e['href']}}" th:text="${e['text']}"></a><th:block th:if="${e['href'] == null}" th:text="${e['text']}"/></h4>
+    <h5 th:case="5" th:class="${cls}" th:id="${e['id']}"><a th:if="${e['href'] != null}" th:href="@{${e['href']}}" th:text="${e['text']}"></a><th:block th:if="${e['href'] == null}" th:text="${e['text']}"/></h5>
+    <h6 th:case="6" th:class="${cls}" th:id="${e['id']}"><a th:if="${e['href'] != null}" th:href="@{${e['href']}}" th:text="${e['text']}"></a><th:block th:if="${e['href'] == null}" th:text="${e['text']}"/></h6>
+</th:block>
+
+</body>
+</html>
