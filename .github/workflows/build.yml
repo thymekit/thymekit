@@ -2,8 +2,7 @@ name: build
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
+  workflow_dispatch:
 
 # A new push to the same branch cancels the previous run: the result of an outdated commit
 # is of no interest to anyone.
@@ -27,14 +26,21 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
       - name: Build and test
         run: ./gradlew build
-      - name: Reports
+      - name: API docs
+        if: github.ref == 'refs/heads/main'
+        run: ./gradlew javadoc
+      # The reports travel to the publishing job as artefacts rather than being produced twice.
+      - uses: actions/upload-artifact@v7
         if: always()
-        uses: actions/upload-artifact@v7
         with:
-          name: test-and-coverage-reports
+          name: reports-build
+          include-hidden-files: true
           path: |
-            build/reports/tests/test/
-            build/reports/jacoco/test/
+            build/reports/tests/
+            build/reports/jacoco/
+            build/test-results/
+            build/showcase/
+            build/docs/
           retention-days: 7
 
   mutation:
@@ -50,21 +56,19 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
       - name: Mutation gate
         run: ./gradlew pitest
-      - name: Report
+      - uses: actions/upload-artifact@v7
         if: always()
-        uses: actions/upload-artifact@v7
         with:
-          name: mutation-report
+          name: reports-mutation
           path: build/reports/pitest/
           retention-days: 7
 
-  # The site lives on the gh-pages branch: the reports from main at the root, and a snapshot of the
-  # showcase for every commit under /showcase/. A snapshot is what makes a change visible before it is
-  # merged — you open the page rather than imagine it.
+  # Every commit publishes a site of its own: main at /main/, anything else at /<sha>/. A change is
+  # easier to judge as a page than as a diff — and the numbers stand next to it.
   publish:
     needs: [build, mutation]
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
     permissions:
       contents: write
     # Publishing rewrites one branch, so runs queue instead of racing each other.
@@ -73,23 +77,14 @@ jobs:
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-java@v5
+      - name: Collect the reports produced earlier
+        uses: actions/download-artifact@v7
         with:
-          distribution: temurin
-          java-version: '21'
-      - uses: gradle/actions/setup-gradle@v6
-
-      - name: Produce the reports (main only; a branch publishes just its snapshot)
-        if: github.ref == 'refs/heads/main'
-        run: ./gradlew build javadoc pitest
-
-      - name: Render the showcase
-        if: github.ref != 'refs/heads/main'
-        run: ./gradlew test
-
-      - name: Assemble
+          pattern: reports-*
+          merge-multiple: true
+          path: build
+      - name: Assemble the site
         run: python3 .github/site/build-site.py
-
       - name: Publish to gh-pages
         env:
           # On a pull_request event GITHUB_SHA is a synthetic merge commit; a snapshot has to be
@@ -98,7 +93,7 @@ jobs:
           SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           SUBJECT: ${{ github.event.pull_request.title || github.event.head_commit.message }}
         run: |
-          # --global: коммит делается во временном каталоге, у которого своя, пустая конфигурация
+          # --global: the commit is made in a temporary directory with a configuration of its own
           git config --global user.name thymekit
           git config --global user.email 318698958+thymekit@users.noreply.github.com
           rm -rf /tmp/gh && mkdir /tmp/gh

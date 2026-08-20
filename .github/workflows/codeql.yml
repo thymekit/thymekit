@@ -4,8 +4,7 @@ name: codeql
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
+  workflow_dispatch:
   schedule:
     # Once a week, so newly published queries reach old code without waiting for the next commit.
     - cron: '17 4 * * 1'
