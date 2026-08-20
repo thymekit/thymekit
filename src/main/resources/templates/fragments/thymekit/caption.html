@@ -1,0 +1,12 @@
+<!--/* This Source Code Form is subject to the terms of the Mozilla Public
+       License, v. 2.0. If a copy of the MPL was not distributed with this
+       file, You can obtain one at https://mozilla.org/MPL/2.0/. */-->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+
+<!--/* caption in one of four roles; a paragraph, never a heading. */-->
+<p th:fragment="captionEl(e)" th:class="${'tk-caption tk-caption--' + e['role']}" th:text="${e['text']}"></p>
+
+</body>
+</html>

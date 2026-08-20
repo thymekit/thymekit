@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ru">
+<body>
+<!--/* fails in the MIDDLE, after tags are open: pins that an interrupted render leaves no depth behind */-->
+<div class="outer">
+    <div class="inner">
+        <span th:text="${missing.boom()}">fails here</span>
+    </div>
+</div>
+</body>
+</html>

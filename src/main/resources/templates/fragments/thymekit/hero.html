@@ -1,0 +1,26 @@
+<!--/* This Source Code Form is subject to the terms of the Mozilla Public
+       License, v. 2.0. If a copy of the MPL was not distributed with this
+       file, You can obtain one at https://mozilla.org/MPL/2.0/. */-->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+
+<!--/*
+    hero: heading group (<hgroup> with eyebrow, H1, subtitle and meta lines), then a divider, an
+    optional status badge and an optional action row. The order is fixed; absent parts render nothing.
+    Nested elements go through the single dispatcher, never through local markup.
+*/-->
+<div th:fragment="heroEl(e)" class="page-hero">
+    <hgroup class="page-hero-group">
+        <th:block th:replace="~{fragments/thymekit/element :: render(${e['eyebrow']})}"/>
+        <th:block th:replace="~{fragments/thymekit/element :: render(${e['heading']})}"/>
+        <th:block th:replace="~{fragments/thymekit/element :: render(${e['subtitle']})}"/>
+        <th:block th:replace="~{fragments/thymekit/element :: renderAll(${e['metas']})}"/>
+    </hgroup>
+    <div class="page-hero-divider"></div>
+    <p class="hero-status-line" th:if="${e['badge'] != null}"><th:block th:replace="~{fragments/thymekit/element :: render(${e['badge']})}"/></p>
+    <div class="page-hero-actions" th:if="${e['actions'] != null}"><th:block th:replace="~{fragments/thymekit/element :: render(${e['actions']})}"/></div>
+</div>
+
+</body>
+</html>

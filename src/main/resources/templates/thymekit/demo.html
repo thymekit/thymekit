@@ -1,0 +1,28 @@
+<!--/* This Source Code Form is subject to the terms of the Mozilla Public
+       License, v. 2.0. If a copy of the MPL was not distributed with this
+       file, You can obtain one at https://mozilla.org/MPL/2.0/. */-->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${pageTitle}">thymekit</title>
+
+    <!--/* The showcase ships with the library: its document is its own, decorated by no consumer
+           layout. Stylesheets are linked here by hand, exactly as any consumer would: the kit first,
+           the showcase theme after it. */-->
+    <link rel="stylesheet" th:href="@{/thymekit/ui.css}">
+    <link rel="stylesheet" th:href="@{/thymekit/demo.css}">
+</head>
+<body>
+
+<!--/* The document is the consumer's; the body is drawn by the kit's dispatcher. */-->
+<div class="page" th:classappend="${pageClass}">
+    <th:block th:replace="~{fragments/thymekit/element :: renderAll(${elements})}"/>
+</div>
+
+<!--/* Behaviour scripts of the element tree, deduplicated, once at the end of body. */-->
+<th:block th:replace="~{fragments/thymekit/element :: scripts(${assets})}"/>
+
+</body>
+</html>
