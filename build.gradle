@@ -60,6 +60,9 @@ dependencies {
     testImplementation 'org.thymeleaf:thymeleaf-spring6'      // render pins with the same expression engine consumers use
     testImplementation 'org.springframework.boot:spring-boot-autoconfigure'
     testImplementation 'org.springframework.boot:spring-boot-test'   // ApplicationContextRunner for auto-configuration pins
+    testImplementation 'org.springframework:spring-test'             // servlet doubles: the showcase snapshot renders through a web context
+    testImplementation 'org.springframework:spring-web'
+    testImplementation 'jakarta.servlet:jakarta.servlet-api'
 }
 
 test {
