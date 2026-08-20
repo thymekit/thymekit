@@ -46,8 +46,10 @@ hardly ever again.
 
 Every number above is produced by the build and published to
 [thymekit.github.io/thymekit](https://thymekit.github.io/thymekit/) — together with
-[the showcase itself](https://thymekit.github.io/thymekit/showcase/), rendered at build time, so you
-can see what the kit produces before adding a line of it to your project.
+[the showcase itself](https://thymekit.github.io/thymekit/showcase/main/), rendered at build time, so
+you can see what the kit produces before adding a line of it to your project. Every commit gets its
+own snapshot under [/showcase/](https://thymekit.github.io/thymekit/showcase/), which makes a visual
+change reviewable before it is merged.
 
 ## Getting started
 
