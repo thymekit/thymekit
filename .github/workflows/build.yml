@@ -26,9 +26,6 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
       - name: Build and test
         run: ./gradlew build
-      - name: API docs
-        if: github.ref == 'refs/heads/main'
-        run: ./gradlew javadoc
       # The reports travel to the publishing job as artefacts rather than being produced twice.
       - uses: actions/upload-artifact@v7
         if: always()
@@ -77,12 +74,23 @@ jobs:
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v7
-      - name: Collect the reports produced earlier
-        uses: actions/download-artifact@v7
+      # Two artefacts, two destinations: an artefact built from a single path has that path as its
+      # root, so it has to be unpacked back into the place the site assembler expects.
+      - uses: actions/download-artifact@v7
         with:
-          pattern: reports-*
-          merge-multiple: true
+          name: reports-build
           path: build
+      - uses: actions/download-artifact@v7
+        with:
+          name: reports-mutation
+          path: build/reports/pitest
+
+      # The API docs are published for the trunk only: 4.8 MB of the 6.4, and they hardly differ
+      # between commits of the same day. `gradlew build` produces them anyway (withJavadocJar), so
+      # the choice is made here rather than by skipping the task.
+      - name: Trim the API docs on branches
+        if: github.ref != 'refs/heads/main'
+        run: rm -rf build/docs
       - name: Assemble the site
         run: python3 .github/site/build-site.py
       - name: Publish to gh-pages
