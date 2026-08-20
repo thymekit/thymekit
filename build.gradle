@@ -21,6 +21,14 @@ tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
 
+// Javadoc is kept as a defect detector, not as a tag counter: broken links and malformed HTML fail
+// the build, while "no @param" on a method whose javadoc already says what it means does not. The
+// documentation here explains meaning; repeating the signature in tags would only add noise.
+tasks.withType(Javadoc).configureEach {
+    options.encoding = 'UTF-8'
+    options.addStringOption('Xdoclint:all,-missing', '-quiet')
+}
+
 repositories { mavenCentral() }
 
 dependencies {
