@@ -41,7 +41,7 @@ dependencies {
     implementation 'com.vladsch.flexmark:flexmark:0.64.8'
     implementation 'com.vladsch.flexmark:flexmark-ext-tables:0.64.8'
     implementation 'com.vladsch.flexmark:flexmark-ext-autolink:0.64.8'
-    implementation 'org.jsoup:jsoup:1.18.3'
+    implementation 'org.jsoup:jsoup:1.23.1'
 
     // Spring is optional at compile time: @Cacheable on the renderer is a no-op without it,
     // and org.springframework.ui.Model is only needed by Spring consumers
