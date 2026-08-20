@@ -1,6 +1,9 @@
 # thymekit
 
 [![build](https://github.com/thymekit/thymekit/actions/workflows/build.yml/badge.svg)](https://github.com/thymekit/thymekit/actions/workflows/build.yml)
+[![tests](https://img.shields.io/endpoint?url=https%3A%2F%2Fthymekit.github.io%2Fthymekit%2Fbadges%2Ftests.json)](https://thymekit.github.io/thymekit/tests/)
+[![coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fthymekit.github.io%2Fthymekit%2Fbadges%2Fcoverage.json)](https://thymekit.github.io/thymekit/coverage/)
+[![mutation](https://img.shields.io/endpoint?url=https%3A%2F%2Fthymekit.github.io%2Fthymekit%2Fbadges%2Fmutation.json)](https://thymekit.github.io/thymekit/mutation/)
 [![licence: MPL-2.0](https://img.shields.io/badge/licence-MPL--2.0-3d5c3a)](LICENSE)
 [![Java 21+](https://img.shields.io/badge/Java-21%2B-3d5c3a)](#getting-started)
 [![Spring Boot 4](https://img.shields.io/badge/Spring%20Boot-4-3d5c3a)](#getting-started)
@@ -40,6 +43,10 @@ String ingredient(@PathVariable String slug, Model model) {
 
 Pages become declarations in Java. You touch templates and CSS when you build a new element — and then
 hardly ever again.
+
+Every number above is produced by the build and published to
+[thymekit.github.io/thymekit](https://thymekit.github.io/thymekit/) — tests, coverage, the mutation
+report and the API docs, with nothing in between.
 
 ## Getting started
 

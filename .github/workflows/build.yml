@@ -57,3 +57,36 @@ jobs:
           name: mutation-report
           path: build/reports/pitest/
           retention-days: 7
+
+  # Reports go where anyone can look at them without cloning: tests, coverage, mutation and the API,
+  # published by the build itself. Badges read their numbers from the same place, so there is no
+  # third-party service between the build and what the README claims.
+  pages:
+    if: github.ref == 'refs/heads/main'
+    needs: [build, mutation]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Produce the reports
+        run: ./gradlew build javadoc pitest
+      - name: Assemble the site
+        run: python3 .github/site/build-site.py
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: build/site
+      - id: deploy
+        uses: actions/deploy-pages@v4
