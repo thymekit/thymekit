@@ -246,8 +246,9 @@ public final class Element<K> {
         }
 
         /** Script dependency declared by the factory; the canvas renders it once per page. */
+        @SafeVarargs
         @SuppressWarnings("unchecked")
-        public Descriptor<K> requires(Element<Script>... scripts) {
+        public final Descriptor<K> requires(Element<Script>... scripts) {
             List<Map<String, Object>> list =
                 (List<Map<String, Object>>) d.computeIfAbsent("assets", k -> new ArrayList<Map<String, Object>>());
             for (Element<Script> s : Objects.requireNonNull(scripts, "scripts")) {
