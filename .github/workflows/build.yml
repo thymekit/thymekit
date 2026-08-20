@@ -98,8 +98,9 @@ jobs:
           SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           SUBJECT: ${{ github.event.pull_request.title || github.event.head_commit.message }}
         run: |
-          git config user.name thymekit
-          git config user.email 318698958+thymekit@users.noreply.github.com
+          # --global: коммит делается во временном каталоге, у которого своя, пустая конфигурация
+          git config --global user.name thymekit
+          git config --global user.email 318698958+thymekit@users.noreply.github.com
           rm -rf /tmp/gh && mkdir /tmp/gh
           if git ls-remote --exit-code origin gh-pages >/dev/null 2>&1; then
             git fetch -q --depth=1 origin gh-pages
