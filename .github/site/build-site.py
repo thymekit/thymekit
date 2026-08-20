@@ -16,24 +16,34 @@ def copy(src: str, dst: str) -> bool:
     return True
 
 
-def coverage() -> tuple[float, float]:
-    t = ET.parse(root / "build/reports/jacoco/test/jacocoTestReport.xml").getroot()
+# A branch publishes only its snapshot, so the reports may legitimately be absent: whatever is
+# missing simply does not get a card or a badge.
+def coverage():
+    f = root / "build/reports/jacoco/test/jacocoTestReport.xml"
+    if not f.exists():
+        return None
     out = {}
-    for c in t.findall("counter"):
+    for c in ET.parse(f).getroot().findall("counter"):
         missed, covered = int(c.get("missed")), int(c.get("covered"))
         out[c.get("type")] = 100.0 * covered / (covered + missed)
     return out["INSTRUCTION"], out["BRANCH"]
 
 
-def mutation() -> tuple[int, int]:
-    x = (root / "build/reports/pitest/mutations.xml").read_text(encoding="utf-8")
+def mutation():
+    f = root / "build/reports/pitest/mutations.xml"
+    if not f.exists():
+        return None
+    x = f.read_text(encoding="utf-8")
     return x.count("detected='true'"), x.count("<mutation ")
 
 
-def tests() -> tuple[int, int, float]:
+def tests():
+    results = list((root / "build/test-results/test").glob("TEST-*.xml"))
+    if not results:
+        return None
     total = failed = 0
     seconds = 0.0
-    for f in (root / "build/test-results/test").glob("TEST-*.xml"):
+    for f in results:
         s = ET.parse(f).getroot()
         total += int(s.get("tests", 0))
         failed += int(s.get("failures", 0)) + int(s.get("errors", 0))
@@ -46,9 +56,7 @@ def badge(name: str, label: str, message: str, colour: str) -> None:
         {"schemaVersion": 1, "label": label, "message": message, "color": colour}), encoding="utf-8")
 
 
-instr, branch = coverage()
-killed, mutants = mutation()
-total, failed, seconds = tests()
+cov, mut, tst = coverage(), mutation(), tests()
 def showcase() -> bool:
     """The showcase rendered at build time: real output of the engine, served as a static page.
 
@@ -75,17 +83,24 @@ have = {
     "api": copy("build/docs/javadoc", "api"),
 }
 
-badge("coverage", "coverage", f"{instr:.1f}%", "3d5c3a" if instr >= 90 else "b08c54")
-badge("mutation", "mutation", f"{100 * killed // mutants}%", "3d5c3a" if killed == mutants else "b08c54")
-badge("tests", "tests", f"{total} passing" if not failed else f"{failed} failing", "3d5c3a" if not failed else "a33")
+cards = [("Showcase", "live", "the kit as it renders itself", "showcase/index.html", have["showcase"])]
 
-cards = [
-    ("Showcase", "live", "the kit as it renders itself", "showcase/index.html", have["showcase"]),
-    ("Tests", f"{total}", f"all passing in {seconds:.1f}s" if not failed else f"{failed} failing", "tests/index.html", have["tests"]),
-    ("Coverage", f"{instr:.1f}%", f"instructions · {branch:.1f}% branches", "coverage/index.html", have["coverage"]),
-    ("Mutation", f"{100 * killed // mutants}%", f"{killed} of {mutants} mutants killed", "mutation/index.html", have["mutation"]),
-    ("API", "javadoc", "every public type", "api/index.html", have["api"]),
-]
+if tst:
+    total, failed, seconds = tst
+    badge("tests", "tests", f"{total} passing" if not failed else f"{failed} failing", "3d5c3a" if not failed else "a33")
+    cards.append(("Tests", f"{total}", f"all passing in {seconds:.1f}s" if not failed else f"{failed} failing",
+                  "tests/index.html", have["tests"]))
+if cov:
+    instr, branch = cov
+    badge("coverage", "coverage", f"{instr:.1f}%", "3d5c3a" if instr >= 90 else "b08c54")
+    cards.append(("Coverage", f"{instr:.1f}%", f"instructions · {branch:.1f}% branches",
+                  "coverage/index.html", have["coverage"]))
+if mut:
+    killed, mutants = mut
+    badge("mutation", "mutation", f"{100 * killed // mutants}%", "3d5c3a" if killed == mutants else "b08c54")
+    cards.append(("Mutation", f"{100 * killed // mutants}%", f"{killed} of {mutants} mutants killed",
+                  "mutation/index.html", have["mutation"]))
+cards.append(("API", "javadoc", "every public type", "api/index.html", have["api"]))
 
 html = ["""<!DOCTYPE html>
 <html lang="en">
@@ -130,4 +145,4 @@ html.append("""  </div>
 </body>
 </html>""")
 (site / "index.html").write_text("\n".join(html), encoding="utf-8")
-print(f"site: tests={total} coverage={instr:.1f}% mutation={killed}/{mutants}")
+print("site:", ", ".join(name.lower() for name, *_ , present in cards if present))
