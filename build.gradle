@@ -46,7 +46,7 @@ dependencies {
     // Spring is optional at compile time: @Cacheable on the renderer is a no-op without it,
     // and org.springframework.ui.Model is only needed by Spring consumers
     compileOnly 'org.springframework:spring-context'
-    compileOnly 'org.jspecify:jspecify:1.0.0'
+    compileOnly 'org.jspecify:jspecify:1.0.1'
     // auto-configuration, so the kit works right after the dependency is added; compileOnly keeps
     // Boot off the classpath of those who do not use it
     compileOnly 'org.springframework.boot:spring-boot-autoconfigure'
@@ -55,7 +55,7 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly    'org.junit.platform:junit-platform-launcher'
     testImplementation 'org.assertj:assertj-core:3.27.7'
-    testImplementation 'org.jspecify:jspecify:1.0.0'
+    testImplementation 'org.jspecify:jspecify:1.0.1'
     testImplementation 'org.springframework:spring-context'   // ExtendedModelMap for canvas unit tests
     testImplementation 'org.thymeleaf:thymeleaf-spring6'      // render pins with the same expression engine consumers use
     testImplementation 'org.springframework.boot:spring-boot-autoconfigure'
