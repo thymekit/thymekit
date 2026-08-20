@@ -1,5 +1,10 @@
 # thymekit
 
+[![build](https://github.com/thymekit/thymekit/actions/workflows/build.yml/badge.svg)](https://github.com/thymekit/thymekit/actions/workflows/build.yml)
+[![licence: MPL-2.0](https://img.shields.io/badge/licence-MPL--2.0-3d5c3a)](LICENSE)
+[![Java 21+](https://img.shields.io/badge/Java-21%2B-3d5c3a)](#getting-started)
+[![Spring Boot 4](https://img.shields.io/badge/Spring%20Boot-4-3d5c3a)](#getting-started)
+
 **Everything is an element, and an element is made of elements.**
 
 Server-side Java has no notion of a UI component. A "component" ends up scattered — some model code in

@@ -1,0 +1,24 @@
+name: Bug report
+description: Something renders wrong, guards let something through, or the build breaks.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you expected, what you got. Rendered HTML helps more than a description of it.
+    validations: { required: true }
+  - type: textarea
+    id: repro
+    attributes:
+      label: How to reproduce
+      description: The smallest declaration that shows it — a few lines of Java are usually enough.
+      render: java
+    validations: { required: true }
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: thymekit, Spring Boot, Thymeleaf, Java.
+      placeholder: thymekit 0.1.0, Boot 4.1, Thymeleaf 3.1, Java 21
+    validations: { required: true }
