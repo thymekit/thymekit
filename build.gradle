@@ -87,6 +87,20 @@ pitest {
 }
 
 publishing {
+    // GitHub Packages. Note for consumers: even a public package there requires authentication —
+    // a GitHub username and a token with read:packages. Maven Central, where no such thing is
+    // needed, comes when the namespace io.thymekit is verified.
+    repositories {
+        maven {
+            name = 'GitHubPackages'
+            url = 'https://maven.pkg.github.com/thymekit/thymekit'
+            credentials {
+                username = System.getenv('GITHUB_ACTOR')
+                password = System.getenv('GITHUB_TOKEN')
+            }
+        }
+    }
+
     publications {
         maven(MavenPublication) {
             from components.java

@@ -52,10 +52,28 @@ can see what the kit produces before adding a line of it to your project.
 ## Getting started
 
 ```groovy
-implementation 'io.thymekit:thymekit'
+repositories {
+    mavenCentral()
+    maven {
+        url = 'https://maven.pkg.github.com/thymekit/thymekit'
+        credentials {
+            username = providers.gradleProperty('gpr.user').orElse(providers.environmentVariable('GITHUB_ACTOR'))
+            password = providers.gradleProperty('gpr.key').orElse(providers.environmentVariable('GITHUB_TOKEN'))
+        }
+    }
+}
+
+dependencies {
+    implementation 'io.thymekit:thymekit:0.1.0'
+}
 ```
 
 Java 21 or newer, Spring Boot 4, Thymeleaf 3.1.
+
+The kit is published to GitHub Packages, which asks every consumer for a GitHub username and a token
+with `read:packages` — that is their rule for public packages, not ours. Maven Central, where nothing
+of the sort is needed, follows once the `io.thymekit` namespace is verified. Until then the jars are
+also attached to every [release](https://github.com/thymekit/thymekit/releases).
 
 **1. Nothing to configure.** Auto-configuration registers the markdown renderer, its `#md` expression
 object and the tidy-render dialect. Each bean is `@ConditionalOnMissingBean` — declare your own and
