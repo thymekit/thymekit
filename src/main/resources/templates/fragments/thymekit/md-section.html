@@ -1,0 +1,40 @@
+<!--/* This Source Code Form is subject to the terms of the Mozilla Public
+       License, v. 2.0. If a copy of the MPL was not distributed with this
+       file, You can obtain one at https://mozilla.org/MPL/2.0/. */-->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+
+<!--/*
+    md-section: a section with a heading, XSS-safe markdown rendering and an empty state with an
+    optional "add" affordance.
+
+      heading   descriptor of a Heading element; null renders no heading
+      markdown  source text; null switches the section to its empty state
+      emptyHint empty-state text; null together with null markdown renders nothing at all
+      addAction any element shown next to the empty state; null renders none
+
+    The #md expression object comes from the kit's auto-configuration.
+*/-->
+<section th:fragment="mdSection(heading, markdown, emptyHint, addAction)"
+         class="tk-related"
+         th:if="${markdown != null or emptyHint != null}">
+    <!--/* heading is an element, rendered through the dispatcher */-->
+    <th:block th:if="${heading != null}">
+        <th:block th:replace="~{fragments/thymekit/element :: render(${heading})}"/>
+    </th:block>
+    <div class="rich-content" th:if="${markdown != null}"
+         th:utext="${#md.toHtmlSafe(markdown)}"></div>
+    <p class="detail-empty-hint" th:if="${markdown == null}">
+        <span th:text="${emptyHint}"></span>
+        <th:block th:replace="~{fragments/thymekit/element :: render(${addAction})}"/>
+    </p>
+</section>
+
+<!--/* adapter: unpacks the descriptor into the mdSection contract */-->
+<th:block th:fragment="mdSectionEl(e)"
+          th:replace="~{fragments/thymekit/md-section :: mdSection(
+              ${e['heading']}, ${e['markdown']}, ${e['emptyHint']}, ${e['addAction']})}"/>
+
+</body>
+</html>
