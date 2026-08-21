@@ -131,6 +131,26 @@ class ElementContractPublicTest {
             .hasMessageContaining("addAction").hasMessageContaining("renders exactly the same without it");
     }
 
+    /**
+     * An adapter that does not render is said to once. What it carries is not looked at afterwards:
+     * against a page that never appeared every key looks unread, and a list of consequences buries the
+     * one thing wrong.
+     */
+    @Test
+    void anAdapterThatDoesNotRenderIsNamedOnce() {
+        assertThatThrownBy(() -> ElementContract.of(Element.raw("test/broken", "emptyEl")
+                .with("text", "x").build()).renderedBy(ENGINE).check())
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("broken in 1 place(s)")
+            .hasMessageContaining("renders nothing a browser would show");
+
+        assertThatThrownBy(() -> ElementContract.of(Element.raw("test/broken", "explodingEl")
+                .with("text", "x").build()).renderedBy(ENGINE).check())
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("broken in 1 place(s)")
+            .hasMessageContaining("does not render");
+    }
+
     @Test
     void anAdapterNamedLikeSomethingElseIsNamed() {
         assertThatThrownBy(() -> ElementContract.of(Element.raw("thymekit/heading", "heading").build()).check())

@@ -41,14 +41,6 @@ public final class Heading {
     public static Builder h5(String text) { return new Builder(5, text); }
     public static Builder h6(String text) { return new Builder(6, text); }
 
-    /** Level as a number, for hosts that compute it; 1..6. */
-    static Builder of(int level, String text) {
-        if (level < 1 || level > 6) {
-            throw new IllegalArgumentException("level " + level + ": allowed range is 1..6");
-        }
-        return new Builder(level, text);
-    }
-
     public static final class Builder implements Composable<Heading> {
 
         private final Element.Descriptor<Heading> b;

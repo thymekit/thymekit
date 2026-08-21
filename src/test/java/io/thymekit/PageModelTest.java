@@ -182,7 +182,7 @@ class PageModelTest {
         assertThat(e.bare()).isFalse();
         assertThat(e.asMap()).containsEntry("template", "uikit/sections").containsEntry("fragment", "chips")
             .containsEntry("bare", false).containsEntry("plain", List.of("a")).containsEntry("removable", List.of("b"))
-            .doesNotContainKey("type");                                                       
+            .doesNotContainKey("level");   // a raw element carries what it was given and nothing besides
         assertThatThrownBy(() -> e.asMap().put("x", "y")).isInstanceOf(UnsupportedOperationException.class);
         Element<Element.Script> js = Element.script("fragments/ui/toggle", "toggleJs");
         assertThat(js.bare()).isTrue();
@@ -353,10 +353,15 @@ class PageModelTest {
         assertThat(Md.of(null).emptyHint("No description yet").build().asMap())
             .doesNotContainKey("markdown").containsEntry("emptyHint", "No description yet");
         Element<?> action = Element.raw("t", "add").build();
-        assertThat(Md.of("x").addAction(action).build().asMap())
+        assertThat(Md.of(null).emptyHint("Nothing yet").addAction(action).build().asMap())
             .containsEntry("addAction", action.asMap());   // the affordance is an element, not a URL
         assertThatThrownBy(() -> Md.of("x").addAction(Element.script("t", "js")))
             .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("script element");
+        // an affordance beside text that is there is shown nowhere: the empty state is its only place
+        assertThatThrownBy(() -> Md.of("text").addAction(action).build())
+            .isInstanceOf(IllegalStateException.class).hasMessageContaining("nowhere to show it");
+        assertThatThrownBy(() -> Md.of(null).addAction(action).build())
+            .isInstanceOf(IllegalStateException.class).hasMessageContaining("nowhere to show it");
         // the section owns the heading now, and takes nothing else in its place
         assertThatThrownBy(() -> Section.of(null)).isInstanceOf(NullPointerException.class).hasMessageContaining("heading");
         @SuppressWarnings("unchecked")
@@ -416,11 +421,6 @@ class PageModelTest {
         assertThat(Heading.h6("x").build().asMap()).containsEntry("level", 6);
         assertThat(Heading.h3("Name").href("/p/7").build().asMap()).containsEntry("href", "/p/7");   // heading as a link
         assertThat(Heading.h2("hidden").srOnly().build().asMap()).containsEntry("srOnly", true);   // present in the outline, invisible on screen
-        assertThat(Heading.of(2, "x").build()).isEqualTo(Heading.h2("x").build());                 // numeric level, for hosts that compute it
-        assertThatThrownBy(() -> Heading.of(0, "x")).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("1..6");
-        assertThatThrownBy(() -> Heading.of(7, "x")).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("1..6");
-        assertThat(Heading.of(1, "x").build().asMap()).containsEntry("level", 1);   // 1 and 6 are legal bounds
-        assertThat(Heading.of(6, "x").build().asMap()).containsEntry("level", 6);
         assertThatThrownBy(() -> Heading.h2(null)).isInstanceOf(NullPointerException.class).hasMessageContaining("text");
         assertThatThrownBy(() -> Heading.h2("x").id(null)).isInstanceOf(NullPointerException.class).hasMessageContaining("id");
         assertThatThrownBy(() -> Heading.h2("x").href(null)).isInstanceOf(NullPointerException.class).hasMessageContaining("href");

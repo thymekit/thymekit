@@ -35,6 +35,8 @@ public final class Md {
         private final Element.Descriptor<Md> b;
         private final LinkedHashSet<Rel> linkRel = new LinkedHashSet<>();
         private final boolean hasText;
+        private boolean hasHint;
+        private boolean hasAction;
 
         private Builder(@Nullable String markdown) {
             this.b = Element.Descriptor.<Md>of("thymekit/md", "mdEl");
@@ -47,6 +49,7 @@ public final class Md {
         /** Empty-state text, shown instead of the block when there is no markdown. */
         public Builder emptyHint(String hint) {
             b.with("emptyHint", Objects.requireNonNull(hint, "emptyHint"));
+            hasHint = true;
             return this;
         }
 
@@ -56,6 +59,7 @@ public final class Md {
          */
         public Builder addAction(Composable<?> action) {
             b.with("addAction", Element.requireRenderableElement(Element.settle(action, "action"), "Md.addAction").asMap());
+            hasAction = true;
             return this;
         }
 
@@ -76,6 +80,10 @@ public final class Md {
 
         @Override
         public Element<Md> build() {
+            if (hasAction && (hasText || !hasHint)) {
+                throw new IllegalStateException("an affordance with nowhere to show it: it stands beside the "
+                    + "empty state, which needs text that is absent and a hint that is not");
+            }
             if (!linkRel.isEmpty()) {
                 if (!hasText) {
                     throw new IllegalStateException("linkRel on a section with no text: the policy would apply to "
