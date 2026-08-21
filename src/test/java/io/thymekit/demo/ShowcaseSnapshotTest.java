@@ -57,7 +57,7 @@ class ShowcaseSnapshotTest {
 
         String html = engine.process(view, context);
 
-        assertThat(html).contains("<main class=\"page-canvas\">")   // the canvas puts down the landmark itself
+        assertThat(html).contains("<main class=\"page-showcase page-canvas\">")   // the canvas puts down the landmark, the page its own class
             .contains("<h1 class=\"tk-heading tk-heading--1\">thymekit</h1>")
             .contains("tk-caption--eyebrow")
             .contains("rich-content")
@@ -67,7 +67,17 @@ class ShowcaseSnapshotTest {
             .contains("<meta property=\"og:title\"")
             // the page claims the theme can be taken away; the frame in the stock scope shows it
             .contains("<div class=\"tk-demo-stock tk-defaults\">")
-            .containsPattern("tk-demo-stock[\\s\\S]*<h1 class=\"tk-heading tk-heading--1\">thymekit</h1>");
+            .containsPattern("tk-demo-stock[\\s\\S]*<h1 class=\"tk-heading tk-heading--1\">thymekit</h1>")
+            // every instrument the kit has, on one page
+            .contains("<time datetime=\"2026-08-21\">")                       // a date a machine reads
+            .contains("lang=\"la\"")                                          // a phrase in another language
+            .contains("rel=\"nofollow noopener\"").contains("target=\"_blank\"")   // a heading that is a link
+            .contains("tk-sr-only")                                            // one only a screen reader meets
+            .contains("tk-caption--label").contains("tk-caption--meta")        // all four caption roles
+            .contains("page-hero-status").contains("page-hero-actions")        // badge and action row
+            .contains("rel=\"ugc nofollow\"")                                 // links of somebody else's text
+            .contains("detail-empty-hint")                                     // the empty state
+            .contains("thymekitDemo");                                         // the script, collected once
 
         Files.createDirectories(OUT.getParent());
         Files.writeString(OUT, html);

@@ -103,7 +103,9 @@ class ElementContractTest {
         var dir = java.nio.file.Path.of(getClass().getResource("/templates/thymekit").toURI());
         Set<String> declared = new java.util.TreeSet<>();
         try (var files = java.nio.file.Files.list(dir)) {
-            for (java.nio.file.Path file : files.toList()) {
+            // the kit's own adapters live here; what is one level down (thymekit/demo/) is showcase
+            // furniture standing in for a consumer's elements, and owes this test nothing
+            for (java.nio.file.Path file : files.filter(java.nio.file.Files::isRegularFile).toList()) {
                 java.util.regex.Matcher m = java.util.regex.Pattern.compile("th:fragment=\"([a-zA-Z0-9]+El)\\(")
                     .matcher(java.nio.file.Files.readString(file));
                 while (m.find()) {
