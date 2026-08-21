@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light">
+    <title>thymekit — element showcase</title>
+    <meta name="description" content="Every element of the kit, rendered by the kit itself: the page you are looking at is composed in Java and dressed by one stylesheet of handle values.">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="thymekit — element showcase">
+    <meta property="og:description" content="Every element of the kit, rendered by the kit itself: the page you are looking at is composed in Java and dressed by one stylesheet of handle values.">
+    <meta name="twitter:card" content="summary">
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="assets/ui.css">
+    <link rel="stylesheet" href="assets/demo.css">
+    <link rel="canonical" href="https://thymekit.github.io/thymekit/main/showcase/">
+    <meta name="robots" content="noindex, follow">
+  </head>
+  <body>
+    <main class="page-showcase page-canvas">
+      <header class="page-hero">
+        <hgroup class="page-hero-group">
+          <p class="tk-caption tk-caption--eyebrow">showcase</p>
+          <h1 class="tk-heading tk-heading--1">thymekit</h1>
+          <p class="tk-caption tk-caption--subtitle">the elements on this page are composed in Java and rendered by the kit itself</p>
+          <p class="tk-caption tk-caption--meta">four elements, a canvas and a head</p>
+          <p class="tk-caption tk-caption--meta"><time datetime="2026-08-21">built 21 August 2026</time></p>
+        </hgroup>
+        <div class="page-hero-status"><span class="tk-demo-badge">0.1.0</span></div>
+        <div class="page-hero-actions"><p class="tk-demo-actions"><a href="https://github.com/thymekit/thymekit">the source, and every number on this page</a></p></div>
+      </header>
+      <section class="tk-section">
+        <h2 class="tk-heading tk-heading--2">What this page is</h2>
+        <div class="rich-content"><p>This page is composed <strong>declaratively in Java</strong> and rendered by the kit. Its look comes from one stylesheet, <code>thymekit/demo.css</code>, which hands values to element handles and touches nothing else — no override of the kit's markup, no rule the kit knows about. Take that file away and the very same page renders as plain HTML.</p></div>
+      </section>
+      <section class="tk-section" aria-labelledby="who-dresses-whom">
+        <h2 class="tk-heading tk-heading--2" id="who-dresses-whom">Who dresses whom</h2>
+        <div class="rich-content"><p>Three headings on this page wear three different faces, and no stylesheet rule mentions where any of them sits.</p>
+          <h3>The title of the page</h3>
+          <p>A serif display face, dressed by the hero — the element that hosts it. A page has exactly one H1 and the canvas keeps it that way, so its own face is a decision about the hero rather than about every heading on the site.</p>
+          <h3>The titles of the sections</h3>
+          <p>The heading above wears the site's own voice, set once in <code>:root</code>: small, tracked, upper-case, gold. Every section title on every page follows it.</p>
+          <h3>The headings of the text</h3>
+          <p>These two lines are written by an author inside markdown, not by the page. The markdown section hosts them, so it dresses them — quieter, in its own scale, through <code>--tk-md-heading-*</code>. Where the theme says nothing, the site's values come through untouched.</p></div>
+      </section>
+      <section class="tk-section">
+        <h2 class="tk-heading tk-heading--2">What text can carry</h2>
+        <div class="rich-content"><p>A caption comes in four roles and carries what a machine needs beside what a person reads: a date as <code>&lt;time datetime="…"&gt;</code>, a phrase marked with the language it is in. A heading may be a link — this one says <code>rel="nofollow"</code> and opens in a new tab, which is why it also says <code>noopener</code>, whichever order the two were written in. And a heading may be there only for the outline: the frame below holds one no eye finds.</p></div>
+        <div class="tk-demo-sample">
+          <p class="tk-caption tk-caption--eyebrow">eyebrow</p>
+          <h3 class="tk-heading tk-heading--3"><a href="https://github.com/thymekit/thymekit" rel="nofollow noopener" target="_blank">A heading that is a link</a></h3>
+          <h4 class="tk-heading tk-heading--4 tk-sr-only">Only a screen reader meets this one</h4>
+          <p class="tk-caption tk-caption--subtitle">subtitle — the line under a title</p>
+          <p class="tk-caption tk-caption--label">label</p>
+          <p class="tk-caption tk-caption--meta"><time datetime="2026-08-21">meta · 21 August 2026</time></p>
+          <p class="tk-caption tk-caption--subtitle" lang="la">Adansonia digitata</p>
+        </div>
+      </section>
+      <section class="tk-section">
+        <h2 class="tk-heading tk-heading--2">Whose text this is</h2>
+        <div class="rich-content"><p>Text written by visitors says so. The link below carries <code>rel="ugc nofollow"</code> because this block was told <code>linkRel(UGC, NOFOLLOW)</code>; a link of the site's own would keep its weight, since only what leaves the site is marked: <a href="https://example.com/somewhere" rel="ugc nofollow">a stranger's page</a> beside <a href="/ingredients/baobab">a page of ours</a>.</p></div>
+      </section>
+      <section class="tk-section">
+        <h2 class="tk-heading tk-heading--2">When there is nothing to show</h2>
+        <div class="detail-empty-hint">
+          <span>Nothing written here yet</span>
+          <p class="tk-demo-actions"><a href="https://github.com/thymekit/thymekit">write it</a></p>
+        </div>
+      </section>
+      <section class="tk-section">
+        <h2 class="tk-heading tk-heading--2">The theme, taken away</h2>
+        <div class="rich-content"><p>Every element file resets its handles inside <code>.tk-defaults</code>, so a frame carrying that class is a place the theme cannot reach. The same elements are below, in it: this is the page with <code>demo.css</code> taken away, and the claim above stops being a promise. The heading in the frame is an h2 and not the page's H1, because a page has one of those and a sample of the stock is not it.</p></div>
+        <div class="tk-demo-stock tk-defaults">
+          <p class="tk-caption tk-caption--eyebrow">showcase</p>
+          <h2 class="tk-heading tk-heading--2">thymekit, undressed</h2>
+          <p class="tk-caption tk-caption--subtitle">the same elements, with nothing said about them</p>
+        </div>
+      </section>
+    </main>
+    <script>
+  document.documentElement.dataset.thymekitDemo = 'the scripts of the element tree are collected once';
+</script>
+  </body>
+</html>

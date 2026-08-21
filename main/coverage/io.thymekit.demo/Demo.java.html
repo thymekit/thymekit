@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Demo.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">thymekit</a> &gt; <a href="index.source.html" class="el_package">io.thymekit.demo</a> &gt; <span class="el_source">Demo.java</span></div><h1>Demo.java</h1><pre class="source lang-java linenums">/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+package io.thymekit.demo;
+
+import io.thymekit.Caption;
+import io.thymekit.Element;
+import io.thymekit.Heading;
+import io.thymekit.Hero;
+import io.thymekit.Md;
+import io.thymekit.PageModel;
+import org.springframework.ui.Model;
+
+/**
+ * The kit's showcase, shipped with the library. Mount it with one controller method and see the
+ * elements live, rendered by your engine and served by your static handling; the library knows neither
+ * the address you mounted it at nor your theme.
+ *
+ * &lt;p&gt;The showcase has a document of its own ({@code templates/thymekit/demo.html}, from the jar): no
+ * consumer layout decorates it, so the page shows exactly what the kit produced. Its two stylesheets
+ * are linked in the template itself — the kit ({@code /thymekit/ui.css}) and the showcase theme
+ * ({@code /thymekit/demo.css}). The theme only hands values to element handles, which is what makes
+ * the page a demonstration of theming rather than a page with a look of its own.
+ *
+ * &lt;h2&gt;Mounting&lt;/h2&gt;
+ * &lt;pre&gt;{@code
+ * @GetMapping(&quot;/thymekit-demo&quot;)
+ * String demo(Model model) {
+ *     return Demo.page(model);
+ * }
+ * }&lt;/pre&gt;
+ */
+public final class Demo {
+
+    private static final String VIEW = &quot;thymekit/demo&quot;;
+
+    private Demo() {}
+
+    /**
+     * A frame in the stock scope, holding the same elements the page shows dressed. Marked as an
+     * illustration: what is inside is a sample, not the outline of this page, so the H1 in it does not
+     * count as a second one.
+     */
+    private static Element&lt;Demo&gt; stockSample() {
+<span class="fc" id="L45">        return Element.Descriptor.&lt;Demo&gt;of(&quot;thymekit/demo-frame&quot;, &quot;stockFrame&quot;).illustration()</span>
+<span class="fc" id="L46">            .slot(&quot;items&quot;, java.util.List.of(</span>
+<span class="fc" id="L47">                Caption.eyebrow(&quot;showcase&quot;),</span>
+<span class="fc" id="L48">                Heading.h1(&quot;thymekit&quot;),</span>
+<span class="fc" id="L49">                Caption.subtitle(&quot;the same elements, with nothing said about them&quot;)))</span>
+<span class="fc" id="L50">            .build();</span>
+    }
+
+    /** Builds the showcase and returns the name of its view. */
+    public static String page(Model model) {
+<span class="fc" id="L55">        return PageModel.of(model)</span>
+<span class="fc" id="L56">            .title(&quot;thymekit — element showcase&quot;)</span>
+<span class="fc" id="L57">            .description(&quot;Every element of the kit, rendered by the kit itself: the page you are &quot;</span>
+                + &quot;looking at is composed in Java and dressed by one stylesheet of handle values.&quot;)
+<span class="fc" id="L59">            .add(Hero.of(Heading.h1(&quot;thymekit&quot;))</span>
+<span class="fc" id="L60">                .eyebrow(Caption.eyebrow(&quot;showcase&quot;))</span>
+<span class="fc" id="L61">                .subtitle(Caption.subtitle(&quot;the elements on this page are composed in Java and rendered by the kit itself&quot;)))</span>
+<span class="fc" id="L62">            .add(Md.of(&quot;&quot;&quot;</span>
+                This page is composed **declaratively in Java** and rendered by the kit. Its look comes
+                from one stylesheet, `thymekit/demo.css`, which hands values to element handles and
+                touches nothing else — no override of the kit's markup, no rule the kit knows about.
+                Take that file away and the very same page renders as plain HTML.
+<span class="fc" id="L67">                &quot;&quot;&quot;).title(Heading.h2(&quot;What this page is&quot;)))</span>
+<span class="fc" id="L68">            .add(Md.of(&quot;&quot;&quot;</span>
+                Three headings on this page wear three different faces, and no stylesheet rule mentions
+                where any of them sits.
+
+                ### The title of the page
+                A serif display face, dressed by the hero — the element that hosts it. A page has exactly
+                one H1 and the canvas keeps it that way, so its own face is a decision about the hero
+                rather than about every heading on the site.
+
+                ### The titles of the sections
+                The heading above wears the site's own voice, set once in `:root`: small, tracked,
+                upper-case, gold. Every section title on every page follows it.
+
+                ### The headings of the text
+                These two lines are written by an author inside markdown, not by the page. The markdown
+                section hosts them, so it dresses them — quieter, in its own scale, through
+                `--tk-md-heading-*`. Where the theme says nothing, the site's values come through
+                untouched.
+<span class="fc" id="L86">                &quot;&quot;&quot;).title(Heading.h2(&quot;Who dresses whom&quot;).id(&quot;who-dresses-whom&quot;)))</span>
+<span class="fc" id="L87">            .add(Md.of(&quot;&quot;&quot;</span>
+                Every element file resets its handles inside `.tk-defaults`, so a frame carrying that class
+                is a place the theme cannot reach. The same three elements are below, in it: this is the
+                page with `demo.css` taken away, and the claim above stops being a promise.
+<span class="fc" id="L91">                &quot;&quot;&quot;).title(Heading.h2(&quot;The theme, taken away&quot;)))</span>
+<span class="fc" id="L92">            .add(stockSample())</span>
+<span class="fc" id="L93">            .render(VIEW);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

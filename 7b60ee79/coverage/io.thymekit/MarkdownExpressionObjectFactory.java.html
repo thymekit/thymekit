@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MarkdownExpressionObjectFactory.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">thymekit</a> &gt; <a href="index.source.html" class="el_package">io.thymekit</a> &gt; <span class="el_source">MarkdownExpressionObjectFactory.java</span></div><h1>MarkdownExpressionObjectFactory.java</h1><pre class="source lang-java linenums">/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+package io.thymekit;
+
+import java.util.Set;
+import org.thymeleaf.context.IExpressionContext;
+import org.thymeleaf.expression.IExpressionObjectFactory;
+
+/**
+ * Registers {@code #md} as an expression object name. Not cacheable at the Thymeleaf level: caching
+ * happens inside the renderer, keyed by the text and the link policy together.
+ *
+ * &lt;p&gt;The expression object is built once and handed out again: it holds a renderer and nothing else,
+ * so there is nothing for a second instance to hold differently.
+ */
+public class MarkdownExpressionObjectFactory implements IExpressionObjectFactory {
+
+    private static final String MARKDOWN_EXPRESSION_OBJECT_NAME = &quot;md&quot;;
+<span class="fc" id="L20">    private static final Set&lt;String&gt; ALL_EXPRESSION_OBJECT_NAMES =</span>
+<span class="fc" id="L21">            Set.of(MARKDOWN_EXPRESSION_OBJECT_NAME);</span>
+
+    private final MarkdownExpressionObject markdown;
+
+<span class="fc" id="L25">    public MarkdownExpressionObjectFactory(MarkdownRenderer markdownRenderer) {</span>
+<span class="fc" id="L26">        this.markdown = new MarkdownExpressionObject(markdownRenderer);</span>
+<span class="fc" id="L27">    }</span>
+
+    @Override
+    public Set&lt;String&gt; getAllExpressionObjectNames() {
+<span class="fc" id="L31">        return ALL_EXPRESSION_OBJECT_NAMES;</span>
+    }
+
+    @Override
+    public Object buildObject(IExpressionContext context, String expressionObjectName) {
+<span class="fc bfc" id="L36" title="All 2 branches covered.">        if (MARKDOWN_EXPRESSION_OBJECT_NAME.equals(expressionObjectName)) {</span>
+<span class="fc" id="L37">            return markdown;</span>
+        }
+<span class="fc" id="L39">        return null;</span>
+    }
+
+    @Override
+    public boolean isCacheable(String expressionObjectName) {
+<span class="fc" id="L44">        return false;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

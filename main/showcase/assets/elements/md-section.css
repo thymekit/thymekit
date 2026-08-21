@@ -1,0 +1,91 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+   License, v. 2.0. If a copy of the MPL was not distributed with this
+   file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+/* =============================================================================
+   md-section — a markdown block: the section heading plus sanitised output. The section
+   wrapper and the empty state live in base/section.css.
+
+   What is inside .rich-content is the author's markup, not the kit's: tables, quotes,
+   code, whatever markdown allows and whatever it will allow next. No set of handles
+   can cover that, so this file keeps only what stops a page from breaking — an image
+   that would overflow its column, a code block that would push the layout sideways, a
+   word long enough to widen it — and hands the look over. One thing it cannot hold: a
+   table too wide for the column. Holding that needs a wrapper around markup the kit
+   never wrote, and a theme that expects wide tables gives .rich-content table its own
+   scroller. A theme styles the inside of .rich-content directly; it is
+   the one place where writing rules against a kit class is right, because the markup
+   there was never the kit's.
+
+   Classes: .rich-content
+
+   Handles, for the block as a whole:
+      --tk-md-size   --tk-md-fg   --tk-md-max-width   --tk-md-accent   --tk-md-strong-fg
+
+   Content headings are written by an author, not by the page: the same levels, another
+   voice. The section hosts them, so it dresses them — from its own handles, falling
+   through to the site's scale wherever a theme is silent:
+      --tk-md-heading-font      --tk-md-heading-weight  --tk-md-heading-color
+      --tk-md-heading-tracking  --tk-md-heading-transform
+      --tk-md-heading-size-1  --tk-md-heading-size-2  --tk-md-heading-size-3
+      --tk-md-heading-size-4  --tk-md-heading-size-5  --tk-md-heading-size-6
+   ============================================================================= */
+
+.rich-content {
+    font-size: var(--tk-md-size, inherit);
+    color: var(--tk-md-fg, inherit);
+    max-width: var(--tk-md-max-width, none);   /* stock spans the full width; a narrow column is a handle */
+    margin: 0 auto;
+    overflow-wrap: break-word;                 /* an address nobody spaced is still not allowed to
+                                                  widen the column it sits in */
+}
+/* The rhythm of the section does not double at its edges. */
+.rich-content > *:first-child { margin-top: 0; }
+.rich-content > *:last-child  { margin-bottom: 0; }
+
+/* The section dressing the headings of its content: the host tier of the heading element,
+   filled from the section's own handles, with the site's values coming through untouched
+   where the theme said nothing. */
+.rich-content h1,
+.rich-content h2,
+.rich-content h3,
+.rich-content h4,
+.rich-content h5,
+.rich-content h6 {
+    font-family:    var(--tk-md-heading-font,      var(--tk-heading-font, inherit));
+    font-weight:    var(--tk-md-heading-weight,    var(--tk-heading-weight, bold));
+    color:          var(--tk-md-heading-color,     var(--tk-heading-color, inherit));
+    letter-spacing: var(--tk-md-heading-tracking,  var(--tk-heading-tracking, normal));
+    text-transform: var(--tk-md-heading-transform, var(--tk-heading-transform, none));
+}
+/* Six sizes of its own, because an author writes any level and a site whose section titles are
+   small brand labels cannot lend that number to a chapter of text. Silence falls through. */
+.rich-content h1 { font-size: var(--tk-md-heading-size-1, var(--tk-heading-size-1, 2em)); }
+.rich-content h2 { font-size: var(--tk-md-heading-size-2, var(--tk-heading-size-2, 1.5em)); }
+.rich-content h3 { font-size: var(--tk-md-heading-size-3, var(--tk-heading-size-3, 1.17em)); }
+.rich-content h4 { font-size: var(--tk-md-heading-size-4, var(--tk-heading-size-4, 1em)); }
+.rich-content h5 { font-size: var(--tk-md-heading-size-5, var(--tk-heading-size-5, .83em)); }
+.rich-content h6 { font-size: var(--tk-md-heading-size-6, var(--tk-heading-size-6, .67em)); }
+
+/* Links and emphasis take the block's colours; everything else about them is the browser's. */
+.rich-content a { color: var(--tk-md-accent, inherit); }
+.rich-content strong { color: var(--tk-md-strong-fg, inherit); }
+
+/* Containment, and nothing but: a picture that would break the column, a code block that would
+   push the page sideways, a table whose cells would not meet. */
+.rich-content img { max-width: 100%; height: auto; }
+.rich-content pre { overflow-x: auto; }
+.rich-content table { border-collapse: collapse; }
+
+/* Stock scope: inside .tk-defaults the handles are reset to the library fallbacks.
+   Add a handle to the element — reset it here as well. */
+.tk-defaults {
+    --tk-md-size: initial;
+    --tk-md-max-width: initial;
+    --tk-md-fg: initial;
+    --tk-md-strong-fg: initial;
+    --tk-md-accent: initial;
+    --tk-md-heading-font: initial; --tk-md-heading-weight: initial; --tk-md-heading-color: initial;
+    --tk-md-heading-tracking: initial; --tk-md-heading-transform: initial;
+    --tk-md-heading-size-1: initial; --tk-md-heading-size-2: initial; --tk-md-heading-size-3: initial;
+    --tk-md-heading-size-4: initial; --tk-md-heading-size-5: initial; --tk-md-heading-size-6: initial;
+}

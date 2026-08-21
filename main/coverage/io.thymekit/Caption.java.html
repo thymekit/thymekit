@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Caption.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">thymekit</a> &gt; <a href="index.source.html" class="el_package">io.thymekit</a> &gt; <span class="el_source">Caption.java</span></div><h1>Caption.java</h1><pre class="source lang-java linenums">/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+package io.thymekit;
+
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Objects;
+
+/**
+ * Owner of the caption concept: short text attached to something. Not a heading (it stays out of the
+ * outline) and not a link. The role lives in the factory name and has no default. Renders as
+ * {@code &lt;p class=&quot;tk-caption tk-caption--{role}&quot;&gt;} — inside {@code &lt;hgroup&gt;} only {@code p} and
+ * headings are allowed, and {@code p} is valid everywhere else too. Not a form {@code &lt;label&gt;}.
+ *
+ * &lt;p&gt;Beside the text a caption may carry what machines read: {@link Builder#time} for a date and
+ * {@link Builder#lang} for a phrase in another language.
+ */
+public final class Caption {
+
+    private Caption() {}
+
+    public static final String EYEBROW = &quot;eyebrow&quot;;
+    public static final String SUBTITLE = &quot;subtitle&quot;;
+    public static final String LABEL = &quot;label&quot;;
+    public static final String META = &quot;meta&quot;;
+
+    /** Sits above the H1 inside a heading group. */
+<span class="fc" id="L30">    public static Builder eyebrow(String text) { return new Builder(EYEBROW, text); }</span>
+    /** Sits below the H1 inside a heading group. */
+<span class="fc" id="L32">    public static Builder subtitle(String text) { return new Builder(SUBTITLE, text); }</span>
+    /** Labels an object, a group or a frame. */
+<span class="fc" id="L34">    public static Builder label(String text) { return new Builder(LABEL, text); }</span>
+    /** Secondary line: a counter, a slug, card meta. */
+<span class="fc" id="L36">    public static Builder meta(String text) { return new Builder(META, text); }</span>
+
+    /** Role of the caption, for host guards. */
+    public static String roleOf(Element&lt;Caption&gt; caption) {
+<span class="fc" id="L40">        return String.valueOf(Objects.requireNonNull(caption, &quot;caption&quot;).asMap().get(&quot;role&quot;));</span>
+    }
+
+    /** Narrow-point guard: a caption in the required role, settled and handed back. */
+    static Element&lt;Caption&gt; inRole(Composable&lt;Caption&gt; caption, String role, String what) {
+<span class="fc" id="L45">        Element&lt;Caption&gt; settled = Element.settle(caption, &quot;caption&quot;);</span>
+<span class="fc" id="L46">        Element.requireAdapter(settled, &quot;captionEl&quot;, what);</span>
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        if (!role.equals(settled.asMap().get(&quot;role&quot;))) {</span>
+<span class="fc" id="L48">            throw new IllegalArgumentException(what + &quot; in role \&quot;&quot; + role + &quot;\&quot; (got \&quot;&quot; + settled.asMap().get(&quot;role&quot;) + &quot;\&quot;)&quot;);</span>
+        }
+<span class="fc" id="L50">        return settled;</span>
+    }
+
+    public static final class Builder implements Composable&lt;Caption&gt; {
+
+        private final Element.Descriptor&lt;Caption&gt; b;
+
+<span class="fc" id="L57">        private Builder(String role, String text) {</span>
+<span class="fc" id="L58">            this.b = Element.Descriptor.&lt;Caption&gt;of(&quot;fragments/thymekit/caption&quot;, &quot;captionEl&quot;)</span>
+<span class="fc" id="L59">                .with(&quot;role&quot;, role)</span>
+<span class="fc" id="L60">                .with(&quot;text&quot;, Objects.requireNonNull(text, &quot;text&quot;));</span>
+<span class="fc" id="L61">        }</span>
+
+        /**
+         * The day this caption is about, written for machines beside the text written for people:
+         * {@code meta(&quot;12 March 2026&quot;).time(LocalDate.of(2026, 3, 12))} prints
+         * {@code &lt;time datetime=&quot;2026-03-12&quot;&gt;12 March 2026&lt;/time&gt;}. The text stays yours — its
+         * language, its format, its wording; the attribute is what a search engine and a reader for
+         * the blind understand.
+         */
+        public Builder time(LocalDate day) {
+<span class="fc" id="L71">            b.with(&quot;datetime&quot;, Objects.requireNonNull(day, &quot;day&quot;).toString());</span>
+<span class="fc" id="L72">            return this;</span>
+        }
+
+        /**
+         * The moment this caption is about, in UTC and as precise as the instant given — for a
+         * publication, an edit, an event. Calling either {@code time} after the other keeps the last.
+         */
+        public Builder time(Instant moment) {
+<span class="fc" id="L80">            b.with(&quot;datetime&quot;, DateTimeFormatter.ISO_INSTANT.format(Objects.requireNonNull(moment, &quot;moment&quot;)));</span>
+<span class="fc" id="L81">            return this;</span>
+        }
+
+        /**
+         * Language of this text when it differs from the page: a Latin name in a Russian catalogue, a
+         * quotation, a brand written the way its own country writes it. A screen reader pronounces it
+         * accordingly instead of reading it as broken page language.
+         */
+        public Builder lang(String languageTag) {
+<span class="fc" id="L90">            b.with(&quot;lang&quot;, Element.requireTag(languageTag, &quot;languageTag&quot;));</span>
+<span class="fc" id="L91">            return this;</span>
+        }
+
+        @Override
+        public Element&lt;Caption&gt; build() {
+<span class="fc" id="L96">            return b.build();</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

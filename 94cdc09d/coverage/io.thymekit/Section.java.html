@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Section.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">thymekit</a> &gt; <a href="index.source.html" class="el_package">io.thymekit</a> &gt; <span class="el_source">Section.java</span></div><h1>Section.java</h1><pre class="source lang-java linenums">/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+package io.thymekit;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+/**
+ * Owner of the section concept: a part of a page with a heading and whatever belongs under it. Anything
+ * that needs a titled area composes this instead of writing its own {@code &lt;section&gt;} — a markdown
+ * block, a row of cards, a table of yours, several of them together.
+ *
+ * &lt;pre&gt;{@code
+ * Section.of(Heading.h2(&quot;Composition&quot;).id(&quot;composition&quot;))
+ *     .add(Md.of(it.description()).emptyHint(&quot;Nothing written yet&quot;))
+ *     .add(myCardRow)
+ * }&lt;/pre&gt;
+ *
+ * &lt;p&gt;The section takes its accessible name from the heading, when the heading was given an id: deciding
+ * that a section deserves an address is deciding that it stands on its own, and what stands on its own
+ * deserves a name. Where nobody decided that, it stays an ordinary box rather than one more landmark to
+ * step over.
+ *
+ * &lt;p&gt;Whether there is anything worth showing is the consumer's decision — the kit does not know the
+ * data. A section renders its heading and its contents; an element inside that has nothing to render
+ * renders nothing, and the heading stays.
+ */
+public final class Section {
+
+    private Section() {}
+
+    /** A section under a heading of the level the outline calls for. */
+    public static Builder of(Composable&lt;Heading&gt; heading) {
+<span class="fc" id="L36">        Element&lt;Heading&gt; settled = Element.settle(heading, &quot;heading&quot;);</span>
+<span class="fc" id="L37">        Element.requireAdapter(settled, &quot;headingEl&quot;, &quot;Section.of accepts a heading only&quot;);</span>
+<span class="fc" id="L38">        return new Builder(settled);</span>
+    }
+
+    public static final class Builder implements Composable&lt;Section&gt; {
+
+        private final Element.Descriptor&lt;Section&gt; b;
+<span class="fc" id="L44">        private final List&lt;Element&lt;?&gt;&gt; items = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L46">        private Builder(Element&lt;Heading&gt; heading) {</span>
+<span class="fc" id="L47">            this.b = Element.Descriptor.&lt;Section&gt;of(&quot;thymekit/section&quot;, &quot;sectionEl&quot;)</span>
+<span class="fc" id="L48">                .with(&quot;heading&quot;, heading.asMap());</span>
+<span class="fc" id="L49">        }</span>
+
+        /** Appends to the flow of the section, in call order. */
+        public Builder add(Composable&lt;?&gt; element) {
+<span class="fc" id="L53">            items.add(Element.requireRenderableElement(Element.settle(element, &quot;element&quot;), &quot;Section.add&quot;));</span>
+<span class="fc" id="L54">            return this;</span>
+        }
+
+        @Override
+        public Element&lt;Section&gt; build() {
+<span class="fc" id="L59">            return b.slot(&quot;items&quot;, items).build();</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

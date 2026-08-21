@@ -1,0 +1,167 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+   License, v. 2.0. If a copy of the MPL was not distributed with this
+   file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+/* =============================================================================
+   thymekit/demo.css — theme of the showcase, served from the jar.
+
+   This file is the proof of the contract: the kit ships structure, a theme dresses
+   it, and the two never touch. Everything below is either a value handed to an
+   element handle or a rule about the showcase's own document — not one line reaches
+   into the kit's markup, and the kit knows nothing about what is written here.
+
+   The look is borrowed from a real consumer (rosactive.com): a warm ground, a serif
+   display face for the H1, a gold hairline under the hero, an uppercase tracked
+   eyebrow. Take this file away and the same page renders as plain HTML.
+   ============================================================================= */
+
+/* ── Every value this theme hands to the kit, in one place: what the page is, what the site's
+      voice is, and where an element dresses what it hosts. ── */
+:root {
+    /* The showcase's own palette */
+    --demo-cream:  #f9f7f4;
+    --demo-white:  #fffefb;
+    --demo-gold:   #8a6a2f;
+    --demo-dark:   #1c1a17;
+    --demo-mid:    #5a5650;
+    --demo-light:  #767068;
+    --demo-border: #e8e3da;
+    --demo-serif:  'Cormorant Garamond', 'Iowan Old Style', Palatino, Georgia, serif;
+    --demo-sans:   system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    /* The document */
+    --tk-page-width:   760px;
+    --tk-page-padding: 40px 24px 80px;   /* no fixed topbar here, so nothing to reserve room for */
+    --tk-page-gap:     32px;             /* the space between elements belongs to the page */
+    /* The hero, dressed entirely through handles: centred, with a short gold rule
+      instead of the stock full-width one */
+    --tk-hero-align:         center;
+    --tk-hero-divider-width: 40px;
+    --tk-hero-divider-color: var(--demo-gold);
+    /* The voice of the site, set once */
+    --tk-heading-font:      var(--demo-sans);
+    --tk-heading-weight:    500;
+    --tk-heading-color:     var(--demo-gold);
+    --tk-heading-tracking:  2px;
+    --tk-heading-transform: uppercase;
+    --tk-heading-size-1: 36px;
+    --tk-heading-size-2: 11px;
+    --tk-heading-size-3: 11px;
+    --tk-heading-size-4: 11px;
+    --tk-heading-size-5: 10px;
+    --tk-heading-size-6: 10px;
+    /* The hero dresses the title it hosts: a serif display face, straight, dark */
+    --tk-hero-heading-font:      var(--demo-serif);
+    --tk-hero-heading-weight:    500;
+    --tk-hero-heading-color:     var(--demo-dark);
+    --tk-hero-heading-tracking:  1px;
+    --tk-hero-heading-transform: none;
+    /* The markdown section dresses the headings of its content: an author's chapters, in
+      their own quieter scale — the site's labels would be the wrong number for prose */
+    --tk-md-heading-font:      var(--demo-serif);
+    --tk-md-heading-weight:    600;
+    --tk-md-heading-color:     var(--demo-mid);
+    --tk-md-heading-tracking:  normal;
+    --tk-md-heading-transform: none;
+    --tk-md-heading-size-1: 24px;
+    --tk-md-heading-size-2: 20px;
+    --tk-md-heading-size-3: 17px;
+    --tk-md-heading-size-4: 15px;
+    --tk-md-heading-size-5: 13px;
+    --tk-md-heading-size-6: 11px;
+    /* Captions by role */
+    --tk-caption-eyebrow-size:      11px;
+    --tk-caption-eyebrow-color:     var(--demo-gold);
+    --tk-caption-eyebrow-weight:    500;
+    --tk-caption-eyebrow-tracking:  2px;
+    --tk-caption-eyebrow-transform: uppercase;
+
+    --tk-caption-subtitle-size:   14px;
+    --tk-caption-subtitle-color:  var(--demo-dark);
+    --tk-caption-subtitle-weight: 600;
+
+    --tk-caption-label-size:      10px;
+    --tk-caption-label-color:     var(--demo-gold);
+    --tk-caption-label-weight:    500;
+    --tk-caption-label-tracking:  2px;
+    --tk-caption-label-transform: uppercase;
+
+    --tk-caption-meta-size:  13px;
+    --tk-caption-meta-color: var(--demo-light);
+    /* A heading that is a link keeps the browser's underline; only its colour is the theme's */
+    --tk-heading-link-color: var(--demo-gold);
+    /* The empty state: quiet text, and a link in the site's accent */
+    --tk-section-empty-fg:  var(--demo-light);
+    --tk-section-link-fg:   var(--demo-gold);
+    /* Markdown output, so the prose under the hero belongs to the same page */
+    --tk-md-fg:        var(--demo-mid);
+    --tk-md-strong-fg: var(--demo-dark);
+    --tk-md-accent:    var(--demo-gold);
+    --tk-md-max-width: 60ch;
+    --tk-md-size:      15px;
+}
+
+body {
+    margin: 0;
+    background: var(--demo-cream);
+    color: var(--demo-dark);
+    font-family: var(--demo-sans);
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Furniture of the showcase: frames to stand elements in, and the two stand-ins the hero asks for by
+   adapter name. None of this is the kit — it is what a consumer would write. */
+.tk-demo-sample {
+    border: 1px solid var(--demo-border);
+    border-radius: 4px;
+    padding: 20px 24px;
+    display: grid;
+    gap: 10px;
+}
+.tk-demo-badge {
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--demo-gold);
+    border: 1px solid var(--demo-border);
+    border-radius: 999px;
+    padding: 3px 10px;
+}
+.tk-demo-actions { margin: 0; font-size: 13px; }
+.tk-demo-actions a { color: var(--demo-gold); }
+
+.tk-demo-stock {
+    border: 1px dashed var(--demo-border);
+    border-radius: 4px;
+    padding: 20px 24px;
+    background: var(--demo-white);
+}
+
+.rich-content { line-height: 1.8; }
+.rich-content p, .rich-content ul, .rich-content ol { margin: 0 0 1em; }
+.rich-content h1, .rich-content h2, .rich-content h3,
+.rich-content h4, .rich-content h5, .rich-content h6 { line-height: 1.25; margin: 1.4em 0 .5em; }
+.rich-content strong { font-weight: 600; }
+.rich-content code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: .92em;
+    background: var(--demo-white);
+    border: 1px solid var(--demo-border);
+    border-radius: 3px;
+    padding: .1em .35em;
+}
+.rich-content pre {
+    background: var(--demo-white);
+    border: 1px solid var(--demo-border);
+    border-radius: 4px;
+    padding: 12px 14px;
+    font-size: 13px;
+    line-height: 1.5;
+}
+.rich-content pre code { background: none; border: 0; padding: 0; }
+.rich-content blockquote {
+    border-left: 2px solid var(--demo-gold);
+    margin: 0 0 1em;
+    padding: .2em 0 .2em 14px;
+    color: var(--demo-light);
+}
+.rich-content th, .rich-content td { padding: 8px 12px; border-bottom: 1px solid var(--demo-border); text-align: left; }
+.rich-content img { display: block; margin: 1em 0; border-radius: 4px; }

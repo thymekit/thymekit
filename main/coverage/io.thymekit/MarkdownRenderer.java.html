@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MarkdownRenderer.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">thymekit</a> &gt; <a href="index.source.html" class="el_package">io.thymekit</a> &gt; <span class="el_source">MarkdownRenderer.java</span></div><h1>MarkdownRenderer.java</h1><pre class="source lang-java linenums">/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+package io.thymekit;
+
+import com.vladsch.flexmark.ext.autolink.AutolinkExtension;
+import com.vladsch.flexmark.ext.tables.TablesExtension;
+import com.vladsch.flexmark.html.HtmlRenderer;
+import com.vladsch.flexmark.parser.Parser;
+import com.vladsch.flexmark.util.ast.Node;
+import com.vladsch.flexmark.util.data.MutableDataSet;
+import java.util.List;
+import java.util.regex.Pattern;
+import org.jsoup.Jsoup;
+import org.jsoup.safety.Safelist;
+import org.jspecify.annotations.Nullable;
+import org.springframework.cache.annotation.Cacheable;
+
+/**
+ * Markdown to safe HTML, rendered into templates through {@code th:utext}.
+ *
+ * &lt;p&gt;Safety is layered. flexmark parses with HTML blocks disabled and inline HTML escaped, so nothing
+ * authored as markup survives the parser; jsoup then cleans the output against a relaxed safelist. Two
+ * independent layers, because one of them may be misconfigured some day.
+ *
+ * &lt;p&gt;Both {@code toHtmlSafe} overloads are annotated {@code @Cacheable} and share one key — the source
+ * text together with the link policy, so the same text under two policies cannot come back with the
+ * wrong attributes. Both carry the annotation on purpose: a method calling its neighbour inside the
+ * same object would go past the Spring proxy and lose the cache silently.
+ *
+ * &lt;p&gt;The key names its arguments by position ({@code #p0}, {@code #p1}) rather than by name. A library
+ * jar carries parameter names only if it was compiled with {@code -parameters}; where it was not, a key
+ * written as {@code #source} evaluates to {@code null} for every call, every text lands on one entry,
+ * and the second page rendered shows the text of the first. By position that cannot happen, whoever
+ * compiles the consumer and however. With Spring Cache enabled
+ * editing the text is a natural miss; without a cache manager the annotation is a no-op. If a consumer
+ * post-processes the HTML with data outside the text (say, resolving image ids), invalidating that
+ * cache is the consumer's business.
+ *
+ * @see MarkdownDialect for the {@code #md} template integration
+ */
+public class MarkdownRenderer {
+
+    /**
+     * Lines that consist only of whitespace are normalised to truly empty ones.
+     *
+     * &lt;p&gt;WYSIWYG editors keep &quot;empty&quot; lines as a space or a non-breaking space. CommonMark requires a
+     * blank line to contain zero non-whitespace characters, and U+00A0 does not count as whitespace
+     * there — so without this, {@code ---} after such a line turns the previous paragraph into a setext
+     * heading instead of a rule, tables stay plain text, and separate paragraphs glue into one.
+     */
+<span class="fc" id="L52">    private static final Pattern WHITESPACE_ONLY_LINE =</span>
+<span class="fc" id="L53">        Pattern.compile(&quot;(?m)^[\\s\\u00A0]+$&quot;);</span>
+
+    /** An address that names its own scheme — {@code https:}, {@code mailto:}, anything — leaves this site. */
+<span class="fc" id="L56">    private static final Pattern SCHEME = Pattern.compile(&quot;^[A-Za-z][A-Za-z0-9+.-]*:&quot;);</span>
+
+    private final Parser parser;
+    private final HtmlRenderer renderer;
+    private final Safelist safelist;
+    private final int maxHeadingLevel;
+
+    /** By default authored headings start at h2: the page H1 belongs to the hero, not to content. */
+    public MarkdownRenderer() {
+<span class="fc" id="L65">        this(2);</span>
+<span class="fc" id="L66">    }</span>
+
+    /**
+     * @param maxHeadingLevel ceiling for content headings (1..6): the topmost authored level is demoted
+     *        to it and the rest shift by the same amount, so the structure of the text survives. 1 keeps
+     *        the text as authored (pages written entirely in markdown).
+     */
+<span class="fc" id="L73">    public MarkdownRenderer(int maxHeadingLevel) {</span>
+<span class="fc bfc" id="L74" title="All 4 branches covered.">        if (maxHeadingLevel &lt; 1 || maxHeadingLevel &gt; 6) {</span>
+<span class="fc" id="L75">            throw new IllegalArgumentException(&quot;maxHeadingLevel &quot; + maxHeadingLevel + &quot;: allowed range is 1..6&quot;);</span>
+        }
+<span class="fc" id="L77">        this.maxHeadingLevel = maxHeadingLevel;</span>
+        // Parser and HtmlRenderer are immutable and thread-safe, so they are built once.
+        //
+        // HTML_BLOCK_PARSER=false keeps authored HTML blocks as text, ESCAPE_HTML=true escapes what is
+        // left inline; soft breaks stay CommonMark default, since pasted markdown wraps lines by accident.
+<span class="fc" id="L82">        MutableDataSet options = new MutableDataSet()</span>
+<span class="fc" id="L83">            .set(Parser.HTML_BLOCK_PARSER, false)</span>
+<span class="fc" id="L84">            .set(HtmlRenderer.ESCAPE_HTML, true)</span>
+<span class="fc" id="L85">            .set(Parser.EXTENSIONS, List.of(</span>
+<span class="fc" id="L86">                TablesExtension.create(),</span>
+<span class="fc" id="L87">                AutolinkExtension.create()));</span>
+<span class="fc" id="L88">        this.parser = Parser.builder(options).build();</span>
+<span class="fc" id="L89">        this.renderer = HtmlRenderer.builder(options).build();</span>
+<span class="fc" id="L90">        this.safelist = createSafelist();</span>
+<span class="fc" id="L91">    }</span>
+
+    /**
+     * Converts markdown source into safe HTML.
+     *
+     * &lt;p&gt;Pipeline: flexmark Parser → HtmlRenderer → jsoup Safelist.relaxed(), plus a pass that marks
+     * outgoing links when a policy was given.
+     *
+     * @param source markdown text; {@code null} or blank yields an empty string
+     * @return sanitised HTML ready for {@code th:utext}
+     */
+    @Cacheable(value = &quot;markdown.htmlSafe&quot;, key = &quot;{#p0, null}&quot;)
+    public String toHtmlSafe(@Nullable String source) {
+<span class="fc" id="L104">        return render(source, null);</span>
+    }
+
+    /**
+     * The same, with what the links of this text say about themselves — {@code &quot;ugc nofollow&quot;} for a
+     * review, nothing for text your own editors wrote.
+     *
+     * &lt;p&gt;Marked are the links that leave the site: an address carrying a scheme ({@code https://…}) or
+     * an authority ({@code //host/…}). A path of the site's own ({@code /x}, {@code #x}, {@code ../x})
+     * is left alone, since holding back the weight of your own links is a wound self-inflicted. The one
+     * case this cannot tell apart is a link written absolutely to your own site: it is marked with the
+     * rest.
+     *
+     * @param source markdown text; {@code null} or blank yields an empty string
+     * @param linkRel value for the {@code rel} attribute of outgoing links; {@code null} marks nothing
+     */
+    @Cacheable(value = &quot;markdown.htmlSafe&quot;, key = &quot;{#p0, #p1}&quot;)
+    public String toHtmlSafe(@Nullable String source, @Nullable String linkRel) {
+<span class="fc" id="L122">        return render(source, linkRel);</span>
+    }
+
+    /** The pipeline itself; both public methods are cached entry points into it. */
+    private String render(@Nullable String source, @Nullable String linkRel) {
+<span class="fc bfc" id="L127" title="All 4 branches covered.">        if (source == null || source.isBlank()) {</span>
+<span class="fc" id="L128">            return &quot;&quot;;</span>
+        }
+<span class="fc" id="L130">        String normalized = WHITESPACE_ONLY_LINE.matcher(source).replaceAll(&quot;&quot;);</span>
+<span class="fc" id="L131">        Node document = parser.parse(normalized);</span>
+<span class="fc" id="L132">        demoteHeadings(document);</span>
+<span class="fc" id="L133">        String safeHtml = Jsoup.clean(renderer.render(document), safelist);</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">        if (linkRel == null) {</span>
+<span class="fc" id="L135">            return safeHtml;</span>
+        }
+        // A second parse, and deliberately so: Jsoup.clean keeps a relative href alive, while a Cleaner
+        // driven by hand over a parsed document drops it. The cost is paid only by text that carries a
+        // link policy, and jsoup's own output settings are left alone so both paths serialise alike.
+<span class="fc" id="L140">        org.jsoup.nodes.Document marked = Jsoup.parseBodyFragment(safeHtml);</span>
+<span class="fc" id="L141">        markOutgoing(marked, linkRel);</span>
+<span class="fc" id="L142">        return marked.body().html();</span>
+    }
+
+    /**
+     * Puts the given rel on every link that leaves the site. Leaving means carrying a scheme
+     * ({@code https://…}, and any other) or an authority ({@code //host/…}); a path of the site's own
+     * ({@code /x}, {@code #x}, {@code ../x}) is left alone, because holding back the weight of your own
+     * links is a wound self-inflicted. A protocol-relative address counts as outgoing: it is somebody
+     * else's host written without a scheme, and in text a visitor wrote it is exactly the shape spam
+     * takes to slip past a check for {@code http}.
+     */
+    private static void markOutgoing(org.jsoup.nodes.Document doc, String linkRel) {
+<span class="fc bfc" id="L154" title="All 2 branches covered.">        for (org.jsoup.nodes.Element a : doc.select(&quot;a[href]&quot;)) {</span>
+<span class="fc" id="L155">            String href = a.attr(&quot;href&quot;).strip();</span>
+<span class="fc bfc" id="L156" title="All 4 branches covered.">            if (href.startsWith(&quot;//&quot;) || SCHEME.matcher(href).find()) {</span>
+<span class="fc" id="L157">                a.attr(&quot;rel&quot;, linkRel);</span>
+            }
+<span class="fc" id="L159">        }</span>
+<span class="fc" id="L160">    }</span>
+
+    /**
+     * Demotes content headings: the topmost authored level becomes {@code maxHeadingLevel} and the rest
+     * shift by the same amount, never past h6. Content does not declare the page H1 — the hero does.
+     */
+    private void demoteHeadings(Node document) {
+<span class="fc" id="L167">        List&lt;com.vladsch.flexmark.ast.Heading&gt; headings = new java.util.ArrayList&lt;&gt;();</span>
+<span class="fc" id="L168">        Node n = document.getFirstChild();</span>
+<span class="fc" id="L169">        java.util.ArrayDeque&lt;Node&gt; stack = new java.util.ArrayDeque&lt;&gt;();</span>
+<span class="pc bpc" id="L170" title="1 of 2 branches missed.">        if (n != null) {</span>
+<span class="fc" id="L171">            stack.push(n);</span>
+        }
+<span class="fc bfc" id="L173" title="All 2 branches covered.">        while (!stack.isEmpty()) {</span>
+<span class="fc" id="L174">            Node cur = stack.pop();</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">            if (cur instanceof com.vladsch.flexmark.ast.Heading h) {</span>
+<span class="fc" id="L176">                headings.add(h);</span>
+            }
+<span class="fc bfc" id="L178" title="All 2 branches covered.">            if (cur.getNext() != null) {</span>
+<span class="fc" id="L179">                stack.push(cur.getNext());</span>
+            }
+<span class="fc bfc" id="L181" title="All 2 branches covered.">            if (cur.getFirstChild() != null) {</span>
+<span class="fc" id="L182">                stack.push(cur.getFirstChild());</span>
+            }
+<span class="fc" id="L184">        }</span>
+<span class="fc bfc" id="L185" title="All 2 branches covered.">        if (headings.isEmpty()) {</span>
+<span class="fc" id="L186">            return;</span>
+        }
+<span class="fc" id="L188">        int min = headings.stream().mapToInt(com.vladsch.flexmark.ast.Heading::getLevel).min().orElse(6);</span>
+<span class="fc" id="L189">        int shift = Math.max(0, maxHeadingLevel - min);</span>
+<span class="fc bfc" id="L190" title="All 2 branches covered.">        if (shift == 0) {</span>
+<span class="fc" id="L191">            return;</span>
+        }
+<span class="fc bfc" id="L193" title="All 2 branches covered.">        for (com.vladsch.flexmark.ast.Heading h : headings) {</span>
+<span class="fc" id="L194">            h.setLevel(Math.min(6, h.getLevel() + shift));</span>
+<span class="fc" id="L195">        }</span>
+<span class="fc" id="L196">    }</span>
+
+    /**
+     * Output-side safelist: {@code Safelist.relaxed()} plus {@code rel}/{@code target} on links,
+     * loading hints on images, and {@code class} on {@code &lt;code&gt;} — flexmark puts the fenced-block
+     * language there, and without it code blocks lose their highlighting.
+     */
+    private static Safelist createSafelist() {
+<span class="fc" id="L204">        return Safelist.relaxed()</span>
+<span class="fc" id="L205">            .preserveRelativeLinks(true)   // without it a link to your own site loses its href: jsoup</span>
+                                           // resolves relative addresses against a base document, and
+                                           // here there is none. The protocol list still applies, so
+                                           // javascript: and data: are dropped as before.
+<span class="fc" id="L209">            .addAttributes(&quot;a&quot;, &quot;rel&quot;, &quot;target&quot;)</span>
+<span class="fc" id="L210">            .addAttributes(&quot;img&quot;, &quot;loading&quot;, &quot;decoding&quot;)</span>
+<span class="fc" id="L211">            .addAttributes(&quot;code&quot;, &quot;class&quot;);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,315 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PageModel.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">thymekit</a> &gt; <a href="index.source.html" class="el_package">io.thymekit</a> &gt; <span class="el_source">PageModel.java</span></div><h1>PageModel.java</h1><pre class="source lang-java linenums">/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+package io.thymekit;
+
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
+import org.springframework.ui.Model;
+
+/**
+ * The canvas of an arbitrary page: document properties (a title, what search engines and messengers
+ * are told about the page, and classes of your own if your theme needs them) plus an ordered
+ * collection of elements — the order of {@code add} is the order of rendering.
+ *
+ * &lt;p&gt;The canvas knows no list of bricks: an element is whatever a factory produced, so adding one to
+ * the kit never touches this API.
+ *
+ * &lt;p&gt;The builder only accumulates; the model is filled by {@code render()} under four keys, and two of
+ * them are elements: {@code page} — the canvas itself, with its classes and its flow inside — and
+ * {@code head}, what the page says about itself. The other two are {@code assets}, the scripts of the
+ * tree, and {@code pageTitle}, the bare string for a document that wants to show the title somewhere
+ * of its own; the tag is printed by the head element alone, so the two cannot disagree.
+ *
+ * &lt;p&gt;That the page is an element is not a turn of phrase. It carries an adapter address like any other,
+ * the same dispatcher renders it, and a document says {@code render(${page})} exactly as it would for a
+ * heading. Composition is closed at the top as well as at the bottom.
+ *
+ * &lt;p&gt;The canvas renders itself: the element under {@code page} draws the {@code &lt;main&gt;} landmark with
+ * the flow inside it. A page owes a reader and a crawler that landmark, so the kit puts it down rather
+ * than trusting every document to remember.
+ *
+ * &lt;p&gt;The head of the document is filled the same way: {@code head} is an element like any other, so a
+ * document renders it through the dispatcher and gets the title, the description, the canonical link
+ * and the Open Graph tags from one source — the builder below. Say a thing once and every place that
+ * repeats it stays in step.
+ *
+ * &lt;p&gt;Guards: a title is required (an unnamed browser tab is always a mistake), an empty collection is
+ * legal (a placeholder page knows what it is doing).
+ */
+public final class PageModel {
+
+    private PageModel() {}
+
+    /** Default document: the view name returned by the no-argument {@code render()}. */
+    private static final String DEFAULT_VIEW = &quot;page&quot;;
+
+    /** Marker of a canvas-built page; the only class the kit puts there by itself. */
+    private static final String CANVAS = &quot;page-canvas&quot;;
+
+    /** A page canvas. */
+    public static Canvas of(Model model) {
+<span class="fc" id="L58">        return new Builder(Objects.requireNonNull(model, &quot;model&quot;));</span>
+    }
+
+    /**
+     * What a page is told about itself, and what goes on it.
+     *
+     * &lt;p&gt;Every text here is refused when it is blank and kept trimmed when it is not: a space at the end
+     * of a title is never meant, and it travels into the tab, the search result and the preview alike.
+     */
+    public interface Canvas {
+
+        /** Document title; required before {@code render}. Also the Open Graph title. */
+        Canvas title(String title);
+
+        /**
+         * What this page is, in a sentence — the description a search engine may show under the link
+         * and a messenger shows in a preview. One source for both.
+         */
+        Canvas description(String description);
+
+        /**
+         * The address this page is to be found at, when more than one leads to it (a filter, a sort,
+         * a session parameter, a copy under another path). Becomes the canonical link and the Open
+         * Graph url. Only the consumer knows where the page lives, so the kit never guesses it.
+         *
+         * &lt;p&gt;Absolute, with a scheme: {@code https://shop/ingredients/baobab}. A relative canonical
+         * link a browser would resolve, but the same value goes out as {@code og:url}, and a messenger
+         * scraping the page has no document to resolve it against.
+         */
+        Canvas canonical(String url);
+
+        /**
+         * The picture a messenger shows in the preview of this page. Absolute, with a scheme — a
+         * relative {@code og:image} is not a smaller picture, it is no preview at all.
+         */
+        Canvas image(String url);
+
+        /**
+         * What a crawler may do with this page. Say nothing and nothing is printed, which is the same
+         * as full permission; say {@code robots(NOINDEX)} for a draft, a filtered listing, a page
+         * meant for one visitor.
+         *
+         * &lt;p&gt;One thing is added without being asked: a page that was given an {@link #image(String)}
+         * and is not kept out of the index also says {@code max-image-preview:large}. The consumer has
+         * already declared a picture worth showing, and the default of a search engine is a thumbnail —
+         * so silence there would be a decision nobody made. Nothing else is ever added, and whatever is
+         * written here is printed exactly as written.
+         */
+        Canvas robots(Robots... directives);
+
+        /**
+         * Classes of your own for the page element — an audience, a section of the site, whatever your
+         * theme hooks onto. The kit adds only its own {@code page-canvas} marker and has no opinion
+         * about what kinds of pages you have.
+         */
+        Canvas pageClass(String classes);
+
+        /** Appends an element to the flow — or whatever becomes one, settled here and now. */
+        Canvas add(Composable&lt;?&gt; element);
+
+        /** Terminal: fills the model and returns the default view name. */
+        String render();
+
+        /**
+         * Terminal with a document of your own: the view name is yours (own layout, print version,
+         * the kit's showcase). All such a document has to do is include the canvas fragment and the
+         * scripts of the element tree.
+         */
+        String render(String view);
+    }
+
+    /**
+     * What a crawler may do with a page. Four directives, because these are the four that change what a
+     * visitor sees in a search result; the rest of the vocabulary is added when something actually needs
+     * it, not in advance.
+     */
+<span class="fc" id="L134">    public enum Robots {</span>
+
+        /** Keep the page out of the index. Links on it are still followed. */
+<span class="fc" id="L137">        NOINDEX(&quot;noindex&quot;),</span>
+
+        /** Do not follow the links of this page. */
+<span class="fc" id="L140">        NOFOLLOW(&quot;nofollow&quot;),</span>
+
+        /** Do not keep a cached copy. */
+<span class="fc" id="L143">        NOARCHIVE(&quot;noarchive&quot;),</span>
+
+        /** Allow a large image preview instead of the thumbnail a search engine shows by default. */
+<span class="fc" id="L146">        MAX_IMAGE_PREVIEW_LARGE(&quot;max-image-preview:large&quot;);</span>
+
+        private final String directive;
+
+<span class="fc" id="L150">        Robots(String directive) {</span>
+<span class="fc" id="L151">            this.directive = directive;</span>
+<span class="fc" id="L152">        }</span>
+
+        /** The directive as it is written in the tag. */
+        public String directive() {
+<span class="fc" id="L156">            return directive;</span>
+        }
+    }
+
+    /** Addresses of the two elements a page is made of; the canvas builds them, the document renders them. */
+    private static final String HEAD = &quot;fragments/thymekit/head&quot;;
+    private static final String CANVAS_TEMPLATE = &quot;fragments/thymekit/canvas&quot;;
+
+    private static final class Builder implements Canvas {
+
+        private final Model model;
+<span class="fc" id="L167">        private String pageClass = CANVAS;</span>
+        private @Nullable String title;
+        private @Nullable String description;
+        private @Nullable String canonical;
+        private @Nullable String image;
+        private @Nullable Set&lt;Robots&gt; robots;
+<span class="fc" id="L173">        private final List&lt;Element&lt;?&gt;&gt; elements = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L175">        private Builder(Model model) {</span>
+<span class="fc" id="L176">            this.model = model;</span>
+<span class="fc" id="L177">        }</span>
+
+        @Override
+        public Canvas pageClass(String classes) {
+<span class="fc" id="L181">            this.pageClass = require(classes, &quot;classes&quot;) + &quot; &quot; + CANVAS;</span>
+<span class="fc" id="L182">            return this;</span>
+        }
+
+        @Override
+        public Canvas title(String title) {
+<span class="fc" id="L187">            this.title = require(title, &quot;title&quot;);</span>
+<span class="fc" id="L188">            return this;</span>
+        }
+
+        @Override
+        public Canvas description(String description) {
+<span class="fc" id="L193">            this.description = require(description, &quot;description&quot;);</span>
+<span class="fc" id="L194">            return this;</span>
+        }
+
+        @Override
+        public Canvas canonical(String url) {
+<span class="fc" id="L199">            this.canonical = requireAbsolute(url, &quot;canonical&quot;);</span>
+<span class="fc" id="L200">            return this;</span>
+        }
+
+        @Override
+        public Canvas image(String url) {
+<span class="fc" id="L205">            this.image = requireAbsolute(url, &quot;image&quot;);</span>
+<span class="fc" id="L206">            return this;</span>
+        }
+
+        @Override
+        public Canvas robots(Robots... directives) {
+<span class="fc" id="L211">            Objects.requireNonNull(directives, &quot;directives&quot;);</span>
+<span class="fc bfc" id="L212" title="All 2 branches covered.">            if (directives.length == 0) {</span>
+<span class="fc" id="L213">                throw new IllegalArgumentException(&quot;robots without a directive: say what a crawler may not do, &quot;</span>
+                    + &quot;or do not call robots at all&quot;);
+            }
+<span class="fc" id="L216">            this.robots = new LinkedHashSet&lt;&gt;(List.of(directives));</span>
+<span class="fc" id="L217">            return this;</span>
+        }
+
+        /**
+         * A blank value is a mistake that shows up as an empty tag, so it is refused here; what is kept
+         * is trimmed, because a space at the end of a title is never meant and travels into the tab, the
+         * search result and the link preview alike.
+         */
+        private static String require(String value, String name) {
+<span class="fc" id="L226">            Objects.requireNonNull(value, name);</span>
+<span class="fc bfc" id="L227" title="All 2 branches covered.">            if (value.isBlank()) {</span>
+<span class="fc" id="L228">                throw new IllegalArgumentException(name + &quot; is blank&quot;);</span>
+            }
+<span class="fc" id="L230">            return value.strip();</span>
+        }
+
+        /**
+         * An address that leaves the page — into a canonical link, into Open Graph — is absolute or it
+         * is broken. Whoever reads it is not looking at the document and has nothing to resolve a path
+         * against, and the failure is silent: no preview, or a canonical pointing at a stranger.
+         */
+        private static String requireAbsolute(String url, String name) {
+<span class="fc" id="L239">            String value = require(url, name);</span>
+<span class="fc bfc" id="L240" title="All 4 branches covered.">            if (!value.regionMatches(true, 0, &quot;https://&quot;, 0, 8) &amp;&amp; !value.regionMatches(true, 0, &quot;http://&quot;, 0, 7)) {</span>
+<span class="fc" id="L241">                throw new IllegalArgumentException(name + &quot; is not an absolute address: \&quot;&quot; + value</span>
+                    + &quot;\&quot; — this value leaves the page, and whoever reads it has no document to resolve it against&quot;);
+            }
+<span class="fc" id="L244">            return value;</span>
+        }
+
+        @Override
+        public Canvas add(Composable&lt;?&gt; element) {
+<span class="fc" id="L249">            Element&lt;?&gt; settled = Element.settle(element, &quot;element&quot;);</span>
+<span class="fc" id="L250">            Element.requireRenderable(settled, &quot;PageModel.add&quot;);</span>
+<span class="fc" id="L251">            elements.add(settled);</span>
+<span class="fc" id="L252">            return this;</span>
+        }
+
+        /**
+         * The robots line: what was said, plus the size of the image preview when a picture was given
+         * and the page is not kept out of the index. Nothing at all when there is nothing to say.
+         */
+        private @Nullable String crawler() {
+<span class="fc bfc" id="L260" title="All 2 branches covered.">            Set&lt;Robots&gt; directives = new LinkedHashSet&lt;&gt;(robots == null ? Set.of() : robots);</span>
+<span class="fc bfc" id="L261" title="All 4 branches covered.">            if (image != null &amp;&amp; !directives.contains(Robots.NOINDEX)) {</span>
+<span class="fc" id="L262">                directives.add(Robots.MAX_IMAGE_PREVIEW_LARGE);</span>
+            }
+<span class="fc bfc" id="L264" title="All 2 branches covered.">            return directives.isEmpty() ? null</span>
+<span class="fc" id="L265">                : directives.stream().map(Robots::directive).collect(Collectors.joining(&quot;, &quot;));</span>
+        }
+
+        /** The page as an element: its classes and its flow, rendered by the same dispatcher as everything else. */
+        private Map&lt;String, Object&gt; page() {
+<span class="fc" id="L270">            return Element.Descriptor.&lt;PageModel&gt;of(CANVAS_TEMPLATE, &quot;canvasEl&quot;)</span>
+<span class="fc" id="L271">                .with(&quot;pageClass&quot;, pageClass)</span>
+<span class="fc" id="L272">                .with(&quot;elements&quot;, elements.stream().map(Element::asMap).toList())</span>
+<span class="fc" id="L273">                .build().asMap();</span>
+        }
+
+        /** The head as an element: only what was said is put in, so the adapter prints no empty tags. */
+        private Map&lt;String, Object&gt; head() {
+<span class="fc" id="L278">            Element.Descriptor&lt;PageModel&gt; head = Element.Descriptor.&lt;PageModel&gt;of(HEAD, &quot;headEl&quot;).with(&quot;title&quot;, title);</span>
+<span class="fc bfc" id="L279" title="All 2 branches covered.">            if (description != null) {</span>
+<span class="fc" id="L280">                head.with(&quot;description&quot;, description);</span>
+            }
+<span class="fc bfc" id="L282" title="All 2 branches covered.">            if (canonical != null) {</span>
+<span class="fc" id="L283">                head.with(&quot;canonical&quot;, canonical);</span>
+            }
+<span class="fc bfc" id="L285" title="All 2 branches covered.">            if (image != null) {</span>
+<span class="fc" id="L286">                head.with(&quot;image&quot;, image);</span>
+            }
+<span class="fc" id="L288">            String crawler = crawler();</span>
+<span class="fc bfc" id="L289" title="All 2 branches covered.">            if (crawler != null) {</span>
+<span class="fc" id="L290">                head.with(&quot;robots&quot;, crawler);</span>
+            }
+<span class="fc" id="L292">            return head.build().asMap();</span>
+        }
+
+        @Override
+        public String render() {
+<span class="fc" id="L297">            return render(DEFAULT_VIEW);</span>
+        }
+
+        @Override
+        public String render(String view) {
+<span class="fc" id="L302">            Objects.requireNonNull(view, &quot;view&quot;);</span>
+<span class="fc bfc" id="L303" title="All 2 branches covered.">            if (title == null) {</span>
+<span class="fc" id="L304">                throw new IllegalStateException(&quot;page without a title: call title(...) before render()&quot;);</span>
+            }
+<span class="fc" id="L306">            Element.assertOutline(elements);</span>
+<span class="fc" id="L307">            model.addAttribute(&quot;pageTitle&quot;, title);</span>
+<span class="fc" id="L308">            model.addAttribute(&quot;head&quot;, head());</span>
+<span class="fc" id="L309">            model.addAttribute(&quot;page&quot;, page());</span>
+<span class="fc" id="L310">            model.addAttribute(&quot;assets&quot;, Element.assetsOf(elements).stream().map(Element::asMap).toList());</span>
+<span class="fc" id="L311">            return view;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

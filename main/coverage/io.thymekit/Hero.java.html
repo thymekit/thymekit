@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Hero.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">thymekit</a> &gt; <a href="index.source.html" class="el_package">io.thymekit</a> &gt; <span class="el_source">Hero.java</span></div><h1>Hero.java</h1><pre class="source lang-java linenums">/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+package io.thymekit;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+/**
+ * The page hero: a heading group ({@code &lt;hgroup&gt;} with eyebrow, H1, subtitle and meta lines), then a
+ * divider, an optional status badge and an optional action row. The order is fixed by the element; a
+ * page only supplies the parts it has. The core is the H1 alone, everything else is a guarded narrow
+ * point. The hero knows no domain words — those belong to whoever composes it.
+ */
+public final class Hero {
+
+    private Hero() {}
+
+    /** The hero of a page; the heading must be level 1. */
+    public static Builder of(Composable&lt;Heading&gt; h1) {
+<span class="fc" id="L23">        Element&lt;Heading&gt; heading = Element.settle(h1, &quot;heading&quot;);</span>
+<span class="fc" id="L24">        Element.requireAdapter(heading, &quot;headingEl&quot;, &quot;Hero.of accepts a heading only&quot;);</span>
+<span class="fc bfc" id="L25" title="All 2 branches covered.">        if (!Integer.valueOf(1).equals(heading.asMap().get(&quot;level&quot;))) {</span>
+<span class="fc" id="L26">            throw new IllegalArgumentException(&quot;Hero.of accepts an H1 only (got level &quot; + heading.asMap().get(&quot;level&quot;) + &quot;)&quot;);</span>
+        }
+<span class="fc" id="L28">        return new Builder(heading);</span>
+    }
+
+    public static final class Builder implements Composable&lt;Hero&gt; {
+
+        private final Element.Descriptor&lt;Hero&gt; b;
+<span class="fc" id="L34">        private final List&lt;Map&lt;String, Object&gt;&gt; metas = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L36">        private Builder(Element&lt;Heading&gt; h1) {</span>
+<span class="fc" id="L37">            this.b = Element.Descriptor.&lt;Hero&gt;of(&quot;fragments/thymekit/hero&quot;, &quot;heroEl&quot;)</span>
+<span class="fc" id="L38">                .with(&quot;heading&quot;, h1.asMap());</span>
+<span class="fc" id="L39">        }</span>
+
+        /** Caption in the eyebrow role, above the H1. */
+        public Builder eyebrow(Composable&lt;Caption&gt; eyebrow) {
+<span class="fc" id="L43">            b.with(&quot;eyebrow&quot;, Caption.inRole(eyebrow, Caption.EYEBROW, &quot;Hero.eyebrow accepts a caption&quot;).asMap());</span>
+<span class="fc" id="L44">            return this;</span>
+        }
+
+        /** Caption in the subtitle role, below the H1. */
+        public Builder subtitle(Composable&lt;Caption&gt; subtitle) {
+<span class="fc" id="L49">            b.with(&quot;subtitle&quot;, Caption.inRole(subtitle, Caption.SUBTITLE, &quot;Hero.subtitle accepts a caption&quot;).asMap());</span>
+<span class="fc" id="L50">            return this;</span>
+        }
+
+        /** Meta lines of the heading group, in call order. */
+        @SafeVarargs
+        public final Builder meta(Composable&lt;Caption&gt;... metaLines) {
+<span class="fc bfc" id="L56" title="All 2 branches covered.">            for (Composable&lt;Caption&gt; line : Objects.requireNonNull(metaLines, &quot;meta&quot;)) {</span>
+<span class="fc" id="L57">                metas.add(Caption.inRole(line, Caption.META, &quot;Hero.meta accepts a caption&quot;).asMap());</span>
+            }
+<span class="fc" id="L59">            return this;</span>
+        }
+
+        /**
+         * A status line under the hero — &quot;in stock&quot;, &quot;draft&quot;, &quot;archived&quot;. The element is the consumer's,
+         * and so is the name its adapter carries: the guard asks for {@code statusBadgeEl}, which no
+         * fragment of the kit defines. What the kit fixes is the place and the shape of the slot, not
+         * what goes in it.
+         */
+        public Builder badge(Composable&lt;?&gt; badge) {
+<span class="fc" id="L69">            Element&lt;?&gt; settled = Element.settle(badge, &quot;badge&quot;);</span>
+<span class="fc" id="L70">            Element.requireAdapter(settled, &quot;statusBadgeEl&quot;, &quot;Hero.badge accepts a status badge only&quot;);</span>
+<span class="fc" id="L71">            b.with(&quot;badge&quot;, settled.asMap());</span>
+<span class="fc" id="L72">            return this;</span>
+        }
+
+        /**
+         * The row of actions under the hero. Same arrangement as {@link #badge}: the adapter is named
+         * {@code actionsEl} and lives in consumer code.
+         */
+        public Builder actions(Composable&lt;?&gt; actions) {
+<span class="fc" id="L80">            Element&lt;?&gt; settled = Element.settle(actions, &quot;actions&quot;);</span>
+<span class="fc" id="L81">            Element.requireAdapter(settled, &quot;actionsEl&quot;, &quot;Hero.actions accepts an action row&quot;);</span>
+<span class="fc" id="L82">            b.with(&quot;actions&quot;, settled.asMap());</span>
+<span class="fc" id="L83">            return this;</span>
+        }
+
+        @Override
+        public Element&lt;Hero&gt; build() {
+<span class="fc bfc" id="L88" title="All 2 branches covered.">            if (!metas.isEmpty()) {</span>
+<span class="fc" id="L89">                b.with(&quot;metas&quot;, List.copyOf(metas));</span>
+            }
+<span class="fc" id="L91">            return b.build();</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

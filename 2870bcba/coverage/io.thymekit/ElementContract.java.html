@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ElementContract.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">thymekit</a> &gt; <a href="index.source.html" class="el_package">io.thymekit</a> &gt; <span class="el_source">ElementContract.java</span></div><h1>ElementContract.java</h1><pre class="source lang-java linenums">/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+package io.thymekit;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import io.thymekit.Element.Script;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.jspecify.annotations.Nullable;
+import org.thymeleaf.ITemplateEngine;
+import org.thymeleaf.context.Context;
+
+/**
+ * The walk over a triple, handed to whoever writes an element. The kit checks its own elements with
+ * it; an element of yours is checked the same way, in your own test:
+ *
+ * &lt;pre&gt;{@code
+ * @Test
+ * void myElementsKeepTheContract() {
+ *     ElementContract.of(Price.of(&quot;12.00&quot;, &quot;EUR&quot;), Badge.of(&quot;in stock&quot;))
+ *         .renderedBy(templateEngine)
+ *         .styledBy(&quot;static/my/ui.css&quot;)
+ *         .check();
+ * }
+ * }&lt;/pre&gt;
+ *
+ * &lt;p&gt;What it looks at is what no compiler can: that the address points at a fragment that exists and
+ * declares itself, that the adapter is named the way an adapter is named, that a script has not been
+ * put where an element belongs, that the keys the adapter says it reads are the keys the factory puts
+ * in, and — when an engine and stylesheets are given — that the element renders something, and that
+ * every class it prints has a rule somewhere in the CSS you name.
+ *
+ * &lt;p&gt;The keys are declared in the template, above the fragment, in a comment Thymeleaf strips before
+ * anything is rendered:
+ *
+ * &lt;pre&gt;{@code
+ * &lt;!--/* keys: level, text, id, href, rel, target, lang, srOnly *\/--&gt;
+ * &lt;th:block th:fragment=&quot;headingEl(e)&quot; ...&gt;
+ * }&lt;/pre&gt;
+ *
+ * &lt;p&gt;Declare nothing and nothing is checked — the walk says so once rather than failing. Declare, and
+ * a key carried by an element that its adapter never reads becomes a failure: data travelling for
+ * nothing.
+ *
+ * &lt;p&gt;The other direction — a key an adapter reads that nothing here puts in — is only a defect if the
+ * elements given were meant to cover the whole adapter. Say {@link #coveringEveryKey()} and it is
+ * checked; that is a claim about the samples, not about the element, so it is asked for rather than
+ * assumed. The kit makes that claim about its own.
+ *
+ * &lt;p&gt;Nothing here is required to write an element. It is the same walk the kit takes over its own, and
+ * it fails with every problem at once rather than with the first.
+ */
+public final class ElementContract {
+
+    /** An adapter is named for what it renders and ends in El; a second contract gets a version suffix. */
+<span class="fc" id="L64">    private static final Pattern ADAPTER = Pattern.compile(&quot;^[a-z][A-Za-z0-9]*El(V\\d+)?$&quot;);</span>
+
+<span class="fc" id="L66">    private static final Pattern CLASS_ATTRIBUTE = Pattern.compile(&quot;class=\&quot;([^\&quot;]+)\&quot;&quot;);</span>
+
+    /** What an adapter says it reads: a comment above the fragment, stripped before rendering. */
+<span class="fc" id="L69">    private static final Pattern DECLARED_KEYS = Pattern.compile(&quot;keys:\\s*([A-Za-z0-9_,\\s]+?)\\s*\\*/&quot;);</span>
+
+    private final List&lt;Element&lt;?&gt;&gt; elements;
+    private final @Nullable ITemplateEngine engine;
+    private final List&lt;String&gt; stylesheets;
+    private final List&lt;String&gt; templateRoots;
+    private final boolean everyKey;
+
+
+    private ElementContract(List&lt;Element&lt;?&gt;&gt; elements, @Nullable ITemplateEngine engine,
+<span class="fc" id="L79">                            List&lt;String&gt; stylesheets, List&lt;String&gt; templateRoots, boolean everyKey) {</span>
+<span class="fc" id="L80">        this.elements = elements;</span>
+<span class="fc" id="L81">        this.engine = engine;</span>
+<span class="fc" id="L82">        this.stylesheets = stylesheets;</span>
+<span class="fc" id="L83">        this.templateRoots = templateRoots;</span>
+<span class="fc" id="L84">        this.everyKey = everyKey;</span>
+<span class="fc" id="L85">    }</span>
+
+    /** The elements to walk: one live sample of each, as a page would build them. */
+    public static ElementContract of(Composable&lt;?&gt;... elements) {
+<span class="fc" id="L89">        Objects.requireNonNull(elements, &quot;elements&quot;);</span>
+<span class="fc" id="L90">        List&lt;Element&lt;?&gt;&gt; settled = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">        for (Composable&lt;?&gt; element : elements) {</span>
+<span class="fc" id="L92">            settled.add(Element.settle(element, &quot;element&quot;));</span>
+        }
+<span class="fc bfc" id="L94" title="All 2 branches covered.">        if (settled.isEmpty()) {</span>
+<span class="fc" id="L95">            throw new IllegalArgumentException(&quot;no elements to check: give the contract at least one&quot;);</span>
+        }
+<span class="fc" id="L97">        return new ElementContract(settled, null, List.of(), List.of(&quot;templates/&quot;, &quot;&quot;), false);</span>
+    }
+
+    /** Renders each element through the dispatcher, with the engine your application uses. */
+    public ElementContract renderedBy(ITemplateEngine engine) {
+<span class="fc" id="L102">        return new ElementContract(elements, Objects.requireNonNull(engine, &quot;engine&quot;), stylesheets, templateRoots, everyKey);</span>
+    }
+
+    /**
+     * Where your templates live on the classpath, when they are not under {@code templates/} — the
+     * prefix your template resolver was given, {@code &quot;views/&quot;} or whatever it is. Without this the
+     * contract looks under {@code templates/} and then at the address as written, which covers the
+     * default and nothing else.
+     */
+    public ElementContract templatesUnder(String... classpathPrefixes) {
+<span class="fc" id="L112">        List&lt;String&gt; roots = new ArrayList&lt;&gt;(List.of(Objects.requireNonNull(classpathPrefixes, &quot;classpathPrefixes&quot;)));</span>
+<span class="fc" id="L113">        roots.addAll(templateRoots);</span>
+<span class="fc" id="L114">        return new ElementContract(elements, engine, stylesheets, List.copyOf(roots), everyKey);</span>
+    }
+
+    /**
+     * Where the looks live, as classpath resources ({@code &quot;static/my/ui.css&quot;}). Given these, every
+     * class an element prints must have a rule in one of them; without them the classes are not looked
+     * at, since the contract has no way to guess where a consumer keeps its CSS.
+     */
+    public ElementContract styledBy(String... cssResources) {
+<span class="fc" id="L123">        List&lt;String&gt; all = new ArrayList&lt;&gt;(stylesheets);            // said twice means both, never the last one only</span>
+<span class="fc" id="L124">        all.addAll(List.of(Objects.requireNonNull(cssResources, &quot;cssResources&quot;)));</span>
+<span class="fc" id="L125">        return new ElementContract(elements, engine, List.copyOf(all), templateRoots, everyKey);</span>
+    }
+
+    /**
+     * Also require that every key the adapters declare is put in by something here — a claim about the
+     * elements given, not about the elements themselves: it says &quot;these cover their adapters&quot;. Without
+     * it a template branch nothing reaches goes unmentioned, which is right for a consumer checking one
+     * element and wrong for a suite that means to check them all.
+     */
+    public ElementContract coveringEveryKey() {
+<span class="fc" id="L135">        return new ElementContract(elements, engine, stylesheets, templateRoots, true);</span>
+    }
+
+    /** Runs the walk. Throws with everything that is wrong, not with the first thing. */
+    public void check() {
+<span class="fc" id="L140">        List&lt;String&gt; failures = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L141">        Set&lt;String&gt; printedClasses = new LinkedHashSet&lt;&gt;();</span>
+        // what each adapter declares and what the elements given carried, gathered as the walk goes:
+        // local, because a walk is one run and holds nothing between two of them
+<span class="fc" id="L144">        java.util.Map&lt;String, Set&lt;String&gt;&gt; declaredByAdapter = new java.util.LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L145">        java.util.Map&lt;String, Set&lt;String&gt;&gt; carriedByAdapter = new java.util.LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L146" title="All 2 branches covered.">        for (Element&lt;?&gt; element : elements) {</span>
+<span class="fc" id="L147">            String address = element.template() + &quot; :: &quot; + element.fragment();</span>
+<span class="fc bfc" id="L148" title="All 2 branches covered.">            if (!ADAPTER.matcher(element.fragment()).matches()) {</span>
+<span class="fc" id="L149">                failures.add(address + &quot; — an adapter is named like myCardEl, or myCardElV2 for a second contract&quot;);</span>
+            }
+<span class="fc bfc" id="L151" title="All 2 branches covered.">            if (element.bare()) {</span>
+<span class="fc" id="L152">                failures.add(address + &quot; — a script element does not belong among elements; declare it with requires()&quot;);</span>
+            }
+<span class="fc" id="L154">            declaresItself(element, address, failures);</span>
+<span class="fc" id="L155">            declaredKeysMatch(element, address, failures, declaredByAdapter, carriedByAdapter);</span>
+<span class="fc bfc" id="L156" title="All 2 branches covered.">            for (Element&lt;Script&gt; asset : element.assets()) {   // requires() already refuses anything but a script</span>
+<span class="fc" id="L157">                declaresItself(asset, address + &quot; — its script &quot; + asset.template() + &quot; :: &quot; + asset.fragment(), failures);</span>
+<span class="fc" id="L158">            }</span>
+<span class="fc bfc" id="L159" title="All 2 branches covered.">            if (engine != null) {</span>
+<span class="fc" id="L160">                printedClasses.addAll(renderAndCollect(element, address, failures));</span>
+            }
+<span class="fc" id="L162">        }</span>
+<span class="fc bfc" id="L163" title="All 2 branches covered.">        if (!stylesheets.isEmpty()) {</span>
+<span class="fc" id="L164">            checkClasses(printedClasses, failures);</span>
+        }
+<span class="fc bfc" id="L166" title="All 2 branches covered.">        if (everyKey) {</span>
+<span class="fc" id="L167">            declaredByAdapter.forEach((address, declared) -&gt; {</span>
+<span class="fc" id="L168">                Set&lt;String&gt; carried = carriedByAdapter.getOrDefault(address, Set.of());</span>
+<span class="fc bfc" id="L169" title="All 2 branches covered.">                declared.stream().filter(key -&gt; !carried.contains(key)).forEach(key -&gt;</span>
+<span class="fc" id="L170">                    failures.add(address + &quot; — its adapter reads \&quot;&quot; + key + &quot;\&quot;, and nothing given here puts&quot;</span>
+                        + &quot; it in: a branch of the template nothing reaches, or samples too poor to reach it&quot;));
+<span class="fc" id="L172">            });</span>
+        }
+<span class="fc bfc" id="L174" title="All 2 branches covered.">        if (!failures.isEmpty()) {</span>
+<span class="fc" id="L175">            throw new IllegalStateException(&quot;the element contract is broken in &quot; + failures.size()</span>
+<span class="fc" id="L176">                + &quot; place(s):\n  - &quot; + String.join(&quot;\n  - &quot;, failures));</span>
+        }
+<span class="fc" id="L178">    }</span>
+
+    /** The address points at a template that exists, and the template declares the fragment it names. */
+    private void declaresItself(Element&lt;?&gt; element, String address, List&lt;String&gt; failures) {
+<span class="fc" id="L182">        String template = read(element.template() + &quot;.html&quot;);</span>
+<span class="fc bfc" id="L183" title="All 2 branches covered.">        if (template == null) {</span>
+<span class="fc" id="L184">            failures.add(address + &quot; — no template on the classpath at &quot; + element.template() + &quot;.html&quot;</span>
+<span class="fc bfc" id="L185" title="All 2 branches covered.">                + &quot; (looked under &quot; + String.join(&quot;, &quot;, templateRoots.stream().map(r -&gt; r.isEmpty() ? &quot;the address itself&quot; : r).toList()) + &quot;)&quot;);</span>
+<span class="fc bfc" id="L186" title="All 2 branches covered.">        } else if (!template.contains(&quot;th:fragment=\&quot;&quot; + element.fragment() + &quot;(&quot;)) {</span>
+<span class="fc" id="L187">            failures.add(address + &quot; — the template declares no fragment &quot; + element.fragment()</span>
+                + &quot;(e); the dispatcher calls an adapter with the descriptor, so it takes one argument&quot;);
+        }
+<span class="fc" id="L190">    }</span>
+
+    /**
+     * The keys an adapter says it reads against the keys the element actually carries. Both directions
+     * are silent failures otherwise: data nobody reads, and a template branch nothing can reach.
+     */
+    private void declaredKeysMatch(Element&lt;?&gt; element, String address, List&lt;String&gt; failures,
+                                   java.util.Map&lt;String, Set&lt;String&gt;&gt; declaredByAdapter,
+                                   java.util.Map&lt;String, Set&lt;String&gt;&gt; carriedByAdapter) {
+<span class="fc" id="L199">        String template = read(element.template() + &quot;.html&quot;);</span>
+<span class="fc bfc" id="L200" title="All 2 branches covered.">        if (template == null) {</span>
+<span class="fc" id="L201">            return;                                   // already reported by declaresItself</span>
+        }
+<span class="fc" id="L203">        int fragmentAt = template.indexOf(&quot;th:fragment=\&quot;&quot; + element.fragment() + &quot;(&quot;);</span>
+<span class="fc bfc" id="L204" title="All 2 branches covered.">        if (fragmentAt == -1) {</span>
+<span class="fc" id="L205">            return;                                   // same</span>
+        }
+<span class="fc" id="L207">        Matcher declaration = DECLARED_KEYS.matcher(template.substring(0, fragmentAt));</span>
+<span class="fc" id="L208">        String last = null;</span>
+<span class="fc bfc" id="L209" title="All 2 branches covered.">        while (declaration.find()) {</span>
+<span class="fc" id="L210">            last = declaration.group(1);              // the one nearest the fragment</span>
+        }
+<span class="fc bfc" id="L212" title="All 2 branches covered.">        if (last == null) {</span>
+<span class="fc" id="L213">            return;                                   // nothing declared, nothing checked</span>
+        }
+<span class="fc" id="L215">        Set&lt;String&gt; declared = new LinkedHashSet&lt;&gt;(List.of(last.trim().split(&quot;\\s*,\\s*&quot;)));</span>
+<span class="fc" id="L216">        Set&lt;String&gt; carried = new LinkedHashSet&lt;&gt;(element.asMap().keySet());</span>
+<span class="fc" id="L217">        carried.removeAll(Element.RESERVED);</span>
+<span class="fc bfc" id="L218" title="All 2 branches covered.">        for (String key : carried) {</span>
+<span class="fc bfc" id="L219" title="All 2 branches covered.">            if (!declared.contains(key)) {</span>
+<span class="fc" id="L220">                failures.add(address + &quot; — carries the key \&quot;&quot; + key + &quot;\&quot; that its adapter does not read;&quot;</span>
+                    + &quot; declare it above the fragment or stop putting it in&quot;);
+            }
+<span class="fc" id="L223">        }</span>
+<span class="fc" id="L224">        declaredByAdapter.computeIfAbsent(address, a -&gt; new LinkedHashSet&lt;&gt;()).addAll(declared);</span>
+<span class="fc" id="L225">        carriedByAdapter.computeIfAbsent(address, a -&gt; new LinkedHashSet&lt;&gt;()).addAll(carried);</span>
+<span class="fc" id="L226">    }</span>
+
+    /** Renders one element through the single dispatcher, exactly as a page would. */
+    private Set&lt;String&gt; renderAndCollect(Element&lt;?&gt; element, String address, List&lt;String&gt; failures) {
+<span class="fc" id="L230">        Context context = new Context();</span>
+<span class="fc" id="L231">        context.setVariable(&quot;e&quot;, element.asMap());</span>
+        String html;
+        try {
+<span class="fc" id="L234">            html = Objects.requireNonNull(engine).process(&quot;thymekit/element&quot;, Set.of(&quot;render&quot;), context);</span>
+<span class="nc" id="L235">        } catch (RuntimeException notRendered) {</span>
+<span class="nc" id="L236">            failures.add(address + &quot; — does not render: &quot; + notRendered.getMessage());</span>
+<span class="nc" id="L237">            return Set.of();</span>
+<span class="fc" id="L238">        }</span>
+<span class="pc bpc" id="L239" title="2 of 4 branches missed.">        if (html.isBlank() || !html.contains(&quot;&lt;&quot;)) {</span>
+<span class="nc" id="L240">            failures.add(address + &quot; — renders nothing a browser would show&quot;);</span>
+<span class="nc" id="L241">            return Set.of();</span>
+        }
+<span class="fc" id="L243">        Set&lt;String&gt; classes = new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L244">        Matcher m = CLASS_ATTRIBUTE.matcher(html);</span>
+<span class="fc bfc" id="L245" title="All 2 branches covered.">        while (m.find()) {</span>
+<span class="fc" id="L246">            classes.addAll(List.of(m.group(1).trim().split(&quot;\\s+&quot;)));</span>
+        }
+<span class="fc" id="L248">        return classes;</span>
+    }
+
+    /** Every class an element printed has a rule; comments are stripped, since a name in a header styles nothing. */
+    private void checkClasses(Set&lt;String&gt; printed, List&lt;String&gt; failures) {
+<span class="fc" id="L253">        StringBuilder css = new StringBuilder();</span>
+<span class="fc bfc" id="L254" title="All 2 branches covered.">        for (String resource : stylesheets) {</span>
+<span class="fc" id="L255">            String text = read(resource);</span>
+<span class="fc bfc" id="L256" title="All 2 branches covered.">            if (text == null) {</span>
+<span class="fc" id="L257">                failures.add(&quot;no stylesheet on the classpath at &quot; + resource);</span>
+            } else {
+<span class="fc" id="L259">                css.append(text.replaceAll(&quot;(?s)/\\*.*?\\*/&quot;, &quot; &quot;));</span>
+            }
+<span class="fc" id="L261">        }</span>
+<span class="fc bfc" id="L262" title="All 2 branches covered.">        for (String className : printed) {</span>
+<span class="fc bfc" id="L263" title="All 2 branches covered.">            if (!Pattern.compile(&quot;\\.&quot; + Pattern.quote(className) + &quot;(?![\\w-])&quot;).matcher(css).find()) {</span>
+<span class="fc" id="L264">                failures.add(&quot;class &quot; + className + &quot; is printed by an element and styled by none of the stylesheets given&quot;);</span>
+            }
+<span class="fc" id="L266">        }</span>
+<span class="fc" id="L267">    }</span>
+
+    /** A classpath resource, tried under every root the caller named and then as given. */
+    private @Nullable String read(String resource) {
+<span class="fc" id="L271">        List&lt;String&gt; candidates = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L272" title="All 2 branches covered.">        for (String root : templateRoots) {</span>
+<span class="fc" id="L273">            candidates.add(root + resource);</span>
+<span class="fc" id="L274">        }</span>
+<span class="fc" id="L275">        candidates.add(resource);</span>
+<span class="fc bfc" id="L276" title="All 2 branches covered.">        for (String candidate : candidates) {</span>
+<span class="fc" id="L277">            try (InputStream in = ElementContract.class.getClassLoader().getResourceAsStream(candidate)) {</span>
+<span class="fc bfc" id="L278" title="All 2 branches covered.">                if (in != null) {</span>
+<span class="fc" id="L279">                    return new String(in.readAllBytes(), StandardCharsets.UTF_8);</span>
+                }
+<span class="pc bpc" id="L281" title="1 of 2 branches missed.">            } catch (IOException unreadable) {   // a resource that exists and cannot be read is not a verdict to swallow</span>
+<span class="nc" id="L282">                throw new java.io.UncheckedIOException(&quot;cannot read &quot; + candidate, unreadable);</span>
+<span class="fc" id="L283">            }</span>
+<span class="fc" id="L284">        }</span>
+<span class="fc" id="L285">        return null;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Rel.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">thymekit</a> &gt; <a href="index.source.html" class="el_package">io.thymekit</a> &gt; <span class="el_source">Rel.java</span></div><h1>Rel.java</h1><pre class="source lang-java linenums">/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+package io.thymekit;
+
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+/**
+ * What a link says about itself. Five values, because these are the ones a search engine acts on and a
+ * browser protects with; anything rarer is added when something actually needs it.
+ */
+<span class="fc" id="L17">public enum Rel {</span>
+
+    /** Do not pass any ranking to this address — a link the page does not vouch for. */
+<span class="fc" id="L20">    NOFOLLOW(&quot;nofollow&quot;),</span>
+
+    /** A paid or sponsored placement. */
+<span class="fc" id="L23">    SPONSORED(&quot;sponsored&quot;),</span>
+
+    /** Written by a visitor: a comment, a review, anything user-generated. */
+<span class="fc" id="L26">    UGC(&quot;ugc&quot;),</span>
+
+    /** The opened page gets no handle on the one that opened it. Always present with a new tab. */
+<span class="fc" id="L29">    NOOPENER(&quot;noopener&quot;),</span>
+
+    /** The opened page is not told where the visitor came from. */
+<span class="fc" id="L32">    NOREFERRER(&quot;noreferrer&quot;);</span>
+
+    private final String token;
+
+<span class="fc" id="L36">    Rel(String token) {</span>
+<span class="fc" id="L37">        this.token = token;</span>
+<span class="fc" id="L38">    }</span>
+
+    /** The token as it is written in the attribute. */
+    public String token() {
+<span class="fc" id="L42">        return token;</span>
+    }
+
+    /** The attribute value for a set of values, in the order they were given. Shared by every element that links. */
+    static String tokens(Collection&lt;Rel&gt; values) {
+<span class="fc" id="L47">        return values.stream().map(Rel::token).collect(Collectors.joining(&quot; &quot;));</span>
+    }
+
+    /** What a link element does with its own varargs: refuse an empty call, collapse repetitions, keep order. */
+    static Set&lt;Rel&gt; required(Rel[] values, String what) {
+<span class="fc" id="L52">        Objects.requireNonNull(values, &quot;values&quot;);</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">        if (values.length == 0) {</span>
+<span class="fc" id="L54">            throw new IllegalArgumentException(what + &quot; without a value: name at least one, or do not call &quot;</span>
+                + what + &quot;(...) at all&quot;);
+        }
+<span class="fc" id="L57">        Set&lt;Rel&gt; unique = new LinkedHashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">        for (Rel value : values) {</span>
+<span class="fc" id="L59">            unique.add(Objects.requireNonNull(value, () -&gt; &quot;a null among the values of &quot; + what + &quot;(...)&quot;));</span>
+        }
+<span class="fc" id="L61">        return unique;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

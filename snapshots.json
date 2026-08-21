@@ -1,0 +1,30 @@
+[
+  {
+    "slot": "7b60ee79",
+    "sha": "7b60ee79",
+    "branch": "feature/declared-keys",
+    "subject": "refactor(contract): one read of a template per element, one try per root",
+    "date": "2026-08-21 22:00"
+  },
+  {
+    "slot": "2870bcba",
+    "sha": "2870bcba",
+    "branch": "feature/declared-keys",
+    "subject": "feat(demo): the lower half of the scale, two theme handles, and a section on what a showcase must not claim",
+    "date": "2026-08-21 16:40"
+  },
+  {
+    "slot": "94cdc09d",
+    "sha": "94cdc09d",
+    "branch": "feature/declared-keys",
+    "subject": "section: the owner of the part of a page that has a title",
+    "date": "2026-08-21 16:28"
+  },
+  {
+    "slot": "main",
+    "sha": "021d386b",
+    "branch": "main",
+    "subject": "Merge pull request #14 from thymekit/feature/element-contract",
+    "date": "2026-08-21 12:53"
+  }
+]

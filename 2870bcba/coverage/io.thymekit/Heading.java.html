@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Heading.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">thymekit</a> &gt; <a href="index.source.html" class="el_package">io.thymekit</a> &gt; <span class="el_source">Heading.java</span></div><h1>Heading.java</h1><pre class="source lang-java linenums">/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+package io.thymekit;
+
+import java.util.LinkedHashSet;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.Set;
+import java.util.regex.Pattern;
+
+/**
+ * Owner of the heading concept: anything with a heading composes this element instead of writing its
+ * own {@code &lt;h*&gt;}. The level lives in the factory name ({@code h1…h6}) and has no default — it decides
+ * the place in the document outline, so the author states it. Options carry meaning only: an anchor id,
+ * a heading-link with what it says about itself ({@code rel}) and where it opens ({@code newTab}), the
+ * language of the text when it is not the page's, and screen-reader-only. Appearance comes from
+ * {@code --tk-heading-*} handles.
+ */
+public final class Heading {
+
+    /**
+     * Everything a browser throws away before it reads the scheme of an address: spaces, tabs, newlines
+     * and control characters. {@code java\tscript:} is {@code javascript:} by the time it is followed,
+     * so the guard has to look at the address the same way.
+     */
+<span class="fc" id="L27">    private static final Pattern IGNORED_IN_SCHEME = Pattern.compile(&quot;[\\s\\p{Cntrl}]&quot;);</span>
+
+    /**
+     * Schemes that execute instead of navigating. {@code blob:} and {@code file:} are not here: they
+     * navigate, and a heading is not where either becomes dangerous.
+     */
+<span class="fc" id="L33">    private static final Set&lt;String&gt; EXECUTING_SCHEMES = Set.of(&quot;javascript:&quot;, &quot;data:&quot;, &quot;vbscript:&quot;);</span>
+
+    private Heading() {}
+
+<span class="fc" id="L37">    public static Builder h1(String text) { return new Builder(1, text); }</span>
+<span class="fc" id="L38">    public static Builder h2(String text) { return new Builder(2, text); }</span>
+<span class="fc" id="L39">    public static Builder h3(String text) { return new Builder(3, text); }</span>
+<span class="fc" id="L40">    public static Builder h4(String text) { return new Builder(4, text); }</span>
+<span class="fc" id="L41">    public static Builder h5(String text) { return new Builder(5, text); }</span>
+<span class="fc" id="L42">    public static Builder h6(String text) { return new Builder(6, text); }</span>
+
+    /** Level as a number, for hosts that compute it; 1..6. */
+    static Builder of(int level, String text) {
+<span class="fc bfc" id="L46" title="All 4 branches covered.">        if (level &lt; 1 || level &gt; 6) {</span>
+<span class="fc" id="L47">            throw new IllegalArgumentException(&quot;level &quot; + level + &quot;: allowed range is 1..6&quot;);</span>
+        }
+<span class="fc" id="L49">        return new Builder(level, text);</span>
+    }
+
+    public static final class Builder implements Composable&lt;Heading&gt; {
+
+        private final Element.Descriptor&lt;Heading&gt; b;
+<span class="fc" id="L55">        private final Set&lt;Rel&gt; rel = new LinkedHashSet&lt;&gt;();</span>
+        private boolean newTab;
+        private boolean linked;
+
+<span class="fc" id="L59">        private Builder(int level, String text) {</span>
+<span class="fc" id="L60">            this.b = Element.Descriptor.&lt;Heading&gt;of(&quot;thymekit/heading&quot;, &quot;headingEl&quot;)</span>
+<span class="fc" id="L61">                .with(&quot;level&quot;, level)</span>
+<span class="fc" id="L62">                .with(&quot;text&quot;, Objects.requireNonNull(text, &quot;text&quot;));</span>
+<span class="fc" id="L63">        }</span>
+
+        /** Anchor id — for table-of-contents links and {@code aria-labelledby}. */
+        public Builder id(String id) {
+<span class="fc" id="L67">            b.with(&quot;id&quot;, Objects.requireNonNull(id, &quot;id&quot;));</span>
+<span class="fc" id="L68">            return this;</span>
+        }
+
+        /**
+         * Heading as a link ({@code hN &gt; a}). The address is the consumer's, and it is kept trimmed. A
+         * scheme that executes rather than navigates is refused here — {@code javascript:}, {@code data:},
+         * {@code vbscript:}, however they are spelled: a browser drops spaces, tabs and control characters
+         * before it reads a scheme, so {@code java\tscript:} is refused with the plain spelling. An href
+         * is the last place any of them can be stopped before the page.
+         */
+        public Builder href(String href) {
+<span class="fc" id="L79">            String value = Objects.requireNonNull(href, &quot;href&quot;).strip();</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">            if (value.isEmpty()) {</span>
+<span class="fc" id="L81">                throw new IllegalArgumentException(&quot;href is blank&quot;);</span>
+            }
+<span class="fc" id="L83">            String asFollowed = IGNORED_IN_SCHEME.matcher(value).replaceAll(&quot;&quot;).toLowerCase(Locale.ROOT);</span>
+<span class="fc bfc" id="L84" title="All 2 branches covered.">            for (String executing : EXECUTING_SCHEMES) {</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">                if (asFollowed.startsWith(executing)) {</span>
+<span class="fc" id="L86">                    throw new IllegalArgumentException(&quot;href is not a link but a script: \&quot;&quot; + href + &quot;\&quot;&quot;);</span>
+                }
+<span class="fc" id="L88">            }</span>
+<span class="fc" id="L89">            b.with(&quot;href&quot;, value);</span>
+<span class="fc" id="L90">            linked = true;</span>
+<span class="fc" id="L91">            return this;</span>
+        }
+
+        /**
+         * What the link says about itself: {@code rel(NOFOLLOW)} for an address the page does not vouch
+         * for, {@code rel(UGC)} for one a visitor wrote. Repetitions collapse, order is kept.
+         */
+        public Builder rel(Rel... values) {
+<span class="fc" id="L99">            rel.addAll(Rel.required(values, &quot;rel&quot;));</span>
+<span class="fc" id="L100">            return this;</span>
+        }
+
+        /**
+         * Open in a new tab. {@code noopener} comes with it and cannot be forgotten: without it the
+         * opened page can reach back into this one through {@code window.opener}, and remembering that
+         * by hand at every link is exactly the kind of vigilance the kit exists to remove.
+         */
+        public Builder newTab() {
+<span class="fc" id="L109">            newTab = true;</span>
+<span class="fc" id="L110">            return this;</span>
+        }
+
+        /**
+         * Language of the heading when it differs from the page — a Latin name, a title kept in the
+         * language it was published in.
+         */
+        public Builder lang(String languageTag) {
+<span class="fc" id="L118">            b.with(&quot;lang&quot;, Element.requireTag(languageTag, &quot;languageTag&quot;));</span>
+<span class="fc" id="L119">            return this;</span>
+        }
+
+        /** Present in the outline for screen readers, visually clipped (not {@code display:none}). */
+        public Builder srOnly() {
+<span class="fc" id="L124">            b.with(&quot;srOnly&quot;, true);</span>
+<span class="fc" id="L125">            return this;</span>
+        }
+
+        /**
+         * Terminal. The link is assembled here rather than as it is said, so the order of the calls
+         * cannot change the result: {@code noopener} joins a new tab whether the tab was asked for
+         * before the rel values or after them.
+         */
+        @Override
+        public Element&lt;Heading&gt; build() {
+<span class="fc bfc" id="L135" title="All 6 branches covered.">            if (!linked &amp;&amp; (newTab || !rel.isEmpty())) {</span>
+<span class="fc" id="L136">                throw new IllegalStateException(&quot;rel or newTab on a heading that is not a link: &quot;</span>
+                    + &quot;call href(...) as well, or drop them — an attribute with no &lt;a&gt; to sit on is printed nowhere&quot;);
+            }
+<span class="fc" id="L139">            Set&lt;Rel&gt; values = new LinkedHashSet&lt;&gt;(rel);      // the builder is left as it was: build() is not a step</span>
+<span class="fc bfc" id="L140" title="All 2 branches covered.">            if (newTab) {</span>
+<span class="fc" id="L141">                b.with(&quot;target&quot;, &quot;_blank&quot;);</span>
+<span class="fc" id="L142">                values.add(Rel.NOOPENER);</span>
+            }
+<span class="fc bfc" id="L144" title="All 2 branches covered.">            if (!values.isEmpty()) {</span>
+<span class="fc" id="L145">                b.with(&quot;rel&quot;, Rel.tokens(values));</span>
+            }
+<span class="fc" id="L147">            return b.build();</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

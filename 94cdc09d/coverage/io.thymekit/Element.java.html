@@ -1,0 +1,431 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Element.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">thymekit</a> &gt; <a href="index.source.html" class="el_package">io.thymekit</a> &gt; <span class="el_source">Element.java</span></div><h1>Element.java</h1><pre class="source lang-java linenums">/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+package io.thymekit;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.regex.Pattern;
+import org.jspecify.annotations.Nullable;
+
+/**
+ * The single currency of composition: every element's {@code build()} returns one. Elements go onto
+ * a canvas ({@link PageModel}), into containers and into larger elements.
+ *
+ * &lt;p&gt;{@code K} is a &lt;b&gt;phantom marker&lt;/b&gt; — the factory class that produced the element
+ * ({@code Element&lt;Heading&gt;}). There is no type hierarchy: a new element is just a factory, and the
+ * type it produces exists for free. Wide points accept {@code Element&lt;?&gt;}; narrow points name
+ * the marker, so the compiler rejects a combination only where it is genuinely meaningless.
+ *
+ * &lt;p&gt;Inside is a descriptor: the address of the element's adapter fragment ({@code template ::
+ * fragment(e)}) plus data. Templates read {@link #asMap()}, so the adapter contract does not depend on
+ * typing: the data is untyped, the marker is typed.
+ */
+public final class Element&lt;K&gt; implements Composable&lt;K&gt; {
+
+    /** Descriptor keys reserved by the engine; data cannot use them. */
+<span class="fc" id="L34">    static final Set&lt;String&gt; RESERVED = Set.of(&quot;template&quot;, &quot;fragment&quot;, &quot;bare&quot;, &quot;slots&quot;, &quot;assets&quot;, &quot;illustration&quot;);</span>
+
+    private final Map&lt;String, Object&gt; m;
+
+<span class="fc" id="L38">    private Element(Map&lt;String, Object&gt; m) {</span>
+<span class="fc" id="L39">        this.m = m;</span>
+<span class="fc" id="L40">    }</span>
+
+    /** Immutable descriptor as templates and the dispatcher see it. */
+    public Map&lt;String, Object&gt; asMap() {
+<span class="fc" id="L44">        return m;</span>
+    }
+
+    /**
+     * An element has already become one, so this hands back the same value. It exists so that a place
+     * taking {@link Composable} takes an element too, without a second signature for the same idea.
+     */
+    @Override
+    public Element&lt;K&gt; build() {
+<span class="fc" id="L53">        return this;</span>
+    }
+
+    public String template() {
+<span class="fc" id="L57">        return (String) m.get(&quot;template&quot;);</span>
+    }
+
+    public String fragment() {
+<span class="fc" id="L61">        return (String) m.get(&quot;fragment&quot;);</span>
+    }
+
+    /** Contents of a named slot; empty when the slot was never filled. */
+    @SuppressWarnings(&quot;unchecked&quot;)
+    public List&lt;Map&lt;String, Object&gt;&gt; slot(String name) {
+<span class="fc" id="L67">        Map&lt;String, List&lt;Map&lt;String, Object&gt;&gt;&gt; slots = (Map&lt;String, List&lt;Map&lt;String, Object&gt;&gt;&gt;) m.get(&quot;slots&quot;);</span>
+<span class="fc bfc" id="L68" title="All 2 branches covered.">        List&lt;Map&lt;String, Object&gt;&gt; items = slots == null ? null : slots.get(Objects.requireNonNull(name, &quot;name&quot;));</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">        return items == null ? List.of() : items;</span>
+    }
+
+    /**
+     * Script dependencies of the whole element tree — its own {@code requires} plus every nested one,
+     * deduplicated by address in traversal order. The canvas collects them and renders each once, so a
+     * consumer never wires a script by hand.
+     */
+    public List&lt;Element&lt;Script&gt;&gt; assets() {
+<span class="fc" id="L78">        return assetsOf(List.of(m));</span>
+    }
+
+    /** Same, for a collection of elements, descriptors or page models. */
+    public static List&lt;Element&lt;Script&gt;&gt; assetsOf(Collection&lt;?&gt; roots) {
+<span class="fc" id="L83">        LinkedHashMap&lt;String, Element&lt;Script&gt;&gt; acc = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L84">        collectAssets(roots, acc);</span>
+<span class="fc" id="L85">        return List.copyOf(acc.values());</span>
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    private static void collectAssets(@Nullable Object node, Map&lt;String, Element&lt;Script&gt;&gt; acc) {
+<span class="fc bfc" id="L90" title="All 2 branches covered.">        if (node instanceof Element&lt;?&gt; e) {</span>
+<span class="fc" id="L91">            collectAssets(e.m, acc);</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">        } else if (node instanceof Map&lt;?, ?&gt; map) {</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">            if (map.get(&quot;assets&quot;) instanceof List&lt;?&gt; declared) {</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">                for (Object a : declared) {</span>
+<span class="fc" id="L95">                    Map&lt;String, Object&gt; d = (Map&lt;String, Object&gt;) a;</span>
+<span class="fc" id="L96">                    String t = (String) d.get(&quot;template&quot;);</span>
+<span class="fc" id="L97">                    String f = (String) d.get(&quot;fragment&quot;);</span>
+<span class="fc" id="L98">                    acc.putIfAbsent(t + &quot; :: &quot; + f, script(t, f));</span>
+<span class="fc" id="L99">                }</span>
+            }
+<span class="fc bfc" id="L101" title="All 2 branches covered.">            for (Map.Entry&lt;?, ?&gt; en : map.entrySet()) {</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">                if (!&quot;assets&quot;.equals(en.getKey())) {</span>
+<span class="fc" id="L103">                    collectAssets(en.getValue(), acc);</span>
+                }
+<span class="fc" id="L105">            }</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">        } else if (node instanceof Collection&lt;?&gt; c) {</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">            for (Object o : c) {</span>
+<span class="fc" id="L108">                collectAssets(o, acc);</span>
+<span class="fc" id="L109">            }</span>
+        }
+<span class="fc" id="L111">    }</span>
+
+<span class="fc" id="L113">    private static final Pattern LANGUAGE_TAG = Pattern.compile(&quot;[A-Za-z0-9]+(-[A-Za-z0-9]+)*&quot;);</span>
+
+    /** A template path and a fragment name, as a template resolver would accept them. */
+<span class="fc" id="L116">    private static final Pattern TEMPLATE = Pattern.compile(&quot;[A-Za-z0-9_][A-Za-z0-9/_.-]*&quot;);</span>
+<span class="fc" id="L117">    private static final Pattern FRAGMENT = Pattern.compile(&quot;[A-Za-z0-9_][A-Za-z0-9_]*&quot;);</span>
+
+    /**
+     * A language tag, the way {@code lang} wants it: letters, digits and hyphens, nothing else. Not the
+     * full BCP-47 grammar — just enough that a sentence, a translation or an empty string never ends up
+     * in the attribute, where it would silently make the page claim a language it does not speak.
+     */
+    static String requireTag(String tag, String name) {
+<span class="fc" id="L125">        Objects.requireNonNull(tag, name);</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">        if (!LANGUAGE_TAG.matcher(tag).matches()) {</span>
+<span class="fc" id="L127">            throw new IllegalArgumentException(name + &quot; is not a language tag: \&quot;&quot; + tag + &quot;\&quot;&quot;);</span>
+        }
+<span class="fc" id="L129">        return tag;</span>
+    }
+
+    /**
+     * Outline guard, run by the canvas before a page is rendered. Two things are checked, and both are
+     * defects a reader or a crawler would meet on the finished page rather than opinions about style:
+     *
+     * &lt;ul&gt;
+     *   &lt;li&gt;at most one first-level heading — the title of a page is one thing, not several;&lt;/li&gt;
+     *   &lt;li&gt;no level skipped — a page that uses h4 while nothing on it is an h3 has a hole in its
+     *       outline, and a screen reader walking headings falls straight through it;&lt;/li&gt;
+     *   &lt;li&gt;no level outside h1..h6 — html has six, and the adapter renders nothing at all for a
+     *       seventh, which is the kind of silence a page should never ship with.&lt;/li&gt;
+     * &lt;/ul&gt;
+     *
+     * &lt;p&gt;A level is read however it was written into the descriptor — as a number or as text. The
+     * factories always write a number, but an element minted by hand may not, and a guard that only
+     * understood one of the two would have let a second H1 through while the adapter happily rendered
+     * it.
+     *
+     * &lt;p&gt;The levels a page uses have to be contiguous; where in the flow they stand is not the guard's
+     * business, so nesting an element deeper never trips it. Illustration subtrees are skipped — a
+     * sample framed for display is not page structure — and a page with no headings at all is legal.
+     *
+     * &lt;p&gt;The guarantee stops where the kit stops. A heading an author wrote inside markdown is not seen
+     * here — that text is data and arrives as HTML long after this runs. Such headings are lowered under
+     * the page by {@link MarkdownRenderer} instead, so content does not declare a second H1; a gap the
+     * author left inside the text travels with it, and neither this guard nor the renderer closes it.
+     */
+    public static void assertOutline(Collection&lt;?&gt; roots) {
+<span class="fc" id="L159">        List&lt;String&gt; h1 = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L160">        TreeSet&lt;Integer&gt; levels = new TreeSet&lt;&gt;();</span>
+<span class="fc" id="L161">        collectHeadings(roots, h1, levels);</span>
+<span class="fc bfc" id="L162" title="All 2 branches covered.">        if (h1.size() &gt; 1) {</span>
+<span class="fc" id="L163">            throw new IllegalStateException(&quot;more than one H1 on the page: &quot; + h1</span>
+                + &quot; — the title of a page is one thing; sections start at h2&quot;);
+        }
+<span class="fc bfc" id="L166" title="All 2 branches covered.">        if (levels.isEmpty()) {</span>
+<span class="fc" id="L167">            return;</span>
+        }
+<span class="fc bfc" id="L169" title="All 4 branches covered.">        if (levels.first() &lt; 1 || levels.last() &gt; 6) {</span>
+<span class="fc" id="L170">            throw new IllegalStateException(&quot;heading level outside h1..h6 on the page: &quot; + levels</span>
+                + &quot; — html has six, and the adapter renders nothing at all for anything else&quot;);
+        }
+<span class="fc bfc" id="L173" title="All 2 branches covered.">        for (int level = levels.first(); level &lt; levels.last(); level++) {</span>
+<span class="fc bfc" id="L174" title="All 2 branches covered.">            if (!levels.contains(level + 1)) {</span>
+<span class="fc" id="L175">                throw new IllegalStateException(&quot;heading level h&quot; + (level + 1) + &quot; is missing on a page that uses &quot;</span>
+                    + levels + &quot; — an outline with a hole in it is a page a screen reader falls through&quot;);
+            }
+        }
+<span class="fc" id="L179">    }</span>
+
+    /** A level as the descriptor happens to carry it: a number, or text that reads as one. */
+    private static @Nullable Integer levelOf(@Nullable Object raw) {
+<span class="fc bfc" id="L183" title="All 2 branches covered.">        if (raw instanceof Number number) {</span>
+<span class="fc" id="L184">            return number.intValue();</span>
+        }
+<span class="fc bfc" id="L186" title="All 2 branches covered.">        if (raw instanceof String text) {</span>
+            try {
+<span class="fc" id="L188">                return Integer.valueOf(text.strip());</span>
+<span class="fc" id="L189">            } catch (NumberFormatException notALevel) {</span>
+<span class="fc" id="L190">                return null;</span>
+            }
+        }
+<span class="fc" id="L193">        return null;</span>
+    }
+
+    private static void collectHeadings(@Nullable Object node, List&lt;String&gt; h1, Set&lt;Integer&gt; levels) {
+<span class="fc bfc" id="L197" title="All 2 branches covered.">        if (node instanceof Element&lt;?&gt; e) {</span>
+<span class="fc" id="L198">            collectHeadings(e.m, h1, levels);</span>
+<span class="fc bfc" id="L199" title="All 2 branches covered.">        } else if (node instanceof Map&lt;?, ?&gt; map) {</span>
+<span class="fc bfc" id="L200" title="All 2 branches covered.">            if (Boolean.TRUE.equals(map.get(&quot;illustration&quot;))) {</span>
+<span class="fc" id="L201">                return;</span>
+            }
+<span class="fc bfc" id="L203" title="All 2 branches covered.">            if (&quot;headingEl&quot;.equals(map.get(&quot;fragment&quot;))) {</span>
+<span class="fc" id="L204">                Integer level = levelOf(map.get(&quot;level&quot;));</span>
+<span class="fc bfc" id="L205" title="All 2 branches covered.">                if (level != null) {</span>
+<span class="fc" id="L206">                    levels.add(level);</span>
+<span class="fc bfc" id="L207" title="All 2 branches covered.">                    if (level == 1) {</span>
+<span class="fc" id="L208">                        h1.add(String.valueOf(map.get(&quot;text&quot;)));</span>
+                    }
+                }
+            }
+<span class="fc bfc" id="L212" title="All 2 branches covered.">            for (Map.Entry&lt;?, ?&gt; en : map.entrySet()) {</span>
+<span class="fc bfc" id="L213" title="All 2 branches covered.">                if (!&quot;assets&quot;.equals(en.getKey())) {</span>
+<span class="fc" id="L214">                    collectHeadings(en.getValue(), h1, levels);</span>
+                }
+<span class="fc" id="L216">            }</span>
+<span class="fc bfc" id="L217" title="All 2 branches covered.">        } else if (node instanceof Collection&lt;?&gt; c) {</span>
+<span class="fc bfc" id="L218" title="All 2 branches covered.">            for (Object o : c) {</span>
+<span class="fc" id="L219">                collectHeadings(o, h1, levels);</span>
+<span class="fc" id="L220">            }</span>
+        }
+<span class="fc" id="L222">    }</span>
+
+    /** A script element is rendered as {@code template :: fragment}, everything else as {@code fragment(e)}. */
+    public boolean bare() {
+<span class="fc" id="L226">        return Boolean.TRUE.equals(m.get(&quot;bare&quot;));</span>
+    }
+
+    // value semantics: an element is its descriptor, so equal descriptors are the same element
+    @Override
+    public boolean equals(Object o) {
+<span class="fc bfc" id="L232" title="All 4 branches covered.">        return o instanceof Element&lt;?&gt; other &amp;&amp; m.equals(other.m);</span>
+    }
+
+    @Override
+    public int hashCode() {
+<span class="fc" id="L237">        return m.hashCode();</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="fc" id="L242">        return &quot;Element&quot; + m;</span>
+    }
+
+    /**
+     * Whatever becomes an element, settled at once and never before: a place that takes a
+     * {@link Composable} builds it here, keeps the element and forgets the maker. That is the rule the
+     * kit follows everywhere — accept what becomes an element, store only what has become one.
+     */
+    public static &lt;K&gt; Element&lt;K&gt; settle(Composable&lt;K&gt; composable, String name) {
+<span class="fc" id="L251">        Objects.requireNonNull(composable, name);</span>
+<span class="fc" id="L252">        return Objects.requireNonNull(composable.build(), () -&gt; name + &quot; built nothing&quot;);</span>
+    }
+
+    /**
+     * Guard for wide points: a script element never belongs in the element flow — the dispatcher calls
+     * adapters with an argument, while a script fragment takes none. Declare it via {@code requires}.
+     */
+    public static Element&lt;?&gt; requireRenderableElement(Element&lt;?&gt; e, String what) {
+<span class="fc" id="L260">        requireRenderable(e, what);</span>
+<span class="fc" id="L261">        return e;</span>
+    }
+
+    public static void requireRenderable(Element&lt;?&gt; e, String what) {
+<span class="fc bfc" id="L265" title="All 2 branches covered.">        if (Objects.requireNonNull(e, &quot;element&quot;).bare()) {</span>
+<span class="fc" id="L266">            throw new IllegalArgumentException(what + &quot;: a script element does not belong in the flow — &quot;</span>
+                + &quot;declare it as an element dependency via requires(), the canvas collects assets&quot;);
+        }
+<span class="fc" id="L269">    }</span>
+
+    /**
+     * Runtime guard for narrow points, where the marker is erased: checks the adapter address of the
+     * given element. Public on purpose — consumer elements guard their own narrow points the same way.
+     */
+    public static void requireAdapter(Element&lt;?&gt; e, String fragment, String what) {
+<span class="fc bfc" id="L276" title="All 2 branches covered.">        if (!fragment.equals(e.fragment())) {</span>
+<span class="fc" id="L277">            throw new IllegalArgumentException(what + &quot; (got &quot; + e.fragment() + &quot;)&quot;);</span>
+        }
+<span class="fc" id="L279">    }</span>
+
+    /** Marker for a consumer fragment used as an element without a Java factory. */
+    public static final class Raw {
+        private Raw() {}
+    }
+
+    /** Marker for a behaviour script carried as an element. */
+    public static final class Script {
+        private Script() {}
+    }
+
+    /** A consumer fragment as an element: data via {@code with}, terminal {@code build}. */
+    public static Descriptor&lt;Raw&gt; raw(String template, String fragment) {
+<span class="fc" id="L293">        return new Descriptor&lt;&gt;(template, fragment);</span>
+    }
+
+    /** A parameterless script fragment as an element. */
+    public static Element&lt;Script&gt; script(String template, String fragment) {
+<span class="fc" id="L298">        return new Descriptor&lt;Script&gt;(template, fragment).bare();</span>
+    }
+
+    /**
+     * Builds a descriptor: adapter address plus data, terminal {@link #build}. It becomes an element,
+     * and says so — a descriptor goes into a page or a slot exactly where an element goes.
+     */
+    public static final class Descriptor&lt;K&gt; implements Composable&lt;K&gt; {
+
+<span class="fc" id="L307">        private final LinkedHashMap&lt;String, Object&gt; d = new LinkedHashMap&lt;&gt;();</span>
+
+        /**
+         * The address is checked for shape, and not out of tidiness: the dispatcher builds a fragment
+         * expression out of it, so a name assembled from data would be evaluated rather than read.
+         */
+<span class="fc" id="L313">        Descriptor(String template, String fragment) {</span>
+<span class="fc" id="L314">            d.put(&quot;template&quot;, address(template, &quot;template&quot;, TEMPLATE));</span>
+<span class="fc" id="L315">            d.put(&quot;fragment&quot;, address(fragment, &quot;fragment&quot;, FRAGMENT));</span>
+<span class="fc" id="L316">            d.put(&quot;bare&quot;, false);</span>
+<span class="fc" id="L317">        }</span>
+
+        private static String address(String value, String name, Pattern shape) {
+<span class="fc" id="L320">            Objects.requireNonNull(value, name);</span>
+<span class="fc bfc" id="L321" title="All 2 branches covered.">            if (!shape.matcher(value).matches()) {</span>
+<span class="fc" id="L322">                throw new IllegalArgumentException(name + &quot; is not an adapter address: \&quot;&quot; + value</span>
+                    + &quot;\&quot; — the dispatcher turns it into an expression, so it may only be a path and a name&quot;);
+            }
+<span class="fc" id="L325">            return value;</span>
+        }
+
+        /**
+         * Entry point for an element factory — its own adapter address and marker:
+         * {@code Element.Descriptor.&lt;MyCard&gt;of(&quot;fragments/my/card&quot;, &quot;myCardEl&quot;).with(…).build()}.
+         * Elements are written this way both inside the kit and in consumer code.
+         */
+        public static &lt;K&gt; Descriptor&lt;K&gt; of(String template, String fragment) {
+<span class="fc" id="L334">            return new Descriptor&lt;&gt;(template, fragment);</span>
+        }
+
+        /**
+         * Element data; the adapter reads it as {@code ${e['key']}}. Reserved keys are rejected.
+         *
+         * &lt;p&gt;A collection handed in here is copied, however deep it goes. An element is its descriptor —
+         * that is what makes two of them equal and what asset deduplication counts on — so a list the
+         * caller still holds must not be able to change the element after it was built.
+         */
+        public Descriptor&lt;K&gt; with(String key, Object value) {
+<span class="fc" id="L345">            Objects.requireNonNull(key, &quot;key&quot;);</span>
+<span class="fc bfc" id="L346" title="All 2 branches covered.">            if (RESERVED.contains(key)) {</span>
+<span class="fc" id="L347">                throw new IllegalArgumentException(&quot;key \&quot;&quot; + key + &quot;\&quot; is reserved by the descriptor&quot;);</span>
+            }
+<span class="fc" id="L349">            d.put(key, snapshot(Objects.requireNonNull(value, () -&gt; &quot;value of key \&quot;&quot; + key + &quot;\&quot;&quot;)));</span>
+<span class="fc" id="L350">            return this;</span>
+        }
+
+        /**
+         * A value that cannot be changed from outside afterwards. Collections are copied and wrapped,
+         * their contents with them; anything else is taken as it is, since a descriptor carries text,
+         * numbers and elements, and those are values already.
+         *
+         * &lt;p&gt;Copied rather than handed to {@code List.copyOf}: a page may legitimately carry a list with
+         * a hole in it, and refusing that here would turn a rendering decision into an exception.
+         */
+        private static @Nullable Object snapshot(@Nullable Object value) {
+<span class="fc bfc" id="L362" title="All 2 branches covered.">            if (value instanceof Map&lt;?, ?&gt; map) {</span>
+<span class="fc" id="L363">                LinkedHashMap&lt;Object, Object&gt; copy = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L364">                map.forEach((k, v) -&gt; copy.put(k, snapshot(v)));</span>
+<span class="fc" id="L365">                return Collections.unmodifiableMap(copy);</span>
+            }
+<span class="fc bfc" id="L367" title="All 2 branches covered.">            if (value instanceof Collection&lt;?&gt; collection) {</span>
+<span class="fc" id="L368">                List&lt;Object&gt; copy = new ArrayList&lt;&gt;(collection.size());</span>
+<span class="fc bfc" id="L369" title="All 2 branches covered.">                for (Object item : collection) {</span>
+<span class="fc" id="L370">                    copy.add(snapshot(item));</span>
+<span class="fc" id="L371">                }</span>
+<span class="fc" id="L372">                return Collections.unmodifiableList(copy);</span>
+            }
+<span class="fc" id="L374">            return value;</span>
+        }
+
+        /**
+         * A named slot of a composite element. What may go in is constrained by the factory's slot
+         * method, not here; an empty list leaves the slot unrendered.
+         */
+        @SuppressWarnings(&quot;unchecked&quot;)
+        public Descriptor&lt;K&gt; slot(String name, List&lt;? extends Composable&lt;?&gt;&gt; items) {
+<span class="fc" id="L383">            Objects.requireNonNull(name, &quot;name&quot;);</span>
+<span class="fc" id="L384">            Objects.requireNonNull(items, &quot;items&quot;);</span>
+<span class="fc" id="L385">            Map&lt;String, List&lt;Map&lt;String, Object&gt;&gt;&gt; slots =</span>
+<span class="fc" id="L386">                (Map&lt;String, List&lt;Map&lt;String, Object&gt;&gt;&gt;) d.computeIfAbsent(&quot;slots&quot;, k -&gt; new LinkedHashMap&lt;String, List&lt;Map&lt;String, Object&gt;&gt;&gt;());</span>
+<span class="fc" id="L387">            slots.put(name, items.stream().map(item -&gt; settle(item, &quot;slot item&quot;).asMap()).toList());</span>
+<span class="fc" id="L388">            return this;</span>
+        }
+
+        /** Script dependency declared by the factory; the canvas renders it once per page. */
+        @SafeVarargs
+        @SuppressWarnings(&quot;unchecked&quot;)
+        public final Descriptor&lt;K&gt; requires(Element&lt;Script&gt;... scripts) {
+<span class="fc" id="L395">            List&lt;Map&lt;String, Object&gt;&gt; list =</span>
+<span class="fc" id="L396">                (List&lt;Map&lt;String, Object&gt;&gt;) d.computeIfAbsent(&quot;assets&quot;, k -&gt; new ArrayList&lt;Map&lt;String, Object&gt;&gt;());</span>
+<span class="fc bfc" id="L397" title="All 2 branches covered.">            for (Element&lt;Script&gt; s : Objects.requireNonNull(scripts, &quot;scripts&quot;)) {</span>
+<span class="pc bpc" id="L398" title="1 of 2 branches missed.">                if (!Objects.requireNonNull(s, &quot;script&quot;).bare()) {</span>
+<span class="nc" id="L399">                    throw new IllegalArgumentException(&quot;a dependency must be a script element (Element.script)&quot;);</span>
+                }
+<span class="fc" id="L401">                list.add(s.asMap());</span>
+            }
+<span class="fc" id="L403">            return this;</span>
+        }
+
+        /** Marks the element as an illustration: its contents are not page structure (see {@link #assertOutline}). */
+        public Descriptor&lt;K&gt; illustration() {
+<span class="fc" id="L408">            d.put(&quot;illustration&quot;, true);</span>
+<span class="fc" id="L409">            return this;</span>
+        }
+
+        Element&lt;K&gt; bare() {
+<span class="fc" id="L413">            d.put(&quot;bare&quot;, true);</span>
+<span class="fc" id="L414">            return build();</span>
+        }
+
+        @Override
+        @SuppressWarnings(&quot;unchecked&quot;)
+        public Element&lt;K&gt; build() {
+<span class="fc" id="L420">            LinkedHashMap&lt;String, Object&gt; copy = new LinkedHashMap&lt;&gt;(d);</span>
+<span class="fc bfc" id="L421" title="All 2 branches covered.">            if (copy.get(&quot;slots&quot;) instanceof Map&lt;?, ?&gt; slots) {   // snapshot: the builder may go on, the element must not change</span>
+<span class="fc" id="L422">                copy.put(&quot;slots&quot;, Collections.unmodifiableMap(new LinkedHashMap&lt;&gt;((Map&lt;String, Object&gt;) slots)));</span>
+            }
+<span class="fc bfc" id="L424" title="All 2 branches covered.">            if (copy.get(&quot;assets&quot;) instanceof List&lt;?&gt; assets) {</span>
+<span class="fc" id="L425">                copy.put(&quot;assets&quot;, List.copyOf((List&lt;Map&lt;String, Object&gt;&gt;) assets));</span>
+            }
+<span class="fc" id="L427">            return new Element&lt;&gt;(Collections.unmodifiableMap(copy));</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

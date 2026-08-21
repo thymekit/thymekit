@@ -1,0 +1,12 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+   License, v. 2.0. If a copy of the MPL was not distributed with this
+   file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+/* =============================================================================
+   section — a titled part of a page: the section itself and the rhythm around its
+   heading. What goes under the heading is a slot, so it is whatever is an element.
+
+   Classes: .tk-section · .tk-section > .tk-heading
+   ============================================================================= */
+/* Between the parts of the section — its own business. Around it — the page's, so no outer margin. */
+.tk-section > .tk-heading { margin: 0 0 10px; }
+.tk-defaults { --tk-section-empty-fg: initial; --tk-section-link-fg: initial; }

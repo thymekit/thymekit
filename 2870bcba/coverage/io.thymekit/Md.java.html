@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Md.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">thymekit</a> &gt; <a href="index.source.html" class="el_package">io.thymekit</a> &gt; <span class="el_source">Md.java</span></div><h1>Md.java</h1><pre class="source lang-java linenums">/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+package io.thymekit;
+
+import java.util.LinkedHashSet;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
+
+/**
+ * The text of a page: markdown rendered by the {@code #md} dialect and sanitised on the way out, or an
+ * empty state when nothing has been written yet. It is content — a heading and a section around it
+ * belong to {@link Section}, which this goes inside.
+ *
+ * &lt;p&gt;The text belongs to whoever wrote it, and its headings keep their shape: {@link MarkdownRenderer}
+ * lowers the topmost authored level to a ceiling (h2 by default) and moves the rest by the same amount,
+ * so a {@code #} in the source becomes an h2 under the page rather than a second H1. What the author
+ * nested stays nested; what the author skipped stays skipped, and {@link Element#assertOutline} never
+ * sees any of it.
+ */
+public final class Md {
+
+    private Md() {}
+
+    /**
+     * The text may be absent ({@code null} — nothing written yet): then the section shows its
+     * {@link Builder#emptyHint}, and without a hint it is not rendered at all.
+     */
+    public static Builder of(@Nullable String markdown) {
+<span class="fc" id="L30">        return new Builder(markdown);</span>
+    }
+
+    public static final class Builder implements Composable&lt;Md&gt; {
+
+        private final Element.Descriptor&lt;Md&gt; b;
+<span class="fc" id="L36">        private final LinkedHashSet&lt;Rel&gt; linkRel = new LinkedHashSet&lt;&gt;();</span>
+        private final boolean hasText;
+
+<span class="fc" id="L39">        private Builder(@Nullable String markdown) {</span>
+<span class="fc" id="L40">            this.b = Element.Descriptor.&lt;Md&gt;of(&quot;thymekit/md&quot;, &quot;mdEl&quot;);</span>
+<span class="fc bfc" id="L41" title="All 2 branches covered.">            this.hasText = markdown != null;</span>
+<span class="fc bfc" id="L42" title="All 2 branches covered.">            if (hasText) {</span>
+<span class="fc" id="L43">                b.with(&quot;markdown&quot;, markdown);</span>
+            }
+<span class="fc" id="L45">        }</span>
+
+        /** Empty-state text, shown instead of the block when there is no markdown. */
+        public Builder emptyHint(String hint) {
+<span class="fc" id="L49">            b.with(&quot;emptyHint&quot;, Objects.requireNonNull(hint, &quot;emptyHint&quot;));</span>
+<span class="fc" id="L50">            return this;</span>
+        }
+
+        /**
+         * An affordance shown next to the empty state — any element, rendered through the dispatcher.
+         * The section does not know what it is, so the wording and the shape stay with the consumer.
+         */
+        public Builder addAction(Composable&lt;?&gt; action) {
+<span class="fc" id="L58">            b.with(&quot;addAction&quot;, Element.requireRenderableElement(Element.settle(action, &quot;action&quot;), &quot;Md.addAction&quot;).asMap());</span>
+<span class="fc" id="L59">            return this;</span>
+        }
+
+        /**
+         * What the links of this text say about themselves: {@code linkRel(UGC, NOFOLLOW)} for text a
+         * visitor wrote, nothing for text your own editors wrote. The kit has no opinion about whose
+         * text this is — only the consumer knows, and both defaults would be wrong for the other case.
+         *
+         * &lt;p&gt;Marked are the links that leave the site — anything carrying a scheme ({@code https://…})
+         * or an authority ({@code //host/…}). A path of your own ({@code /ingredients/baobab},
+         * {@code #composition}, {@code ../sibling}) keeps its weight, since holding that back would be
+         * a wound self-inflicted.
+         */
+        public Builder linkRel(Rel... values) {
+<span class="fc" id="L73">            linkRel.addAll(Rel.required(values, &quot;linkRel&quot;));</span>
+<span class="fc" id="L74">            return this;</span>
+        }
+
+        @Override
+        public Element&lt;Md&gt; build() {
+<span class="fc bfc" id="L79" title="All 2 branches covered.">            if (!linkRel.isEmpty()) {</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">                if (!hasText) {</span>
+<span class="fc" id="L81">                    throw new IllegalStateException(&quot;linkRel on a section with no text: the policy would apply to &quot;</span>
+                        + &quot;nothing — give the section its markdown, or drop the policy&quot;);
+                }
+<span class="fc" id="L84">                b.with(&quot;linkRel&quot;, Rel.tokens(linkRel));</span>
+            }
+<span class="fc" id="L86">            return b.build();</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
