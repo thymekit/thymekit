@@ -113,4 +113,25 @@ class TidyDialectTest {
         assertThat(html).startsWith("<!DOCTYPE html>").contains("<html").contains("</html>");
         assertThat(outsidePreserved(html).lines().filter(String::isBlank).count()).as(html).isZero();
     }
+
+    /**
+     * One handler counts a whole render, nested templates included: a preserved tag in one file whose
+     * content comes from another keeps that content exactly, rather than re-indenting it to the depth
+     * the outer file happens to be at. Seven spaces in the inner file, four if the depth were applied.
+     */
+    @Test
+    void aPreservedTagKeepsWhatAnotherFilePutInIt() {
+        String html = ENGINE.process("test/preserved-outer", Set.of("outer"), new Context());
+        assertThat(html).contains("<pre>\n       <span>seven spaces before me</span>\n</pre>");
+    }
+
+    /** A render that dies inside a preserved tag leaves no preservation behind for the next one. */
+    @Test
+    void aRenderThatDiesInsideAPreservedTagLeavesNothingBehind() {
+        String good = ENGINE.process("test/preserved-outer", Set.of("outer"), new Context());
+        assertThatThrownBy(() -> ENGINE.process("test/preserved-outer", Set.of("dies"), new Context()))
+            .isInstanceOf(org.thymeleaf.exceptions.TemplateProcessingException.class);
+        assertThat(ENGINE.process("test/preserved-outer", Set.of("outer"), new Context())).isEqualTo(good);
+        assertThat(render()).contains("\n  ");                     // and tidying still happens elsewhere
+    }
 }

@@ -14,15 +14,15 @@ import org.thymeleaf.expression.IExpressionObjectFactory;
  */
 public class MarkdownDialect extends AbstractDialect implements IExpressionObjectDialect {
 
-    private final MarkdownRenderer markdownRenderer;
+    private final MarkdownExpressionObjectFactory factory;
 
     public MarkdownDialect(MarkdownRenderer markdownRenderer) {
         super("markdown");
-        this.markdownRenderer = markdownRenderer;
+        this.factory = new MarkdownExpressionObjectFactory(markdownRenderer);
     }
 
     @Override
     public IExpressionObjectFactory getExpressionObjectFactory() {
-        return new MarkdownExpressionObjectFactory(markdownRenderer);
+        return factory;
     }
 }

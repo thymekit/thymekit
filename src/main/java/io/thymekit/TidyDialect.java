@@ -22,6 +22,9 @@ import org.thymeleaf.templatemode.TemplateMode;
  * <p>Why it is safe: whitespace is only ever collapsed where it already exists, never inserted, and a
  * run of whitespace in HTML is equivalent to one. Between inline elements the newline is kept precisely
  * because there the whitespace is significant.
+ *
+ * <p>HTML only: a template rendered in the text or javascript mode passes through untouched, since
+ * there whitespace is not a matter of formatting but of content.
  */
 public final class TidyDialect extends AbstractDialect implements IPostProcessorDialect {
 

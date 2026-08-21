@@ -40,15 +40,17 @@ public final class Caption {
         return String.valueOf(Objects.requireNonNull(caption, "caption").asMap().get("role"));
     }
 
-    /** Narrow-point guard: a caption in the required role. */
-    static void requireRole(Element<Caption> caption, String role, String what) {
-        Element.requireAdapter(Objects.requireNonNull(caption, "caption"), "captionEl", what);
-        if (!role.equals(caption.asMap().get("role"))) {
-            throw new IllegalArgumentException(what + " in role \"" + role + "\" (got \"" + caption.asMap().get("role") + "\")");
+    /** Narrow-point guard: a caption in the required role, settled and handed back. */
+    static Element<Caption> inRole(Composable<Caption> caption, String role, String what) {
+        Element<Caption> settled = Element.settle(caption, "caption");
+        Element.requireAdapter(settled, "captionEl", what);
+        if (!role.equals(settled.asMap().get("role"))) {
+            throw new IllegalArgumentException(what + " in role \"" + role + "\" (got \"" + settled.asMap().get("role") + "\")");
         }
+        return settled;
     }
 
-    public static final class Builder {
+    public static final class Builder implements Composable<Caption> {
 
         private final Element.Descriptor<Caption> b;
 
@@ -89,6 +91,7 @@ public final class Caption {
             return this;
         }
 
+        @Override
         public Element<Caption> build() {
             return b.build();
         }

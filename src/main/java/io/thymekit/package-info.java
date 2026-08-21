@@ -49,6 +49,11 @@
  *       dispatcher as everything else, so composition is closed at the top as well as at the bottom.
  *       {@code render()} uses the default document, {@code render(view)} one of your own.</li>
  *   <li>{@link io.thymekit.Rel} — what a link says about itself, shared by every element that links.</li>
+ *   <li>{@link io.thymekit.ElementContract} — the walk over a triple: the kit checks its own elements
+ *       with it, and hands the same walk to whoever writes one.</li>
+ *   <li>{@link io.thymekit.Composable} — whatever becomes an element: every builder here, and
+ *       {@link io.thymekit.Element} itself. A place that takes an element takes this, so nothing has to
+ *       be written between one element and the next.</li>
  *   <li>{@code Element.raw(template, fragment)} wraps a consumer fragment as an element,
  *       {@code Element.script(...)} a behaviour script, and {@code Element.Descriptor.of(...)} is how a
  *       consumer mints an element of its own.</li>

@@ -18,7 +18,8 @@ vigilance across the whole project.
 
 thymekit makes the element a first-class object, the way Java makes everything an object. Every element
 is a triple — a Java factory, a Thymeleaf fragment and a CSS file — behind one entry point and one
-address. The factory returns `Element<K>`, the only currency of composition. Elements go into elements
+address. The factory returns `Element<K>`, the only currency of composition; a place that takes one
+takes anything that becomes one, so between an element and the next there is nothing to write. Elements go into elements
 without limit: a caption into a heading group, a heading into a section, a section onto a page.
 Containers render through a single dispatcher and know no list of bricks, which is why the set never
 stops being extensible — from reusable elements you build reusable elements.
@@ -29,14 +30,12 @@ String ingredient(@PathVariable String slug, Model model) {
     Ingredient it = api.bySlug(slug);
     return PageModel.of(model)
         .title(it.name())
-        .add(Hero.of(Heading.h1(it.name()).build())
-            .eyebrow(Caption.eyebrow("Catalogue").build())
-            .subtitle(Caption.subtitle(it.latinName()).build())
-            .build())
+        .add(Hero.of(Heading.h1(it.name()))
+            .eyebrow(Caption.eyebrow("Catalogue"))
+            .subtitle(Caption.subtitle(it.latinName())))
         .add(Md.of(it.description())
-            .title(Heading.h2("Description").build())
-            .emptyHint("No description yet")
-            .build())
+            .title(Heading.h2("Description"))
+            .emptyHint("No description yet"))
         .render("ingredient-page");
 }
 ```
@@ -201,18 +200,31 @@ of widgets.
 ```mermaid
 flowchart LR
     subgraph compile ["at compile time"]
-        N["narrow points<br/><code>Hero.of(Element&lt;Heading&gt;)</code>"]
+        N["narrow points<br/><code>Hero.of(Composable&lt;Heading&gt;)</code>"]
     end
     subgraph run ["at run time"]
-        G["adapter guard<br/><code>requireAdapter</code>"]
+        G["guards where a value is minted<br/><code>requireAdapter</code>, the address, the outline"]
     end
-    subgraph test ["in the test suite"]
+    subgraph test ["in the build"]
         C["contract test walks<br/>every element's triple"]
+        K["canon as code<br/>the rules this package keeps"]
     end
     N --> R["an element that drifts<br/>cannot reach production"]
     G --> R
     C --> R
+    K --> R
 ```
+
+The last one is worth naming, because it is the part a reader cannot see in the code. Eight rules state
+what this package is: a class that hands out elements is final and cannot be instantiated; whatever has
+a `build()` returning an element says so by implementing `Composable`; nothing but `Element` hands a
+descriptor out; a `Composable` is settled where it is taken and never held in a field; nothing public
+is mutable; no element names another element's template; the core does not know its own demo exists;
+and the model is written by the canvas alone.
+
+None of them names a class: a rule that lists what it applies to is a list to forget, which is the
+failure this canon exists to remove. Each is a test, and each was made to fail before it was kept — a
+rule that cannot fail states nothing.
 
 ## Theming
 
@@ -329,9 +341,31 @@ public final class Price {
 }
 ```
 
+Check it the way the kit checks its own, in a test of yours:
+
+```java
+@Test
+void myElementsKeepTheContract() {
+    ElementContract.of(Price.of("12.00", "EUR"), Badge.of("in stock"))
+        .renderedBy(templateEngine)
+        .styledBy("static/my/ui.css")
+        .check();
+}
+```
+
+It looks at what no compiler can: that the address points at a fragment that exists and declares itself
+— the element's own and every script it depends on — that the adapter is named the way an adapter is
+named, that a script has not been put where an element belongs, that the element renders something a
+browser would show, and that every class it prints has a rule in the stylesheets you name. If your
+templates do not live under `templates/`, say `templatesUnder("views/")` and it looks there. It reports
+everything wrong at once, and the kit's own suite takes the same walk over the kit's own elements.
+
 The fragment reads the descriptor as `${e['amount']}`, the CSS file carries the element's handles, and
 the element goes anywhere any other element goes — onto a canvas, into a slot, inside a bigger element
-of your own.
+of your own. Nothing has to be implemented for that: an element is recognised by what it is, not by
+what it declares. If your element has a builder rather than a single factory method, have the builder
+implement `Composable<Price>` — one method it already has — and callers stop writing `.build()` in
+front of it, exactly as they do for the kit's own.
 
 ## The elements
 
@@ -342,6 +376,7 @@ of your own.
 | Hero | `Hero.of(Element<Heading>)` — eyebrow, subtitle, meta lines, a `statusBadgeEl` badge and an `actionsEl` row of your own | `hero :: heroEl` | `hero.css` |
 | Md | `Md.of(markdown)` — title, empty state, empty-state action, `linkRel` | `md-section :: mdSectionEl` | `md-section.css` |
 | Canvas | `PageModel.of(model)` — own page classes, flow of elements, `render(view)`; renders as the `page` element | `canvas :: canvasEl` | `base/canvas.css` |
+| — | `Composable<K>` — whatever becomes an element; `ElementContract` — the walk over a triple, for your elements as much as ours | — | — |
 | Head | filled by the canvas — title, description, canonical, image, `robots`; renders as the `head` element | `head :: headEl` | — (it prints tags, not looks) |
 
 Text written by visitors says so: `Md.of(review).linkRel(UGC, NOFOLLOW)` marks the links that leave
@@ -385,6 +420,36 @@ What the kit does not do is close a hole the author left. Write `#` and then `##
 with the text into the page, and the canvas guard never sees it — content is data, it arrives as HTML
 long after the guard has run. Where an editor lets authors write headings, that is where the levels
 they may use are worth constraining.
+
+## Where the line runs
+
+A framework inverts control: it owns the flow, you fill the places it left for you, and it knows the
+shape of your application — that a page has a layout, a component a lifecycle, a form a binding. Its
+extension points are a list decided in advance, and the day your case is not on the list you either
+fight it or fork it. A kit is called by you. It knows one rule — an element is an address and data,
+and composition is closed — and nothing about your domain.
+
+The line the kit keeps is this:
+
+> **It may know about HTML and about elements. It may not know about your domain, your layout or your
+> looks.**
+
+That is why a guard about HTML being correct belongs here — one H1 to a page, no level skipped, an
+`og:image` that a scraper can resolve, a new tab that cannot lose `noopener` — and a guard about how
+your site works never does. There is no notion of a page kind, no layout to inherit from, no theme
+object, no component lifecycle. What the kit adds to Spring and Thymeleaf is one object; the flow
+stays yours.
+
+It buys four things and costs one. Adding an element is the same twenty lines as every element already
+here, so the set never closes. A broken element breaks one element, where a framework's default breaks
+every page or is worked around on every page. The page — its document, its layout, its addresses —
+stays with you. And you can leave element by element, because what comes out is plain HTML with named
+handles rather than something only this library understands. What it costs is that nothing is decided
+for you: a page is a declaration you write, not a template you fill.
+
+One part of the kit does invert control, and it is worth naming: the canvas. It decides that a page
+has a `<main>`, refuses an outline with a hole in it, and prints the head from what it was told once.
+That is the kit knowing about HTML, which the line allows — and it is exactly as far as it goes.
 
 ## Contributing
 

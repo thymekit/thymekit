@@ -58,12 +58,13 @@ public final class PageModel {
         return new Builder(Objects.requireNonNull(model, "model"));
     }
 
+    /**
+     * What a page is told about itself, and what goes on it.
+     *
+     * <p>Every text here is refused when it is blank and kept trimmed when it is not: a space at the end
+     * of a title is never meant, and it travels into the tab, the search result and the preview alike.
+     */
     public interface Canvas {
-
-        /*
-         * Every text below is refused when it is blank and kept trimmed when it is not: a space at the
-         * end of a title is never meant, and it travels into the tab, the search result and the preview.
-         */
 
         /** Document title; required before {@code render}. Also the Open Graph title. */
         Canvas title(String title);
@@ -111,8 +112,8 @@ public final class PageModel {
          */
         Canvas pageClass(String classes);
 
-        /** Appends an element to the flow. */
-        Canvas add(Element<?> element);
+        /** Appends an element to the flow — or whatever becomes one, settled here and now. */
+        Canvas add(Composable<?> element);
 
         /** Terminal: fills the model and returns the default view name. */
         String render();
@@ -244,9 +245,10 @@ public final class PageModel {
         }
 
         @Override
-        public Canvas add(Element<?> element) {
-            Element.requireRenderable(element, "PageModel.add");
-            elements.add(element);
+        public Canvas add(Composable<?> element) {
+            Element<?> settled = Element.settle(element, "element");
+            Element.requireRenderable(settled, "PageModel.add");
+            elements.add(settled);
             return this;
         }
 

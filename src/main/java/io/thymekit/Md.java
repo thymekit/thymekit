@@ -29,7 +29,7 @@ public final class Md {
         return new Builder(markdown);
     }
 
-    public static final class Builder {
+    public static final class Builder implements Composable<Md> {
 
         private final Element.Descriptor<Md> b;
         private final LinkedHashSet<Rel> linkRel = new LinkedHashSet<>();
@@ -44,9 +44,10 @@ public final class Md {
         }
 
         /** Section heading; the author names the level according to the outline. */
-        public Builder title(Element<Heading> heading) {
-            Element.requireAdapter(Objects.requireNonNull(heading, "heading"), "headingEl", "Md.title accepts a heading only");
-            b.with("heading", heading.asMap());
+        public Builder title(Composable<Heading> heading) {
+            Element<Heading> settled = Element.settle(heading, "heading");
+            Element.requireAdapter(settled, "headingEl", "Md.title accepts a heading only");
+            b.with("heading", settled.asMap());
             return this;
         }
 
@@ -60,8 +61,8 @@ public final class Md {
          * An affordance shown next to the empty state — any element, rendered through the dispatcher.
          * The section does not know what it is, so the wording and the shape stay with the consumer.
          */
-        public Builder addAction(Element<?> action) {
-            b.with("addAction", Element.requireRenderableElement(action, "Md.addAction").asMap());
+        public Builder addAction(Composable<?> action) {
+            b.with("addAction", Element.requireRenderableElement(Element.settle(action, "action"), "Md.addAction").asMap());
             return this;
         }
 
@@ -80,6 +81,7 @@ public final class Md {
             return this;
         }
 
+        @Override
         public Element<Md> build() {
             if (!linkRel.isEmpty()) {
                 if (!hasText) {

@@ -28,7 +28,7 @@ import org.jspecify.annotations.Nullable;
  * fragment(e)}) plus data. Templates read {@link #asMap()}, so the adapter contract does not depend on
  * typing: the data is untyped, the marker is typed.
  */
-public final class Element<K> {
+public final class Element<K> implements Composable<K> {
 
     /** Descriptor keys reserved by the engine; data cannot use them. */
     static final Set<String> RESERVED = Set.of("template", "fragment", "bare", "slots", "assets", "illustration");
@@ -42,6 +42,15 @@ public final class Element<K> {
     /** Immutable descriptor as templates and the dispatcher see it. */
     public Map<String, Object> asMap() {
         return m;
+    }
+
+    /**
+     * An element has already become one, so this hands back the same value. It exists so that a place
+     * taking {@link Composable} takes an element too, without a second signature for the same idea.
+     */
+    @Override
+    public Element<K> build() {
+        return this;
     }
 
     public String template() {
@@ -234,6 +243,16 @@ public final class Element<K> {
     }
 
     /**
+     * Whatever becomes an element, settled at once and never before: a place that takes a
+     * {@link Composable} builds it here, keeps the element and forgets the maker. That is the rule the
+     * kit follows everywhere — accept what becomes an element, store only what has become one.
+     */
+    public static <K> Element<K> settle(Composable<K> composable, String name) {
+        Objects.requireNonNull(composable, name);
+        return Objects.requireNonNull(composable.build(), () -> name + " built nothing");
+    }
+
+    /**
      * Guard for wide points: a script element never belongs in the element flow — the dispatcher calls
      * adapters with an argument, while a script fragment takes none. Declare it via {@code requires}.
      */
@@ -279,8 +298,11 @@ public final class Element<K> {
         return new Descriptor<Script>(template, fragment).bare();
     }
 
-    /** Builds a descriptor: adapter address plus data, terminal {@link #build}. */
-    public static final class Descriptor<K> {
+    /**
+     * Builds a descriptor: adapter address plus data, terminal {@link #build}. It becomes an element,
+     * and says so — a descriptor goes into a page or a slot exactly where an element goes.
+     */
+    public static final class Descriptor<K> implements Composable<K> {
 
         private final LinkedHashMap<String, Object> d = new LinkedHashMap<>();
 
@@ -357,12 +379,12 @@ public final class Element<K> {
          * method, not here; an empty list leaves the slot unrendered.
          */
         @SuppressWarnings("unchecked")
-        public Descriptor<K> slot(String name, List<? extends Element<?>> items) {
+        public Descriptor<K> slot(String name, List<? extends Composable<?>> items) {
             Objects.requireNonNull(name, "name");
             Objects.requireNonNull(items, "items");
             Map<String, List<Map<String, Object>>> slots =
                 (Map<String, List<Map<String, Object>>>) d.computeIfAbsent("slots", k -> new LinkedHashMap<String, List<Map<String, Object>>>());
-            slots.put(name, items.stream().map(Element::asMap).toList());
+            slots.put(name, items.stream().map(item -> settle(item, "slot item").asMap()).toList());
             return this;
         }
 
@@ -392,6 +414,7 @@ public final class Element<K> {
             return build();
         }
 
+        @Override
         @SuppressWarnings("unchecked")
         public Element<K> build() {
             LinkedHashMap<String, Object> copy = new LinkedHashMap<>(d);

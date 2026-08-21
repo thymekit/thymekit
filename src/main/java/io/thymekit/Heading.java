@@ -49,7 +49,7 @@ public final class Heading {
         return new Builder(level, text);
     }
 
-    public static final class Builder {
+    public static final class Builder implements Composable<Heading> {
 
         private final Element.Descriptor<Heading> b;
         private final Set<Rel> rel = new LinkedHashSet<>();
@@ -130,6 +130,7 @@ public final class Heading {
          * cannot change the result: {@code noopener} joins a new tab whether the tab was asked for
          * before the rel values or after them.
          */
+        @Override
         public Element<Heading> build() {
             if (!linked && (newTab || !rel.isEmpty())) {
                 throw new IllegalStateException("rel or newTab on a heading that is not a link: "
