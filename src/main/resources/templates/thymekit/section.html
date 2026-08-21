@@ -14,6 +14,7 @@
     section stands on its own, and only then is it worth being one more landmark.
 */-->
 <!--/* keys: heading */-->
+<!--/* slots: items */-->
 <section th:fragment="sectionEl(e)" class="tk-section"
          th:attr="aria-labelledby=${e['heading'] == null ? null : e['heading']['id']}">
     <th:block th:replace="~{thymekit/element :: render(${e['heading']})}"/>
