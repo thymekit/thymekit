@@ -5,8 +5,19 @@
 <html xmlns:th="http://www.thymeleaf.org" lang="en">
 <body>
 
-<!--/* caption in one of four roles; a paragraph, never a heading. */-->
-<p th:fragment="captionEl(e)" th:class="${'tk-caption tk-caption--' + e['role']}" th:text="${e['text']}"></p>
+<!--/*
+    caption in one of four roles; a paragraph, never a heading.
+
+    Two things may join the text. A datetime wraps it in <time>, so the day written for people is also
+    the day a machine reads; a lang marks text that is not in the language of the page. Both print only
+    when they were given.
+
+    The line breaks below are load-bearing: everything between <p> and its content is whitespace a
+    browser would render, so the tags are joined and the breaks put inside them. Reformat with care.
+*/-->
+<p th:fragment="captionEl(e)" th:class="${'tk-caption tk-caption--' + e['role']}"
+   th:attr="lang=${e['lang']}"><th:block th:if="${e['datetime'] == null}" th:text="${e['text']}"/><time
+   th:if="${e['datetime'] != null}" th:datetime="${e['datetime']}" th:text="${e['text']}"></time></p>
 
 </body>
 </html>

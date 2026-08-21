@@ -1,0 +1,37 @@
+<!--/* This Source Code Form is subject to the terms of the Mozilla Public
+       License, v. 2.0. If a copy of the MPL was not distributed with this
+       file, You can obtain one at https://mozilla.org/MPL/2.0/. */-->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+
+<!--/*
+    head: what the page says about itself — to a browser tab, to a search engine, to a messenger
+    drawing a preview. Everything here comes from the canvas builder, so the title a reader sees and
+    the title a link preview shows are the same string, said once.
+
+    A document renders it through the dispatcher, inside its own <head> — and carries no <title> of
+    its own, since this fragment prints one:
+        <th:block th:replace="~{fragments/thymekit/element :: render(${head})}"/>
+
+    What was not said is not printed: a page without a description is honest, a page with an empty
+    description tag is not. One line is unconditional — og:type, which says what this is rather than
+    repeating anything; twitter:card appears when there is something to preview and says how to shape
+    it.
+*/-->
+<th:block th:fragment="headEl(e)">
+    <title th:text="${e['title']}">Page</title>
+    <meta th:if="${e['description'] != null}" name="description" th:content="${e['description']}">
+    <link th:if="${e['canonical'] != null}" rel="canonical" th:href="${e['canonical']}">
+    <meta th:if="${e['robots'] != null}" name="robots" th:content="${e['robots']}">
+    <meta property="og:type" content="website">
+    <meta property="og:title" th:content="${e['title']}">
+    <meta th:if="${e['description'] != null}" property="og:description" th:content="${e['description']}">
+    <meta th:if="${e['canonical'] != null}" property="og:url" th:content="${e['canonical']}">
+    <meta th:if="${e['image'] != null}" property="og:image" th:content="${e['image']}">
+    <meta th:if="${e['image'] != null or e['description'] != null}" name="twitter:card"
+          th:content="${e['image'] != null ? 'summary_large_image' : 'summary'}">
+</th:block>
+
+</head>
+</html>

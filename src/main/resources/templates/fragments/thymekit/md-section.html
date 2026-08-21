@@ -9,32 +9,38 @@
     md-section: a section with a heading, XSS-safe markdown rendering and an empty state with an
     optional "add" affordance.
 
-      heading   descriptor of a Heading element; null renders no heading
-      markdown  source text; null switches the section to its empty state
-      emptyHint empty-state text; null together with null markdown renders nothing at all
-      addAction any element shown next to the empty state; null renders none
+    Keys of the descriptor it reads:
+      heading   a Heading element; absent renders no heading
+      markdown  source text; absent switches the section to its empty state
+      emptyHint empty-state text; absent together with absent markdown renders nothing at all
+      addAction any element shown next to the empty state; absent renders none
+      linkRel   what the links of the text say about themselves; absent marks nothing
 
     The #md expression object comes from the kit's auto-configuration.
 */-->
-<section th:fragment="mdSection(heading, markdown, emptyHint, addAction)"
-         class="tk-related"
-         th:if="${markdown != null or emptyHint != null}">
-    <!--/* heading is an element, rendered through the dispatcher */-->
-    <th:block th:if="${heading != null}">
-        <th:block th:replace="~{fragments/thymekit/element :: render(${heading})}"/>
-    </th:block>
-    <div class="rich-content" th:if="${markdown != null}"
-         th:utext="${#md.toHtmlSafe(markdown)}"></div>
-    <p class="detail-empty-hint" th:if="${markdown == null}">
-        <span th:text="${emptyHint}"></span>
-        <th:block th:replace="~{fragments/thymekit/element :: render(${addAction})}"/>
-    </p>
-</section>
+<!--/*
+    The section carries a name only when its heading was given an id. Deciding to give a section an
+    address is deciding that it stands on its own, and what stands on its own deserves a name; where
+    nobody decided that, the section stays an ordinary box rather than one more landmark to step over.
 
-<!--/* adapter: unpacks the descriptor into the mdSection contract */-->
-<th:block th:fragment="mdSectionEl(e)"
-          th:replace="~{fragments/thymekit/md-section :: mdSection(
-              ${e['heading']}, ${e['markdown']}, ${e['emptyHint']}, ${e['addAction']})}"/>
+    One fragment, one signature: the adapter reads the descriptor itself. A second entry point taking
+    the parts apart was a contract of its own, and it changed silently the day the descriptor grew a
+    key — exactly what the adapter-name rule exists to prevent.
+*/-->
+<section th:fragment="mdSectionEl(e)"
+         class="tk-section"
+         th:attr="aria-labelledby=${e['heading'] == null ? null : e['heading']['id']}"
+         th:if="${e['markdown'] != null or e['emptyHint'] != null}">
+    <!--/* the heading is an element; render is null-safe, so no th:if belongs here */-->
+    <th:block th:replace="~{fragments/thymekit/element :: render(${e['heading']})}"/>
+    <div class="rich-content" th:if="${e['markdown'] != null}"
+         th:utext="${#md.toHtmlSafe(e['markdown'], e['linkRel'])}"></div>
+    <!--/* a div, not a p: the affordance is whatever element the consumer passed, block or inline */-->
+    <div class="detail-empty-hint" th:if="${e['markdown'] == null}">
+        <span th:text="${e['emptyHint']}"></span>
+        <th:block th:replace="~{fragments/thymekit/element :: render(${e['addAction']})}"/>
+    </div>
+</section>
 
 </body>
 </html>

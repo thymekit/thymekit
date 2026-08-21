@@ -14,8 +14,25 @@
          --tk-caption-meta-color: #8a8a8a;
      }
 
+   A look is declared once, for the element, and reused — never restated per place.
+   The four rules a theme keeps are in the README, chapter "Theming"; demo.css is the
+   worked example.
+
+   What this file may contain, and what it may not:
+     · containment — an image that would overflow, a code block that would push the
+       page sideways: the kit's business, always;
+     · anatomy — which part of an element sits above which, and how far apart: also
+       the kit's, since it is what the element is;
+     · the space around an element: not the kit's. Whoever places it decides that;
+     · a look: not the kit's either. It is a handle, or it is the browser's.
+
+   And one open surface: inside .rich-content the markup is the author's, so a theme
+   styles it directly. That is the single place where a rule against a kit class is
+   the right answer rather than a missing handle.
+
    Manifest: one file per element (Java factory, fragment and CSS are a triple).
    ============================================================================= */
+@import url("base/canvas.css");
 @import url("base/section.css");
 @import url("elements/hero.css");
 @import url("elements/heading.css");

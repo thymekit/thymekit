@@ -6,21 +6,27 @@
 <body>
 
 <!--/*
-    hero: heading group (<hgroup> with eyebrow, H1, subtitle and meta lines), then a divider, an
-    optional status badge and an optional action row. The order is fixed; absent parts render nothing.
-    Nested elements go through the single dispatcher, never through local markup.
+    hero: the header of the page — a heading group (<hgroup> with eyebrow, H1, subtitle and meta lines),
+    then an optional status badge and an optional action row. The order is fixed; absent parts render
+    nothing. Nested elements go through the single dispatcher, never through local markup.
+
+    The rule under the group is drawn by CSS, not by an empty <div>: it says nothing to a reader and
+    nothing to a crawler, and markup is for what does.
+
+    The classes of the hero all begin with page-hero: it is page structure rather than an element with
+    a look of its own, which is why they are not tk-* like a heading or a caption.
 */-->
-<div th:fragment="heroEl(e)" class="page-hero">
+<header th:fragment="heroEl(e)" class="page-hero">
     <hgroup class="page-hero-group">
         <th:block th:replace="~{fragments/thymekit/element :: render(${e['eyebrow']})}"/>
         <th:block th:replace="~{fragments/thymekit/element :: render(${e['heading']})}"/>
         <th:block th:replace="~{fragments/thymekit/element :: render(${e['subtitle']})}"/>
         <th:block th:replace="~{fragments/thymekit/element :: renderAll(${e['metas']})}"/>
     </hgroup>
-    <div class="page-hero-divider"></div>
-    <p class="hero-status-line" th:if="${e['badge'] != null}"><th:block th:replace="~{fragments/thymekit/element :: render(${e['badge']})}"/></p>
+    <!--/* a div, not a p: the badge is whatever element the consumer passed, block or inline */-->
+    <div class="page-hero-status" th:if="${e['badge'] != null}"><th:block th:replace="~{fragments/thymekit/element :: render(${e['badge']})}"/></div>
     <div class="page-hero-actions" th:if="${e['actions'] != null}"><th:block th:replace="~{fragments/thymekit/element :: render(${e['actions']})}"/></div>
-</div>
+</header>
 
 </body>
 </html>

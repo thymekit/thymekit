@@ -6,7 +6,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title th:text="${pageTitle}">thymekit</title>
+    <!--/* The showcase theme is drawn for light; saying so keeps form controls from turning dark. */-->
+    <meta name="color-scheme" content="light">
+    <!--/* What the page says about itself — one element, filled by the canvas. */-->
+    <th:block th:replace="~{fragments/thymekit/element :: render(${head})}"/>
+
+    <!--/* An empty icon, so a page that has none does not cost a 404 in the consumer's log. */-->
+    <link rel="icon" href="data:,">
 
     <!--/* The showcase ships with the library: its document is its own, decorated by no consumer
            layout. Stylesheets are linked here by hand, exactly as any consumer would: the kit first,
@@ -16,10 +22,8 @@
 </head>
 <body>
 
-<!--/* The document is the consumer's; the body is drawn by the kit's dispatcher. */-->
-<div class="page" th:classappend="${pageClass}">
-    <th:block th:replace="~{fragments/thymekit/element :: renderAll(${elements})}"/>
-</div>
+<!--/* The document is the consumer's; the page inside it is an element like any other. */-->
+<th:block th:replace="~{fragments/thymekit/element :: render(${page})}"/>
 
 <!--/* Behaviour scripts of the element tree, deduplicated, once at the end of body. */-->
 <th:block th:replace="~{fragments/thymekit/element :: scripts(${assets})}"/>

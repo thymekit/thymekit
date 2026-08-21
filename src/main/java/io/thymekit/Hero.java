@@ -62,6 +62,12 @@ public final class Hero {
         }
 
         /** Status line below the divider. Guarded by adapter address while the badge element lives outside the core. */
+        /**
+         * A status line under the hero — "in stock", "draft", "archived". The element is the consumer's,
+         * and so is the name its adapter carries: the guard asks for {@code statusBadgeEl}, which no
+         * fragment of the kit defines. What the kit fixes is the place and the shape of the slot, not
+         * what goes in it.
+         */
         public Builder badge(Element<?> badge) {
             Element.requireAdapter(Objects.requireNonNull(badge, "badge"), "statusBadgeEl", "Hero.badge accepts a status badge only");
             b.with("badge", badge.asMap());
@@ -69,6 +75,10 @@ public final class Hero {
         }
 
         /** Action row of the hero; guarded by adapter address, see {@link #badge}. */
+        /**
+         * The row of actions under the hero. Same arrangement as {@link #badge}: the adapter is named
+         * {@code actionsEl} and lives in consumer code.
+         */
         public Builder actions(Element<?> actions) {
             Element.requireAdapter(Objects.requireNonNull(actions, "actions"), "actionsEl", "Hero.actions accepts an action row");
             b.with("actions", actions.asMap());

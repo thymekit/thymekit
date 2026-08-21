@@ -6,16 +6,31 @@
 <body>
 
 <!--/* heading h1..h6: the level modifier is always present; id is an anchor, href turns the heading
-       into a link, srOnly clips it visually. Stock look is the browser's own. */-->
+       into a link (with what it says about itself in rel, and target when it opens elsewhere), lang
+       marks text in another language, srOnly clips it visually. Stock look is the browser's own.
+
+       A level outside 1..6 matches no case here and renders nothing. The factories cannot produce one
+       and the canvas refuses a page carrying one, so the silence is reachable only by minting a
+       descriptor by hand and rendering it outside a page. */-->
+<!--/*
+    The body of a heading, written once: the text, or the text inside a link that says what it is
+    (rel) and where it opens (target). The six cases below differ in their tag and in nothing else,
+    which is the only part html cannot parameterise.
+
+    A relative href goes through @{...}, so it is resolved against the context path — which also means
+    a heading with a relative link renders only inside a web exchange. An absolute one renders anywhere.
+*/-->
+<th:block th:fragment="headingBody(e)"><a th:if="${e['href'] != null}" th:href="@{${e['href']}}" th:attr="rel=${e['rel']},target=${e['target']}" th:text="${e['text']}"></a><th:block th:if="${e['href'] == null}" th:text="${e['text']}"/></th:block>
+
 <th:block th:fragment="headingEl(e)"
           th:with="cls=${'tk-heading tk-heading--' + e['level'] + (e['srOnly'] == true ? ' tk-sr-only' : '')}"
           th:switch="${e['level']}">
-    <h1 th:case="1" th:class="${cls}" th:id="${e['id']}"><a th:if="${e['href'] != null}" th:href="@{${e['href']}}" th:text="${e['text']}"></a><th:block th:if="${e['href'] == null}" th:text="${e['text']}"/></h1>
-    <h2 th:case="2" th:class="${cls}" th:id="${e['id']}"><a th:if="${e['href'] != null}" th:href="@{${e['href']}}" th:text="${e['text']}"></a><th:block th:if="${e['href'] == null}" th:text="${e['text']}"/></h2>
-    <h3 th:case="3" th:class="${cls}" th:id="${e['id']}"><a th:if="${e['href'] != null}" th:href="@{${e['href']}}" th:text="${e['text']}"></a><th:block th:if="${e['href'] == null}" th:text="${e['text']}"/></h3>
-    <h4 th:case="4" th:class="${cls}" th:id="${e['id']}"><a th:if="${e['href'] != null}" th:href="@{${e['href']}}" th:text="${e['text']}"></a><th:block th:if="${e['href'] == null}" th:text="${e['text']}"/></h4>
-    <h5 th:case="5" th:class="${cls}" th:id="${e['id']}"><a th:if="${e['href'] != null}" th:href="@{${e['href']}}" th:text="${e['text']}"></a><th:block th:if="${e['href'] == null}" th:text="${e['text']}"/></h5>
-    <h6 th:case="6" th:class="${cls}" th:id="${e['id']}"><a th:if="${e['href'] != null}" th:href="@{${e['href']}}" th:text="${e['text']}"></a><th:block th:if="${e['href'] == null}" th:text="${e['text']}"/></h6>
+    <h1 th:case="1" th:class="${cls}" th:id="${e['id']}" th:attr="lang=${e['lang']}"><th:block th:replace="~{fragments/thymekit/heading :: headingBody(${e})}"/></h1>
+    <h2 th:case="2" th:class="${cls}" th:id="${e['id']}" th:attr="lang=${e['lang']}"><th:block th:replace="~{fragments/thymekit/heading :: headingBody(${e})}"/></h2>
+    <h3 th:case="3" th:class="${cls}" th:id="${e['id']}" th:attr="lang=${e['lang']}"><th:block th:replace="~{fragments/thymekit/heading :: headingBody(${e})}"/></h3>
+    <h4 th:case="4" th:class="${cls}" th:id="${e['id']}" th:attr="lang=${e['lang']}"><th:block th:replace="~{fragments/thymekit/heading :: headingBody(${e})}"/></h4>
+    <h5 th:case="5" th:class="${cls}" th:id="${e['id']}" th:attr="lang=${e['lang']}"><th:block th:replace="~{fragments/thymekit/heading :: headingBody(${e})}"/></h5>
+    <h6 th:case="6" th:class="${cls}" th:id="${e['id']}" th:attr="lang=${e['lang']}"><th:block th:replace="~{fragments/thymekit/heading :: headingBody(${e})}"/></h6>
 </th:block>
 
 </body>

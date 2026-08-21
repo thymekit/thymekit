@@ -1,0 +1,25 @@
+<!--/* This Source Code Form is subject to the terms of the Mozilla Public
+       License, v. 2.0. If a copy of the MPL was not distributed with this
+       file, You can obtain one at https://mozilla.org/MPL/2.0/. */-->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+
+<!--/*
+    canvas: the page itself. It renders the one landmark a document owes a reader and a crawler —
+    <main>, the main content of the page — and inside it the flow of elements, through the single
+    dispatcher. The kit puts down one class of its own, page-canvas; the rest are the consumer's,
+    given to pageClass(...).
+
+    A document renders it through the dispatcher, like any other element:
+        <th:block th:replace="~{fragments/thymekit/element :: render(${page})}"/>
+
+    The page is an element: it carries an adapter address, it holds its flow as data, and the same
+    dispatcher draws it. Nothing about the top of the composition is special.
+*/-->
+<main th:fragment="canvasEl(e)" th:class="${e['pageClass']}">
+    <th:block th:replace="~{fragments/thymekit/element :: renderAll(${e['elements']})}"/>
+</main>
+
+</body>
+</html>

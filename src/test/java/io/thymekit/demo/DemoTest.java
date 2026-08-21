@@ -17,8 +17,11 @@ class DemoTest {
         var model = new ExtendedModelMap();
         assertThat(Demo.page(model)).isEqualTo("thymekit/demo");
         assertThat(model.asMap()).containsEntry("pageTitle", "thymekit — element showcase")
-            .containsKeys("pageClass", "elements", "assets");
-        assertThat((java.util.List<?>) model.get("elements")).hasSizeGreaterThan(1);   // hero plus sections
+            .containsKeys("head", "page", "assets");
+        @SuppressWarnings("unchecked")
+        var page = (java.util.Map<String, Object>) model.get("page");
+        assertThat(page).containsEntry("fragment", "canvasEl");
+        assertThat((java.util.List<?>) page.get("elements")).hasSizeGreaterThan(1);   // hero plus sections
     }
 
     @Test
