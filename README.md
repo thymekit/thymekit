@@ -92,11 +92,11 @@ yours wins; tidy rendering switches off with `thymekit.tidy.enabled=false`.
 
 ```html
 <head>
-  <th:block th:replace="~{fragments/thymekit/element :: render(${head})}"/>
+  <th:block th:replace="~{thymekit/element :: render(${head})}"/>
 </head>
 <body>
-  <th:block th:replace="~{fragments/thymekit/element :: render(${page})}"/>
-  <th:block th:replace="~{fragments/thymekit/element :: scripts(${assets})}"/>
+  <th:block th:replace="~{thymekit/element :: render(${page})}"/>
+  <th:block th:replace="~{thymekit/element :: scripts(${assets})}"/>
 </body>
 ```
 
@@ -172,8 +172,9 @@ flowchart LR
     C["CSS<br/><code>heading.css</code><br/>handles <code>--tk-heading-*</code>"] -.-> H
 ```
 
-Java, template and CSS are no longer three places to keep in sync by hand: they are one element with
-one address, and a contract test walks every element to prove the triple still holds — every adapter
+Java, template and CSS are no longer three places to keep in sync by hand: they share one suffix path —
+`io/thymekit/Heading.java`, `templates/thymekit/heading.html`, `static/thymekit/heading.css` — they are
+one element with one address, and a contract test walks every element to prove the triple still holds — every adapter
 the kit declares, since the test reads the fragments rather than a list somebody maintains, and every
 class an element prints has to have a rule in its stylesheet.
 
@@ -355,10 +356,25 @@ void myElementsKeepTheContract() {
 
 It looks at what no compiler can: that the address points at a fragment that exists and declares itself
 — the element's own and every script it depends on — that the adapter is named the way an adapter is
-named, that a script has not been put where an element belongs, that the element renders something a
-browser would show, and that every class it prints has a rule in the stylesheets you name. If your
+named, that a script has not been put where an element belongs, **that the keys the adapter says it
+reads are the keys the factory puts in**, that the element renders something a browser would show, and
+that every class it prints has a rule in the stylesheets you name. If your
 templates do not live under `templates/`, say `templatesUnder("views/")` and it looks there. It reports
 everything wrong at once, and the kit's own suite takes the same walk over the kit's own elements.
+
+An adapter says which keys it reads, in a comment above the fragment that Thymeleaf strips before
+anything is rendered:
+
+```html
+<!--/* keys: amount, currency */-->
+<span th:fragment="priceEl(e)" class="my-price">…</span>
+```
+
+That closes the last place where Java and markup were held together by attention alone. A key an
+element carries that its adapter never reads is data travelling for nothing, and fails the walk. The
+other direction — a key an adapter reads that nothing puts in, a branch of the template nothing can
+reach — is a claim about your samples rather than about the element, so it is asked for with
+`coveringEveryKey()`; the kit makes that claim about its own.
 
 The fragment reads the descriptor as `${e['amount']}`, the CSS file carries the element's handles, and
 the element goes anywhere any other element goes — onto a canvas, into a slot, inside a bigger element
@@ -375,7 +391,7 @@ front of it, exactly as they do for the kit's own.
 | Caption | `Caption.eyebrow/subtitle/label/meta(text)` — `time`, `lang` | `caption :: captionEl` | `caption.css` |
 | Hero | `Hero.of(Element<Heading>)` — eyebrow, subtitle, meta lines, a `statusBadgeEl` badge and an `actionsEl` row of your own | `hero :: heroEl` | `hero.css` |
 | Md | `Md.of(markdown)` — title, empty state, empty-state action, `linkRel` | `md-section :: mdSectionEl` | `md-section.css` |
-| Canvas | `PageModel.of(model)` — own page classes, flow of elements, `render(view)`; renders as the `page` element | `canvas :: canvasEl` | `base/canvas.css` |
+| Canvas | `PageModel.of(model)` — own page classes, flow of elements, `render(view)`; renders as the `page` element | `canvas :: canvasEl` | `canvas.css` |
 | — | `Composable<K>` — whatever becomes an element; `ElementContract` — the walk over a triple, for your elements as much as ours | — | — |
 | Head | filled by the canvas — title, description, canonical, image, `robots`; renders as the `head` element | `head :: headEl` | — (it prints tags, not looks) |
 

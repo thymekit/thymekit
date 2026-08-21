@@ -23,7 +23,7 @@ class CaptionTest {
                 case Caption.LABEL -> Caption.label("t").build();
                 default -> Caption.meta("t").build();
             };
-            assertThat(c.template()).isEqualTo("fragments/thymekit/caption");
+            assertThat(c.template()).isEqualTo("thymekit/caption");
             assertThat(c.fragment()).isEqualTo("captionEl");
             assertThat(c.asMap()).containsEntry("role", role).containsEntry("text", "t");
             assertThat(Caption.roleOf(c)).isEqualTo(role);

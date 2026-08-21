@@ -30,12 +30,12 @@
 */-->
 <th:block th:fragment="nothing(e)"></th:block>
 
-<th:block th:fragment="render(e)" th:replace="__${e == null ? 'fragments/thymekit/element :: nothing' : e['template'] + ' :: ' + e['fragment']}__(${e})"></th:block>
+<th:block th:fragment="render(e)" th:replace="__${e == null ? 'thymekit/element :: nothing' : e['template'] + ' :: ' + e['fragment']}__(${e})"></th:block>
 
 <th:block th:fragment="renderAll(items)"><th:block th:each="i : ${items}">
-<th:block th:replace="~{fragments/thymekit/element :: render(${i})}"></th:block></th:block></th:block>
+<th:block th:replace="~{thymekit/element :: render(${i})}"></th:block></th:block></th:block>
 
-<th:block th:fragment="slot(e, slotName)" th:replace="~{fragments/thymekit/element :: renderAll(${e == null or e['slots'] == null ? null : e['slots'].get(slotName)})}"></th:block>
+<th:block th:fragment="slot(e, slotName)" th:replace="~{thymekit/element :: renderAll(${e == null or e['slots'] == null ? null : e['slots'].get(slotName)})}"></th:block>
 
 <th:block th:fragment="scripts(items)"><th:block th:each="s : ${items}" th:if="${s != null}"><th:block th:replace="__${s['template']}__ :: __${s['fragment']}__"></th:block></th:block></th:block>
 

@@ -22,15 +22,16 @@
 */-->
 <th:block th:fragment="headingBody(e)"><a th:if="${e['href'] != null}" th:href="@{${e['href']}}" th:attr="rel=${e['rel']},target=${e['target']}" th:text="${e['text']}"></a><th:block th:if="${e['href'] == null}" th:text="${e['text']}"/></th:block>
 
+<!--/* keys: level, text, id, href, rel, target, lang, srOnly */-->
 <th:block th:fragment="headingEl(e)"
           th:with="cls=${'tk-heading tk-heading--' + e['level'] + (e['srOnly'] == true ? ' tk-sr-only' : '')}"
           th:switch="${e['level']}">
-    <h1 th:case="1" th:class="${cls}" th:id="${e['id']}" th:attr="lang=${e['lang']}"><th:block th:replace="~{fragments/thymekit/heading :: headingBody(${e})}"/></h1>
-    <h2 th:case="2" th:class="${cls}" th:id="${e['id']}" th:attr="lang=${e['lang']}"><th:block th:replace="~{fragments/thymekit/heading :: headingBody(${e})}"/></h2>
-    <h3 th:case="3" th:class="${cls}" th:id="${e['id']}" th:attr="lang=${e['lang']}"><th:block th:replace="~{fragments/thymekit/heading :: headingBody(${e})}"/></h3>
-    <h4 th:case="4" th:class="${cls}" th:id="${e['id']}" th:attr="lang=${e['lang']}"><th:block th:replace="~{fragments/thymekit/heading :: headingBody(${e})}"/></h4>
-    <h5 th:case="5" th:class="${cls}" th:id="${e['id']}" th:attr="lang=${e['lang']}"><th:block th:replace="~{fragments/thymekit/heading :: headingBody(${e})}"/></h5>
-    <h6 th:case="6" th:class="${cls}" th:id="${e['id']}" th:attr="lang=${e['lang']}"><th:block th:replace="~{fragments/thymekit/heading :: headingBody(${e})}"/></h6>
+    <h1 th:case="1" th:class="${cls}" th:id="${e['id']}" th:attr="lang=${e['lang']}"><th:block th:replace="~{thymekit/heading :: headingBody(${e})}"/></h1>
+    <h2 th:case="2" th:class="${cls}" th:id="${e['id']}" th:attr="lang=${e['lang']}"><th:block th:replace="~{thymekit/heading :: headingBody(${e})}"/></h2>
+    <h3 th:case="3" th:class="${cls}" th:id="${e['id']}" th:attr="lang=${e['lang']}"><th:block th:replace="~{thymekit/heading :: headingBody(${e})}"/></h3>
+    <h4 th:case="4" th:class="${cls}" th:id="${e['id']}" th:attr="lang=${e['lang']}"><th:block th:replace="~{thymekit/heading :: headingBody(${e})}"/></h4>
+    <h5 th:case="5" th:class="${cls}" th:id="${e['id']}" th:attr="lang=${e['lang']}"><th:block th:replace="~{thymekit/heading :: headingBody(${e})}"/></h5>
+    <h6 th:case="6" th:class="${cls}" th:id="${e['id']}" th:attr="lang=${e['lang']}"><th:block th:replace="~{thymekit/heading :: headingBody(${e})}"/></h6>
 </th:block>
 
 </body>

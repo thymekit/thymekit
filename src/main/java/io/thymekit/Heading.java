@@ -57,7 +57,7 @@ public final class Heading {
         private boolean linked;
 
         private Builder(int level, String text) {
-            this.b = Element.Descriptor.<Heading>of("fragments/thymekit/heading", "headingEl")
+            this.b = Element.Descriptor.<Heading>of("thymekit/heading", "headingEl")
                 .with("level", level)
                 .with("text", Objects.requireNonNull(text, "text"));
         }

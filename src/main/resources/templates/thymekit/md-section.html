@@ -27,18 +27,19 @@
     the parts apart was a contract of its own, and it changed silently the day the descriptor grew a
     key — exactly what the adapter-name rule exists to prevent.
 */-->
+<!--/* keys: heading, markdown, emptyHint, addAction, linkRel */-->
 <section th:fragment="mdSectionEl(e)"
          class="tk-section"
          th:attr="aria-labelledby=${e['heading'] == null ? null : e['heading']['id']}"
          th:if="${e['markdown'] != null or e['emptyHint'] != null}">
     <!--/* the heading is an element; render is null-safe, so no th:if belongs here */-->
-    <th:block th:replace="~{fragments/thymekit/element :: render(${e['heading']})}"/>
+    <th:block th:replace="~{thymekit/element :: render(${e['heading']})}"/>
     <div class="rich-content" th:if="${e['markdown'] != null}"
          th:utext="${#md.toHtmlSafe(e['markdown'], e['linkRel'])}"></div>
     <!--/* a div, not a p: the affordance is whatever element the consumer passed, block or inline */-->
     <div class="detail-empty-hint" th:if="${e['markdown'] == null}">
         <span th:text="${e['emptyHint']}"></span>
-        <th:block th:replace="~{fragments/thymekit/element :: render(${e['addAction']})}"/>
+        <th:block th:replace="~{thymekit/element :: render(${e['addAction']})}"/>
     </div>
 </section>
 

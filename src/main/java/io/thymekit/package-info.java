@@ -16,7 +16,7 @@
  *       single currency of composition. Wide points accept {@code Element<?>}, narrow points name the
  *       marker; where the marker is erased, {@link io.thymekit.Element#requireAdapter} guards at
  *       runtime.</li>
- *   <li><b>One dispatcher.</b> Everything renders through {@code fragments/thymekit/element}:
+ *   <li><b>One dispatcher.</b> Everything renders through {@code thymekit/element}:
  *       {@code render(e)} for one element, {@code renderAll(items)} for a flow, {@code slot(e, name)}
  *       for a slot, {@code scripts(items)} for behaviour scripts. Containers know no list of bricks.</li>
  *   <li><b>The adapter name is the contract version.</b> Changing the meaning of a descriptor key means

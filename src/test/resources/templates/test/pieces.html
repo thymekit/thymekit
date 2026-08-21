@@ -5,12 +5,14 @@
 <th:block th:fragment="hello"><b class="hello">HELLO</b></th:block>
 <!--/* adapter with slots: the consumer fills them, the dispatcher renders them */-->
 <th:block th:fragment="slotted(e)"><div class="slotted" th:text="${e['title']}"></div>
-<div class="body"><th:block th:replace="~{fragments/thymekit/element :: slot(${e}, 'body')}"/></div>
-<div class="tail"><th:block th:replace="~{fragments/thymekit/element :: slot(${e}, 'tail')}"/></div></th:block>
+<div class="body"><th:block th:replace="~{thymekit/element :: slot(${e}, 'body')}"/></div>
+<div class="tail"><th:block th:replace="~{thymekit/element :: slot(${e}, 'tail')}"/></div></th:block>
 <th:block th:fragment="echo(e)"><i class="echo" th:text="${e['text']}"></i></th:block>
+<!--/* the same, under a name shaped like an adapter: the contract walk asks for that shape */-->
+<th:block th:fragment="echoEl(e)"><i class="echo" th:text="${e['text']}"></i></th:block>
 <!--/* the names the hero's guards ask for: the elements themselves live in consumer code */-->
-<th:block th:fragment="statusBadgeEl(e)"><span class="badge" th:text="${e['text']}"></span></th:block>
-<th:block th:fragment="actionsEl(e)"><div class="actions" th:text="${e['text']}"></div></th:block>
+<th:block th:fragment="statusBadgeEl(e)"><span th:text="${e['text']}"></span></th:block>
+<th:block th:fragment="actionsEl(e)"><div th:text="${e['text']}"></div></th:block>
 <th:block th:fragment="inline(e)"><span>a</span>
 <span>b</span></th:block>
 

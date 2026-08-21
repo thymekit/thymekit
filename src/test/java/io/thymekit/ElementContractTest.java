@@ -34,14 +34,15 @@ class ElementContractTest {
     private static final Pattern ADAPTER_NAME = Pattern.compile("^[a-z][A-Za-z0-9]*El(V\\d+)?$");
 
     /**
-     * Where an element's CSS lives, by template name. The page parts are not in {@code elements/}: the
-     * canvas describes the column a page is drawn in, and the head has no look at all — it prints tags
-     * a browser never shows.
+     * Where an element's CSS lives, by template name. Every file of the triple now shares one suffix
+     * path — {@code io/thymekit/Heading.java}, {@code templates/thymekit/heading.html},
+     * {@code static/thymekit/heading.css} — so this map holds one exception only: the head prints tags
+     * a browser never shows and has no look at all.
      */
     private static final Map<String, String> CSS_BY_TEMPLATE = Map.of(
-        "heading", "elements/heading.css", "caption", "elements/caption.css",
-        "hero", "elements/hero.css", "md-section", "elements/md-section.css",
-        "canvas", "base/canvas.css");
+        "heading", "heading.css", "caption", "caption.css",
+        "hero", "hero.css", "md-section", "md-section.css",
+        "canvas", "canvas.css");
 
     /**
      * One live element per adapter — including the two a page is made of, since the page is an element
@@ -49,14 +50,26 @@ class ElementContractTest {
      */
     static List<Element<?>> samples() {
         var model = new org.springframework.ui.ConcurrentModel();
-        PageModel.of(model).title("Page").add(Heading.h1("Title").build()).render();
+        PageModel.of(model).title("Page").description("What this page is")
+            .canonical("https://shop/page").image("https://shop/page.jpg")
+            .robots(PageModel.Robots.NOARCHIVE)
+            .add(Heading.h1("Title").build()).render();
         return List.of(
             Heading.h3("Section").build(),
+            // every option of the heading, so no branch of its adapter goes unrendered by the suite
+            Heading.h2("Linked").id("linked").href("https://x/y").rel(Rel.NOFOLLOW).newTab()
+                .lang("en").srOnly().build(),
             Caption.eyebrow("Product").build(), Caption.subtitle("RA-101").build(),
             Caption.label("label").build(), Caption.meta("meta").build(),
+            Caption.meta("12 March 2026").time(java.time.LocalDate.of(2026, 3, 12)).lang("en-GB").build(),
             Md.of("**text**").title(Heading.h2("Description").build()).build(),
+            Md.of("[out](https://spam.example/x)").linkRel(Rel.UGC).build(),
+            Md.of(null).emptyHint("No description yet")
+                .addAction(Caption.label("Add")).build(),
             Hero.of(Heading.h1("Title").build()).eyebrow(Caption.eyebrow("Label").build())
-                .subtitle(Caption.subtitle("RA-101").build()).meta(Caption.meta("/slug").build()).build(),
+                .subtitle(Caption.subtitle("RA-101").build()).meta(Caption.meta("/slug").build())
+                .badge(Element.raw("test/pieces", "statusBadgeEl").with("text", "in stock").build())
+                .actions(Element.raw("test/pieces", "actionsEl").with("text", "Buy").build()).build(),
             fromModel(model, "head"), fromModel(model, "page"));
     }
 
@@ -87,7 +100,7 @@ class ElementContractTest {
      */
     @Test
     void everyAdapterHasASample() throws Exception {
-        var dir = java.nio.file.Path.of(getClass().getResource("/templates/fragments/thymekit").toURI());
+        var dir = java.nio.file.Path.of(getClass().getResource("/templates/thymekit").toURI());
         Set<String> declared = new java.util.TreeSet<>();
         try (var files = java.nio.file.Files.list(dir)) {
             for (java.nio.file.Path file : files.toList()) {
@@ -152,11 +165,12 @@ class ElementContractTest {
     @Test
     void theKitKeepsTheContractItPublishes() {
         ElementContract.of(samples().toArray(Composable<?>[]::new))
+            .coveringEveryKey()
             .renderedBy(ENGINE)
-            .styledBy("static/thymekit/ui.css", "static/thymekit/base/canvas.css",
-                "static/thymekit/base/section.css", "static/thymekit/elements/hero.css",
-                "static/thymekit/elements/heading.css", "static/thymekit/elements/caption.css",
-                "static/thymekit/elements/md-section.css")
+            .styledBy("static/thymekit/ui.css", "static/thymekit/canvas.css",
+                "static/thymekit/section.css", "static/thymekit/hero.css",
+                "static/thymekit/heading.css", "static/thymekit/caption.css",
+                "static/thymekit/md-section.css")
             .check();
     }
 
@@ -164,7 +178,7 @@ class ElementContractTest {
     void adapterNames_versionable() {
         for (Element<?> e : samples()) {
             assertThat(e.fragment()).as("adapter %s :: %s", e.template(), e.fragment()).matches(ADAPTER_NAME);
-            assertThat(e.template()).startsWith("fragments/thymekit/");
+            assertThat(e.template()).startsWith("thymekit/");
         }
     }
 
@@ -201,7 +215,7 @@ class ElementContractTest {
         String manifest = resource("static/thymekit/ui.css");
         Set<String> seen = new java.util.HashSet<>();
         for (Element<?> e : samples()) {
-            String name = e.template().substring("fragments/thymekit/".length());
+            String name = e.template().substring("thymekit/".length());
             String css = CSS_BY_TEMPLATE.get(name);
             if (css == null || !seen.add(css)) {
                 continue;                                  // the head prints tags, not looks: no stylesheet of its own
@@ -222,8 +236,8 @@ class ElementContractTest {
     @Test
     void css_everyClassAnElementPrints_hasARule() throws IOException {
         StringBuilder kitCss = new StringBuilder();
-        for (String file : List.of("ui.css", "base/canvas.css", "base/section.css", "elements/hero.css",
-                "elements/heading.css", "elements/caption.css", "elements/md-section.css")) {
+        for (String file : List.of("ui.css", "canvas.css", "section.css", "hero.css",
+                "heading.css", "caption.css", "md-section.css")) {
             // comments name classes too, and a class documented but not styled is exactly what this looks for
             kitCss.append(resource("static/thymekit/" + file).replaceAll("(?s)/\\*.*?\\*/", " "));
         }

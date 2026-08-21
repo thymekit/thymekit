@@ -158,8 +158,8 @@ public final class PageModel {
     }
 
     /** Addresses of the two elements a page is made of; the canvas builds them, the document renders them. */
-    private static final String HEAD = "fragments/thymekit/head";
-    private static final String CANVAS_TEMPLATE = "fragments/thymekit/canvas";
+    private static final String HEAD = "thymekit/head";
+    private static final String CANVAS_TEMPLATE = "thymekit/canvas";
 
     private static final class Builder implements Canvas {
 

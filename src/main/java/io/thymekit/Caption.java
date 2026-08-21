@@ -55,7 +55,7 @@ public final class Caption {
         private final Element.Descriptor<Caption> b;
 
         private Builder(String role, String text) {
-            this.b = Element.Descriptor.<Caption>of("fragments/thymekit/caption", "captionEl")
+            this.b = Element.Descriptor.<Caption>of("thymekit/caption", "captionEl")
                 .with("role", role)
                 .with("text", Objects.requireNonNull(text, "text"));
         }

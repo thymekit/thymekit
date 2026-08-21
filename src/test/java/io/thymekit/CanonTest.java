@@ -161,7 +161,7 @@ class CanonTest {
     @Test
     void noElementNamesAnotherElementsTemplate() throws java.io.IOException {
         var main = java.nio.file.Path.of("src/main/java/io/thymekit");
-        var address = java.util.regex.Pattern.compile("\"(fragments/thymekit/[a-z-]+)\"");
+        var address = java.util.regex.Pattern.compile("\"(thymekit/[a-z-]+)\"");
         java.util.Map<String, java.util.Set<String>> namedBy = new java.util.TreeMap<>();
         try (var files = java.nio.file.Files.walk(main)) {
             for (java.nio.file.Path file : files.filter(f -> f.toString().endsWith(".java")).toList()) {
@@ -174,7 +174,7 @@ class CanonTest {
         }
         assertThat(namedBy).as("the java of the kit names some adapter addresses").isNotEmpty();
         namedBy.forEach((template, files) -> {
-            if (!template.equals("fragments/thymekit/element")) {          // the dispatcher belongs to everyone
+            if (!template.equals("thymekit/element")) {          // the dispatcher belongs to everyone
                 assertThat(files).as("%s is named by more than one element: %s", template, files).hasSize(1);
             }
         });

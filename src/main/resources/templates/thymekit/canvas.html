@@ -12,13 +12,14 @@
     given to pageClass(...).
 
     A document renders it through the dispatcher, like any other element:
-        <th:block th:replace="~{fragments/thymekit/element :: render(${page})}"/>
+        <th:block th:replace="~{thymekit/element :: render(${page})}"/>
 
     The page is an element: it carries an adapter address, it holds its flow as data, and the same
     dispatcher draws it. Nothing about the top of the composition is special.
 */-->
+<!--/* keys: pageClass, elements */-->
 <main th:fragment="canvasEl(e)" th:class="${e['pageClass']}">
-    <th:block th:replace="~{fragments/thymekit/element :: renderAll(${e['elements']})}"/>
+    <th:block th:replace="~{thymekit/element :: renderAll(${e['elements']})}"/>
 </main>
 
 </body>

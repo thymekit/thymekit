@@ -34,8 +34,26 @@ import org.thymeleaf.context.Context;
  *
  * <p>What it looks at is what no compiler can: that the address points at a fragment that exists and
  * declares itself, that the adapter is named the way an adapter is named, that a script has not been
- * put where an element belongs, and — when an engine and stylesheets are given — that the element
- * renders something, and that every class it prints has a rule somewhere in the CSS you name.
+ * put where an element belongs, that the keys the adapter says it reads are the keys the factory puts
+ * in, and — when an engine and stylesheets are given — that the element renders something, and that
+ * every class it prints has a rule somewhere in the CSS you name.
+ *
+ * <p>The keys are declared in the template, above the fragment, in a comment Thymeleaf strips before
+ * anything is rendered:
+ *
+ * <pre>{@code
+ * <!--/* keys: level, text, id, href, rel, target, lang, srOnly *\/-->
+ * <th:block th:fragment="headingEl(e)" ...>
+ * }</pre>
+ *
+ * <p>Declare nothing and nothing is checked — the walk says so once rather than failing. Declare, and
+ * a key carried by an element that its adapter never reads becomes a failure: data travelling for
+ * nothing.
+ *
+ * <p>The other direction — a key an adapter reads that nothing here puts in — is only a defect if the
+ * elements given were meant to cover the whole adapter. Say {@link #coveringEveryKey()} and it is
+ * checked; that is a claim about the samples, not about the element, so it is asked for rather than
+ * assumed. The kit makes that claim about its own.
  *
  * <p>Nothing here is required to write an element. It is the same walk the kit takes over its own, and
  * it fails with every problem at once rather than with the first.
@@ -47,17 +65,23 @@ public final class ElementContract {
 
     private static final Pattern CLASS_ATTRIBUTE = Pattern.compile("class=\"([^\"]+)\"");
 
+    /** What an adapter says it reads: a comment above the fragment, stripped before rendering. */
+    private static final Pattern DECLARED_KEYS = Pattern.compile("keys:\\s*([A-Za-z0-9_,\\s]+?)\\s*\\*/");
+
     private final List<Element<?>> elements;
     private final @Nullable ITemplateEngine engine;
     private final List<String> stylesheets;
     private final List<String> templateRoots;
+    private final boolean everyKey;
+
 
     private ElementContract(List<Element<?>> elements, @Nullable ITemplateEngine engine,
-                            List<String> stylesheets, List<String> templateRoots) {
+                            List<String> stylesheets, List<String> templateRoots, boolean everyKey) {
         this.elements = elements;
         this.engine = engine;
         this.stylesheets = stylesheets;
         this.templateRoots = templateRoots;
+        this.everyKey = everyKey;
     }
 
     /** The elements to walk: one live sample of each, as a page would build them. */
@@ -70,12 +94,12 @@ public final class ElementContract {
         if (settled.isEmpty()) {
             throw new IllegalArgumentException("no elements to check: give the contract at least one");
         }
-        return new ElementContract(settled, null, List.of(), List.of("templates/", ""));
+        return new ElementContract(settled, null, List.of(), List.of("templates/", ""), false);
     }
 
     /** Renders each element through the dispatcher, with the engine your application uses. */
     public ElementContract renderedBy(ITemplateEngine engine) {
-        return new ElementContract(elements, Objects.requireNonNull(engine, "engine"), stylesheets, templateRoots);
+        return new ElementContract(elements, Objects.requireNonNull(engine, "engine"), stylesheets, templateRoots, everyKey);
     }
 
     /**
@@ -87,7 +111,7 @@ public final class ElementContract {
     public ElementContract templatesUnder(String... classpathPrefixes) {
         List<String> roots = new ArrayList<>(List.of(Objects.requireNonNull(classpathPrefixes, "classpathPrefixes")));
         roots.addAll(templateRoots);
-        return new ElementContract(elements, engine, stylesheets, List.copyOf(roots));
+        return new ElementContract(elements, engine, stylesheets, List.copyOf(roots), everyKey);
     }
 
     /**
@@ -98,13 +122,27 @@ public final class ElementContract {
     public ElementContract styledBy(String... cssResources) {
         List<String> all = new ArrayList<>(stylesheets);            // said twice means both, never the last one only
         all.addAll(List.of(Objects.requireNonNull(cssResources, "cssResources")));
-        return new ElementContract(elements, engine, List.copyOf(all), templateRoots);
+        return new ElementContract(elements, engine, List.copyOf(all), templateRoots, everyKey);
+    }
+
+    /**
+     * Also require that every key the adapters declare is put in by something here — a claim about the
+     * elements given, not about the elements themselves: it says "these cover their adapters". Without
+     * it a template branch nothing reaches goes unmentioned, which is right for a consumer checking one
+     * element and wrong for a suite that means to check them all.
+     */
+    public ElementContract coveringEveryKey() {
+        return new ElementContract(elements, engine, stylesheets, templateRoots, true);
     }
 
     /** Runs the walk. Throws with everything that is wrong, not with the first thing. */
     public void check() {
         List<String> failures = new ArrayList<>();
         Set<String> printedClasses = new LinkedHashSet<>();
+        // what each adapter declares and what the elements given carried, gathered as the walk goes:
+        // local, because a walk is one run and holds nothing between two of them
+        java.util.Map<String, Set<String>> declaredByAdapter = new java.util.LinkedHashMap<>();
+        java.util.Map<String, Set<String>> carriedByAdapter = new java.util.LinkedHashMap<>();
         for (Element<?> element : elements) {
             String address = element.template() + " :: " + element.fragment();
             if (!ADAPTER.matcher(element.fragment()).matches()) {
@@ -114,6 +152,7 @@ public final class ElementContract {
                 failures.add(address + " — a script element does not belong among elements; declare it with requires()");
             }
             declaresItself(element, address, failures);
+            declaredKeysMatch(element, address, failures, declaredByAdapter, carriedByAdapter);
             for (Element<Script> asset : element.assets()) {   // requires() already refuses anything but a script
                 declaresItself(asset, address + " — its script " + asset.template() + " :: " + asset.fragment(), failures);
             }
@@ -123,6 +162,14 @@ public final class ElementContract {
         }
         if (!stylesheets.isEmpty()) {
             checkClasses(printedClasses, failures);
+        }
+        if (everyKey) {
+            declaredByAdapter.forEach((address, declared) -> {
+                Set<String> carried = carriedByAdapter.getOrDefault(address, Set.of());
+                declared.stream().filter(key -> !carried.contains(key)).forEach(key ->
+                    failures.add(address + " — its adapter reads \"" + key + "\", and nothing given here puts"
+                        + " it in: a branch of the template nothing reaches, or samples too poor to reach it"));
+            });
         }
         if (!failures.isEmpty()) {
             throw new IllegalStateException("the element contract is broken in " + failures.size()
@@ -142,13 +189,49 @@ public final class ElementContract {
         }
     }
 
+    /**
+     * The keys an adapter says it reads against the keys the element actually carries. Both directions
+     * are silent failures otherwise: data nobody reads, and a template branch nothing can reach.
+     */
+    private void declaredKeysMatch(Element<?> element, String address, List<String> failures,
+                                   java.util.Map<String, Set<String>> declaredByAdapter,
+                                   java.util.Map<String, Set<String>> carriedByAdapter) {
+        String template = read(element.template() + ".html");
+        if (template == null) {
+            return;                                   // already reported by declaresItself
+        }
+        int fragmentAt = template.indexOf("th:fragment=\"" + element.fragment() + "(");
+        if (fragmentAt == -1) {
+            return;                                   // same
+        }
+        Matcher declaration = DECLARED_KEYS.matcher(template.substring(0, fragmentAt));
+        String last = null;
+        while (declaration.find()) {
+            last = declaration.group(1);              // the one nearest the fragment
+        }
+        if (last == null) {
+            return;                                   // nothing declared, nothing checked
+        }
+        Set<String> declared = new LinkedHashSet<>(List.of(last.trim().split("\\s*,\\s*")));
+        Set<String> carried = new LinkedHashSet<>(element.asMap().keySet());
+        carried.removeAll(Element.RESERVED);
+        for (String key : carried) {
+            if (!declared.contains(key)) {
+                failures.add(address + " — carries the key \"" + key + "\" that its adapter does not read;"
+                    + " declare it above the fragment or stop putting it in");
+            }
+        }
+        declaredByAdapter.computeIfAbsent(address, a -> new LinkedHashSet<>()).addAll(declared);
+        carriedByAdapter.computeIfAbsent(address, a -> new LinkedHashSet<>()).addAll(carried);
+    }
+
     /** Renders one element through the single dispatcher, exactly as a page would. */
     private Set<String> renderAndCollect(Element<?> element, String address, List<String> failures) {
         Context context = new Context();
         context.setVariable("e", element.asMap());
         String html;
         try {
-            html = Objects.requireNonNull(engine).process("fragments/thymekit/element", Set.of("render"), context);
+            html = Objects.requireNonNull(engine).process("thymekit/element", Set.of("render"), context);
         } catch (RuntimeException notRendered) {
             failures.add(address + " — does not render: " + notRendered.getMessage());
             return Set.of();

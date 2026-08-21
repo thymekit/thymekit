@@ -36,7 +36,7 @@ public final class Md {
         private final boolean hasText;
 
         private Builder(@Nullable String markdown) {
-            this.b = Element.Descriptor.<Md>of("fragments/thymekit/md-section", "mdSectionEl");
+            this.b = Element.Descriptor.<Md>of("thymekit/md-section", "mdSectionEl");
             this.hasText = markdown != null;
             if (hasText) {
                 b.with("markdown", markdown);

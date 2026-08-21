@@ -37,7 +37,7 @@ class PageModelTest {
             .render();
         assertThat(view).isEqualTo("page");
         assertThat(model.asMap().get("pageTitle")).isEqualTo("Showcase");
-        assertThat(page(model)).containsEntry("template", "fragments/thymekit/canvas")
+        assertThat(page(model)).containsEntry("template", "thymekit/canvas")
             .containsEntry("fragment", "canvasEl").containsEntry("pageClass", "page-public page-canvas");
         var padded = new ConcurrentModel();                                  // the consumer's own classes are trimmed
         PageModel.of(padded).pageClass(" page-public ").title("T").render();
@@ -91,7 +91,7 @@ class PageModelTest {
         PageModel.of(model).title("Baobab").description("An oil from the tree of life")
             .canonical("https://shop/ingredients/baobab").image("https://shop/img/baobab.jpg").render();
         Map<String, Object> head = (Map<String, Object>) model.asMap().get("head");
-        assertThat(head).containsEntry("template", "fragments/thymekit/head").containsEntry("fragment", "headEl")
+        assertThat(head).containsEntry("template", "thymekit/head").containsEntry("fragment", "headEl")
             .containsEntry("title", "Baobab").containsEntry("description", "An oil from the tree of life")
             .containsEntry("canonical", "https://shop/ingredients/baobab")
             .containsEntry("image", "https://shop/img/baobab.jpg")
@@ -303,24 +303,24 @@ class PageModelTest {
     @Test
     void assertOutline_readsLevelsHoweverWritten_andRefusesOnesHtmlHasNot() {
         Element<?> hero = Hero.of(Heading.h1("Page").build()).build();
-        Element<?> textLevel = Element.raw("fragments/thymekit/heading", "headingEl")
+        Element<?> textLevel = Element.raw("thymekit/heading", "headingEl")
             .with("level", "1").with("text", "sneaky").build();          // renders <h1>, written as text
         assertThatThrownBy(() -> Element.assertOutline(List.of(hero, textLevel)))
             .isInstanceOf(IllegalStateException.class).hasMessageContaining("more than one H1").hasMessageContaining("sneaky");
 
-        Element.assertOutline(List.of(hero, Element.raw("fragments/thymekit/heading", "headingEl")
+        Element.assertOutline(List.of(hero, Element.raw("thymekit/heading", "headingEl")
             .with("level", " 2 ").with("text", "spaced").build()));       // text with spaces still reads as a level
 
         for (Object impossible : List.of(7, "7", 0L)) {
-            assertThatThrownBy(() -> Element.assertOutline(List.of(Element.raw("fragments/thymekit/heading", "headingEl")
+            assertThatThrownBy(() -> Element.assertOutline(List.of(Element.raw("thymekit/heading", "headingEl")
                 .with("level", impossible).with("text", "x").build())))
                 .isInstanceOf(IllegalStateException.class).hasMessageContaining("outside h1..h6");
         }
         Element.assertOutline(List.of(Heading.h1("a").build(), Heading.h2("b").build(), Heading.h3("c").build(),
             Heading.h4("d").build(), Heading.h5("e").build(), Heading.h6("f").build()));   // all six are legal
-        Element.assertOutline(List.of(Element.raw("fragments/thymekit/heading", "headingEl")
+        Element.assertOutline(List.of(Element.raw("thymekit/heading", "headingEl")
             .with("level", "two").with("text", "x").build()));            // not a level at all: not the guard's business
-        Element.assertOutline(List.of(Element.raw("fragments/thymekit/heading", "headingEl")
+        Element.assertOutline(List.of(Element.raw("thymekit/heading", "headingEl")
             .with("text", "x").build()));                                 // no level key either
     }
 
@@ -346,7 +346,7 @@ class PageModelTest {
     @Test
     void elementFactories_selfRegisteringDescriptors() {
         assertThat(Md.of("**text**").title(Heading.h2("Description").build()).build().asMap())
-            .containsEntry("template", "fragments/thymekit/md-section").containsEntry("fragment", "mdSectionEl")
+            .containsEntry("template", "thymekit/md-section").containsEntry("fragment", "mdSectionEl")
             .containsEntry("markdown", "**text**")
             .containsEntry("heading", Heading.h2("Description").build().asMap());   
         assertThat(Md.of("x").build().asMap()).doesNotContainKey("heading");
@@ -366,7 +366,7 @@ class PageModelTest {
 
         Map<String, Object> hero = Hero.of(Heading.h1("Showcase").build()).eyebrow(Caption.eyebrow("thymekit").build())
             .meta(Caption.meta("meta").build()).build().asMap();
-        assertThat(hero).containsEntry("template", "fragments/thymekit/hero").containsEntry("fragment", "heroEl")
+        assertThat(hero).containsEntry("template", "thymekit/hero").containsEntry("fragment", "heroEl")
             .containsEntry("heading", Heading.h1("Showcase").build().asMap())
             .containsEntry("eyebrow", Caption.eyebrow("thymekit").build().asMap())
             .containsEntry("metas", List.of(Caption.meta("meta").build().asMap()));
@@ -402,7 +402,7 @@ class PageModelTest {
     @Test
     void heading_factoriesH1toH6_idHrefSrOnly_guards() {
         assertThat(Heading.h2("Topbar and hero").build().asMap())
-            .containsEntry("template", "fragments/thymekit/heading").containsEntry("fragment", "headingEl")
+            .containsEntry("template", "thymekit/heading").containsEntry("fragment", "headingEl")
             .containsEntry("text", "Topbar and hero").containsEntry("level", 2)
             .doesNotContainKey("id").doesNotContainKey("href").doesNotContainKey("srOnly");
         assertThat(Heading.h3("Subsection").id("badges").build().asMap()).containsEntry("level", 3).containsEntry("id", "badges");

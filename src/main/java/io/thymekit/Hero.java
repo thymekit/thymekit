@@ -34,7 +34,7 @@ public final class Hero {
         private final List<Map<String, Object>> metas = new ArrayList<>();
 
         private Builder(Element<Heading> h1) {
-            this.b = Element.Descriptor.<Hero>of("fragments/thymekit/hero", "heroEl")
+            this.b = Element.Descriptor.<Hero>of("thymekit/hero", "heroEl")
                 .with("heading", h1.asMap());
         }
 

@@ -39,10 +39,10 @@ class ElementContractPublicTest {
                 Md.of("**text**").title(Heading.h3("Description")),
                 Hero.of(Heading.h1("Title")).subtitle(Caption.subtitle("RA-101")))
             .renderedBy(ENGINE)
-            .styledBy("static/thymekit/ui.css", "static/thymekit/base/canvas.css",
-                "static/thymekit/base/section.css", "static/thymekit/elements/hero.css",
-                "static/thymekit/elements/heading.css", "static/thymekit/elements/caption.css",
-                "static/thymekit/elements/md-section.css")
+            .styledBy("static/thymekit/ui.css", "static/thymekit/canvas.css",
+                "static/thymekit/section.css", "static/thymekit/hero.css",
+                "static/thymekit/heading.css", "static/thymekit/caption.css",
+                "static/thymekit/md-section.css")
             .check();
     }
 
@@ -52,21 +52,41 @@ class ElementContractPublicTest {
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("no template on the classpath");
 
-        assertThatThrownBy(() -> ElementContract.of(Element.raw("fragments/thymekit/heading", "absentEl").build()).check())
+        assertThatThrownBy(() -> ElementContract.of(Element.raw("thymekit/heading", "absentEl").build()).check())
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("declares no fragment absentEl");
     }
 
+    /** The keys an adapter says it reads, against the keys an element carries — in both directions. */
+    @Test
+    void keysDeclaredAndKeysCarried() {
+        Element<?> stranger = Element.raw("thymekit/heading", "headingEl")
+            .with("level", 2).with("text", "x").with("colour", "gold").build();
+        assertThatThrownBy(() -> ElementContract.of(stranger).check())
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("carries the key \"colour\" that its adapter does not read");
+
+        // one element of an adapter is not a claim about the whole adapter: silence unless asked
+        ElementContract.of(Heading.h2("plain")).check();
+        assertThatThrownBy(() -> ElementContract.of(Heading.h2("plain")).coveringEveryKey().check())
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("its adapter reads \"href\"").hasMessageContaining("nothing given here puts it in");
+
+        // and an adapter that declares nothing is simply not checked for keys
+        ElementContract.of(Element.raw("test/pieces", "echoEl").with("text", "x").with("anything", 1).build())
+            .coveringEveryKey().check();
+    }
+
     @Test
     void anAdapterNamedLikeSomethingElseIsNamed() {
-        assertThatThrownBy(() -> ElementContract.of(Element.raw("fragments/thymekit/heading", "heading").build()).check())
+        assertThatThrownBy(() -> ElementContract.of(Element.raw("thymekit/heading", "heading").build()).check())
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("named like myCardEl");
     }
 
     @Test
     void aScriptAmongElementsIsNamed() {
-        assertThatThrownBy(() -> ElementContract.of(Element.script("fragments/thymekit/heading", "headingEl")).check())
+        assertThatThrownBy(() -> ElementContract.of(Element.script("thymekit/heading", "headingEl")).check())
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("does not belong among elements");
     }
@@ -74,7 +94,7 @@ class ElementContractPublicTest {
     @Test
     void aClassWithoutARuleIsNamed() {
         assertThatThrownBy(() -> ElementContract.of(Heading.h2("Section"))
-                .renderedBy(ENGINE).styledBy("static/thymekit/elements/caption.css").check())
+                .renderedBy(ENGINE).styledBy("static/thymekit/caption.css").check())
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("tk-heading").hasMessageContaining("styled by none");
 
@@ -99,7 +119,7 @@ class ElementContractPublicTest {
     /** A script an element depends on is walked as well: its fragment has to exist too. */
     @Test
     void aDependencyThatPointsNowhereIsNamed() {
-        Element<?> withScript = Element.raw("fragments/thymekit/heading", "headingEl")
+        Element<?> withScript = Element.raw("thymekit/heading", "headingEl")
             .with("level", 2).with("text", "x")
             .requires(Element.script("fragments/my/absent", "priceJs")).build();
         assertThatThrownBy(() -> ElementContract.of(withScript).check())
@@ -107,7 +127,7 @@ class ElementContractPublicTest {
             .hasMessageContaining("its script fragments/my/absent :: priceJs")
             .hasMessageContaining("no template on the classpath");
 
-        Element<?> soundScript = Element.raw("fragments/thymekit/heading", "headingEl")
+        Element<?> soundScript = Element.raw("thymekit/heading", "headingEl")
             .with("level", 2).with("text", "x")
             .requires(Element.script("fragments/my/price", "priceEl")).build();
         ElementContract.of(soundScript).templatesUnder("views/").check();

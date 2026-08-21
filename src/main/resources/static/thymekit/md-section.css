@@ -3,7 +3,7 @@
    file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 /* =============================================================================
    md-section — a markdown block: the section heading plus sanitised output. The section
-   wrapper and the empty state live in base/section.css.
+   wrapper and the empty state live in section.css.
 
    What is inside .rich-content is the author's markup, not the kit's: tables, quotes,
    code, whatever markdown allows and whatever it will allow next. No set of handles

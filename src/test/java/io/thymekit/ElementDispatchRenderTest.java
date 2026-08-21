@@ -127,8 +127,8 @@ class ElementDispatchRenderTest {
         String withParts = renderAll(List.of(Hero.of(Heading.h1("B").build())
             .badge(Element.raw("test/pieces", "statusBadgeEl").with("text", "in stock").build())
             .actions(Element.raw("test/pieces", "actionsEl").with("text", "Buy").build()).build()));
-        assertThat(withParts).contains("<div class=\"page-hero-status\"><span class=\"badge\">in stock</span></div>")
-            .contains("<div class=\"page-hero-actions\"><div class=\"actions\">Buy</div></div>");
+        assertThat(withParts).contains("<div class=\"page-hero-status\"><span>in stock</span></div>")
+            .contains("<div class=\"page-hero-actions\"><div>Buy</div></div>");
 
         String bare = renderAll(List.of(Hero.of(Heading.h1("H1 only").build()).build()));
         assertThat(bare).contains("<hgroup class=\"page-hero-group\"><h1 class=\"tk-heading tk-heading--1\">H1 only</h1></hgroup>")
