@@ -2,8 +2,8 @@
    License, v. 2.0. If a copy of the MPL was not distributed with this
    file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 /* =============================================================================
-   md-section — a markdown block: the section heading plus sanitised output. The section
-   wrapper and the empty state live in section.css.
+   md — the text of a page: sanitised markdown output, or the empty state when nothing
+   has been written yet. The heading and the <section> around it belong to section.css.
 
    What is inside .rich-content is the author's markup, not the kit's: tables, quotes,
    code, whatever markdown allows and whatever it will allow next. No set of handles
@@ -20,10 +20,10 @@
 
    Handles, for the block as a whole:
       --tk-md-size   --tk-md-fg   --tk-md-max-width   --tk-md-accent   --tk-md-strong-fg
-      --tk-section-empty-fg   --tk-section-link-fg  (the empty state)
+      --tk-md-empty-fg   --tk-md-link-fg  (the empty state)
 
    Content headings are written by an author, not by the page: the same levels, another
-   voice. The section hosts them, so it dresses them — from its own handles, falling
+   voice. This block hosts them, so it dresses them — from its own handles, falling
    through to the site's scale wherever a theme is silent:
       --tk-md-heading-font      --tk-md-heading-weight  --tk-md-heading-color
       --tk-md-heading-tracking  --tk-md-heading-transform
@@ -78,10 +78,10 @@
 /* The empty state belongs to the text that is missing, not to the section around it. */
 .detail-empty-hint {
     margin: 0;
-    color: var(--tk-section-empty-fg, inherit);
+    color: var(--tk-md-empty-fg, inherit);
     display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
 }
-.detail-empty-hint a { color: var(--tk-section-link-fg, inherit); }
+.detail-empty-hint a { color: var(--tk-md-link-fg, inherit); }
 
 .rich-content pre { overflow-x: auto; }
 .rich-content table { border-collapse: collapse; }
@@ -94,6 +94,8 @@
     --tk-md-fg: initial;
     --tk-md-strong-fg: initial;
     --tk-md-accent: initial;
+    --tk-md-empty-fg: initial;
+    --tk-md-link-fg: initial;
     --tk-md-heading-font: initial; --tk-md-heading-weight: initial; --tk-md-heading-color: initial;
     --tk-md-heading-tracking: initial; --tk-md-heading-transform: initial;
     --tk-md-heading-size-1: initial; --tk-md-heading-size-2: initial; --tk-md-heading-size-3: initial;
