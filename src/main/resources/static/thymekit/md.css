@@ -20,6 +20,7 @@
 
    Handles, for the block as a whole:
       --tk-md-size   --tk-md-fg   --tk-md-max-width   --tk-md-accent   --tk-md-strong-fg
+      --tk-section-empty-fg   --tk-section-link-fg  (the empty state)
 
    Content headings are written by an author, not by the page: the same levels, another
    voice. The section hosts them, so it dresses them — from its own handles, falling
@@ -73,6 +74,15 @@
 /* Containment, and nothing but: a picture that would break the column, a code block that would
    push the page sideways, a table whose cells would not meet. */
 .rich-content img { max-width: 100%; height: auto; }
+
+/* The empty state belongs to the text that is missing, not to the section around it. */
+.detail-empty-hint {
+    margin: 0;
+    color: var(--tk-section-empty-fg, inherit);
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.detail-empty-hint a { color: var(--tk-section-link-fg, inherit); }
+
 .rich-content pre { overflow-x: auto; }
 .rich-content table { border-collapse: collapse; }
 

@@ -1,0 +1,24 @@
+<!--/* This Source Code Form is subject to the terms of the Mozilla Public
+       License, v. 2.0. If a copy of the MPL was not distributed with this
+       file, You can obtain one at https://mozilla.org/MPL/2.0/. */-->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+
+<!--/*
+    section: a titled part of a page. The heading is an element and goes through the dispatcher; what
+    is under it is a slot, so anything that is an element belongs there — a markdown block, a row of
+    cards, one of yours.
+
+    The section carries a name only when its heading was given an id: an address is a decision that the
+    section stands on its own, and only then is it worth being one more landmark.
+*/-->
+<!--/* keys: heading */-->
+<section th:fragment="sectionEl(e)" class="tk-section"
+         th:attr="aria-labelledby=${e['heading'] == null ? null : e['heading']['id']}">
+    <th:block th:replace="~{thymekit/element :: render(${e['heading']})}"/>
+    <th:block th:replace="~{thymekit/element :: slot(${e}, 'items')}"/>
+</section>
+
+</body>
+</html>

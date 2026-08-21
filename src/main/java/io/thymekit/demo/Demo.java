@@ -10,6 +10,7 @@ import io.thymekit.Hero;
 import io.thymekit.Md;
 import io.thymekit.PageModel;
 import io.thymekit.Rel;
+import io.thymekit.Section;
 import java.time.LocalDate;
 import java.util.List;
 import org.springframework.ui.Model;
@@ -56,7 +57,7 @@ public final class Demo {
         return Element.Descriptor.<Demo>of(PARTS, "stockFrame").illustration()
             .slot("items", List.of(
                 Caption.eyebrow("showcase"),
-                Heading.h1("thymekit"),
+                Heading.h2("thymekit, undressed"),
                 Caption.subtitle("the same elements, with nothing said about them")))
             .build();
     }
@@ -96,13 +97,15 @@ public final class Demo {
                 .actions(Element.Descriptor.of(PARTS, "actionsEl")
                     .with("text", "the source, and every number on this page")
                     .with("href", "https://github.com/thymekit/thymekit")))
-            .add(Md.of("""
-                This page is composed **declaratively in Java** and rendered by the kit. Its look comes
-                from one stylesheet, `thymekit/demo.css`, which hands values to element handles and
-                touches nothing else — no override of the kit's markup, no rule the kit knows about.
-                Take that file away and the very same page renders as plain HTML.
-                """).title(Heading.h2("What this page is")))
-            .add(Md.of("""
+            .add(Section.of(Heading.h2("What this page is"))
+                .add(Md.of("""
+                    This page is composed **declaratively in Java** and rendered by the kit. Its look
+                    comes from one stylesheet, `thymekit/demo.css`, which hands values to element
+                    handles and touches nothing else — no override of the kit's markup, no rule the kit
+                    knows about. Take that file away and the very same page renders as plain HTML.
+                    """)))
+            .add(Section.of(Heading.h2("Who dresses whom").id("who-dresses-whom"))
+                .add(Md.of("""
                 Three headings on this page wear three different faces, and no stylesheet rule mentions
                 where any of them sits.
 
@@ -120,34 +123,39 @@ public final class Demo {
                 section hosts them, so it dresses them — quieter, in its own scale, through
                 `--tk-md-heading-*`. Where the theme says nothing, the site's values come through
                 untouched.
-                """).title(Heading.h2("Who dresses whom").id("who-dresses-whom")))
-            .add(Md.of("""
-                A caption comes in four roles and carries what a machine needs beside what a person
-                reads: a date as `<time datetime="…">`, a phrase marked with the language it is in. A
-                heading may be a link — this one says `rel="nofollow"` and opens in a new tab, which is
-                why it also says `noopener`, whichever order the two were written in. And a heading may
-                be there only for the outline: the frame below holds one that no eye will find.
-                """).title(Heading.h2("What text can carry")))
-            .add(textSample())
-            .add(Md.of("""
-                Text written by visitors says so. The link below carries `rel="ugc nofollow"` because
-                this block was told `linkRel(UGC, NOFOLLOW)`; a link of the site's own would keep its
-                weight, since only what leaves the site is marked: [a stranger's
-                page](https://example.com/somewhere) beside [a page of ours](/ingredients/baobab).
-                """).title(Heading.h2("Whose text this is")).linkRel(Rel.UGC, Rel.NOFOLLOW))
-            .add(Md.of(null)
-                .title(Heading.h2("When there is nothing to show"))
-                .emptyHint("Nothing written here yet")
-                .addAction(Element.Descriptor.of(PARTS, "actionsEl")
-                    .with("text", "write it")
-                    .with("href", "https://github.com/thymekit/thymekit")
-                    .requires(Element.script(PARTS, "demoJs"))))
-            .add(Md.of("""
-                Every element file resets its handles inside `.tk-defaults`, so a frame carrying that class
-                is a place the theme cannot reach. The same three elements are below, in it: this is the
-                page with `demo.css` taken away, and the claim above stops being a promise.
-                """).title(Heading.h2("The theme, taken away")))
-            .add(stockSample())
+                    """)))
+            .add(Section.of(Heading.h2("What text can carry"))
+                .add(Md.of("""
+                    A caption comes in four roles and carries what a machine needs beside what a person
+                    reads: a date as `<time datetime="…">`, a phrase marked with the language it is in.
+                    A heading may be a link — this one says `rel="nofollow"` and opens in a new tab,
+                    which is why it also says `noopener`, whichever order the two were written in. And a
+                    heading may be there only for the outline: the frame below holds one no eye finds.
+                    """))
+                .add(textSample()))
+            .add(Section.of(Heading.h2("Whose text this is"))
+                .add(Md.of("""
+                    Text written by visitors says so. The link below carries `rel="ugc nofollow"`
+                    because this block was told `linkRel(UGC, NOFOLLOW)`; a link of the site's own would
+                    keep its weight, since only what leaves the site is marked: [a stranger's
+                    page](https://example.com/somewhere) beside [a page of ours](/ingredients/baobab).
+                    """).linkRel(Rel.UGC, Rel.NOFOLLOW)))
+            .add(Section.of(Heading.h2("When there is nothing to show"))
+                .add(Md.of(null)
+                    .emptyHint("Nothing written here yet")
+                    .addAction(Element.Descriptor.of(PARTS, "actionsEl")
+                        .with("text", "write it")
+                        .with("href", "https://github.com/thymekit/thymekit")
+                        .requires(Element.script(PARTS, "demoJs")))))
+            .add(Section.of(Heading.h2("The theme, taken away"))
+                .add(Md.of("""
+                    Every element file resets its handles inside `.tk-defaults`, so a frame carrying
+                    that class is a place the theme cannot reach. The same elements are below, in it:
+                    this is the page with `demo.css` taken away, and the claim above stops being a
+                    promise. The heading in the frame is an h2 and not the page's H1, because a page has
+                    one of those and a sample of the stock is not it.
+                    """))
+                .add(stockSample()))
             .render(VIEW);
     }
 }

@@ -67,7 +67,8 @@ class ShowcaseSnapshotTest {
             .contains("<meta property=\"og:title\"")
             // the page claims the theme can be taken away; the frame in the stock scope shows it
             .contains("<div class=\"tk-demo-stock tk-defaults\">")
-            .containsPattern("tk-demo-stock[\\s\\S]*<h1 class=\"tk-heading tk-heading--1\">thymekit</h1>")
+            .containsPattern("tk-demo-stock[\\s\\S]*<h2 class=\"tk-heading tk-heading--2\">thymekit, undressed</h2>")
+            .containsOnlyOnce("<h1 ")                                          // a page has one H1, samples included
             // every instrument the kit has, on one page
             .contains("<time datetime=\"2026-08-21\">")                       // a date a machine reads
             .contains("lang=\"la\"")                                          // a phrase in another language

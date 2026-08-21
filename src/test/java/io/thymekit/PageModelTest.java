@@ -345,11 +345,10 @@ class PageModelTest {
 
     @Test
     void elementFactories_selfRegisteringDescriptors() {
-        assertThat(Md.of("**text**").title(Heading.h2("Description").build()).build().asMap())
-            .containsEntry("template", "thymekit/md-section").containsEntry("fragment", "mdSectionEl")
+        assertThat(Md.of("**text**").build().asMap())
+            .containsEntry("template", "thymekit/md").containsEntry("fragment", "mdEl")
             .containsEntry("markdown", "**text**")
-            .containsEntry("heading", Heading.h2("Description").build().asMap());   
-        assertThat(Md.of("x").build().asMap()).doesNotContainKey("heading");
+            .doesNotContainKey("heading");                 // a heading belongs to the section around it
         // the text may be absent: then the section lives by its empty state
         assertThat(Md.of(null).emptyHint("No description yet").build().asMap())
             .doesNotContainKey("markdown").containsEntry("emptyHint", "No description yet");
@@ -358,11 +357,16 @@ class PageModelTest {
             .containsEntry("addAction", action.asMap());   // the affordance is an element, not a URL
         assertThatThrownBy(() -> Md.of("x").addAction(Element.script("t", "js")))
             .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("script element");
-        assertThatThrownBy(() -> Md.of("x").title(null)).isInstanceOf(NullPointerException.class).hasMessageContaining("heading");
+        // the section owns the heading now, and takes nothing else in its place
+        assertThatThrownBy(() -> Section.of(null)).isInstanceOf(NullPointerException.class).hasMessageContaining("heading");
         @SuppressWarnings("unchecked")
         Element<Heading> notTitle = (Element<Heading>) (Element<?>) Element.raw("t", "f").build();
-        assertThatThrownBy(() -> Md.of("x").title(notTitle))
+        assertThatThrownBy(() -> Section.of(notTitle))
             .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("heading only");
+        assertThatThrownBy(() -> Section.of(Heading.h2("t")).add(Element.script("t", "js")))
+            .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("script element");
+        assertThat(Section.of(Heading.h2("Composition").id("composition")).add(Md.of("text")).build().asMap())
+            .containsEntry("template", "thymekit/section").containsEntry("fragment", "sectionEl");
 
         Map<String, Object> hero = Hero.of(Heading.h1("Showcase").build()).eyebrow(Caption.eyebrow("thymekit").build())
             .meta(Caption.meta("meta").build()).build().asMap();

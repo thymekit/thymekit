@@ -2,22 +2,11 @@
    License, v. 2.0. If a copy of the MPL was not distributed with this
    file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 /* =============================================================================
-   section — the shared wrapper for page sections: the section itself, its heading
-   (a heading element; here only the rhythm around it) and a quiet empty state.
-   Not an element but shared structure.
+   section — a titled part of a page: the section itself and the rhythm around its
+   heading. What goes under the heading is a slot, so it is whatever is an element.
 
-   Classes: .tk-section · .tk-section > .tk-heading · .detail-empty-hint
-
-   Handles:
-      --tk-section-empty-fg   --tk-section-link-fg
+   Classes: .tk-section · .tk-section > .tk-heading
    ============================================================================= */
 /* Between the parts of the section — its own business. Around it — the page's, so no outer margin. */
 .tk-section > .tk-heading { margin: 0 0 10px; }
-.detail-empty-hint {
-    margin: 0;
-    color: var(--tk-section-empty-fg, inherit);
-    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-}
-.detail-empty-hint a { color: var(--tk-section-link-fg, inherit); }
-
 .tk-defaults { --tk-section-empty-fg: initial; --tk-section-link-fg: initial; }

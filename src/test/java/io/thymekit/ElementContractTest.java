@@ -41,7 +41,7 @@ class ElementContractTest {
      */
     private static final Map<String, String> CSS_BY_TEMPLATE = Map.of(
         "heading", "heading.css", "caption", "caption.css",
-        "hero", "hero.css", "md-section", "md-section.css",
+        "hero", "hero.css", "md", "md.css",
         "canvas", "canvas.css");
 
     /**
@@ -62,7 +62,8 @@ class ElementContractTest {
             Caption.eyebrow("Product").build(), Caption.subtitle("RA-101").build(),
             Caption.label("label").build(), Caption.meta("meta").build(),
             Caption.meta("12 March 2026").time(java.time.LocalDate.of(2026, 3, 12)).lang("en-GB").build(),
-            Md.of("**text**").title(Heading.h2("Description").build()).build(),
+            Md.of("**text**").build(),
+            Section.of(Heading.h2("Description")).add(Md.of("under a heading")).build(),
             Md.of("[out](https://spam.example/x)").linkRel(Rel.UGC).build(),
             Md.of(null).emptyHint("No description yet")
                 .addAction(Caption.label("Add")).build(),
@@ -113,7 +114,7 @@ class ElementContractTest {
                 }
             }
         }
-        assertThat(declared).contains("headingEl", "captionEl", "heroEl", "mdSectionEl", "headEl", "canvasEl");
+        assertThat(declared).contains("headingEl", "captionEl", "heroEl", "mdEl", "headEl", "canvasEl");
         assertThat(samples()).extracting(Element::fragment).containsAll(declared);
     }
 
@@ -172,7 +173,7 @@ class ElementContractTest {
             .styledBy("static/thymekit/ui.css", "static/thymekit/canvas.css",
                 "static/thymekit/section.css", "static/thymekit/hero.css",
                 "static/thymekit/heading.css", "static/thymekit/caption.css",
-                "static/thymekit/md-section.css")
+                "static/thymekit/md.css")
             .check();
     }
 
@@ -226,7 +227,7 @@ class ElementContractTest {
             assertThat(resource("static/thymekit/" + css)).as("stock scope .tk-defaults in %s", css).contains(".tk-defaults");
         }
         assertThat(CSS_BY_TEMPLATE.keySet()).as("a template with a stylesheet is listed here")
-            .containsExactlyInAnyOrder("heading", "caption", "hero", "md-section", "canvas");
+            .containsExactlyInAnyOrder("heading", "caption", "hero", "md", "canvas");
     }
 
     /**
@@ -239,7 +240,7 @@ class ElementContractTest {
     void css_everyClassAnElementPrints_hasARule() throws IOException {
         StringBuilder kitCss = new StringBuilder();
         for (String file : List.of("ui.css", "canvas.css", "section.css", "hero.css",
-                "heading.css", "caption.css", "md-section.css")) {
+                "heading.css", "caption.css", "md.css")) {
             // comments name classes too, and a class documented but not styled is exactly what this looks for
             kitCss.append(resource("static/thymekit/" + file).replaceAll("(?s)/\\*.*?\\*/", " "));
         }

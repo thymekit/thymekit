@@ -33,9 +33,8 @@ String ingredient(@PathVariable String slug, Model model) {
         .add(Hero.of(Heading.h1(it.name()))
             .eyebrow(Caption.eyebrow("Catalogue"))
             .subtitle(Caption.subtitle(it.latinName())))
-        .add(Md.of(it.description())
-            .title(Heading.h2("Description"))
-            .emptyHint("No description yet"))
+        .add(Section.of(Heading.h2("Description"))
+            .add(Md.of(it.description()).emptyHint("No description yet")))
         .render("ingredient-page");
 }
 ```
@@ -390,7 +389,7 @@ front of it, exactly as they do for the kit's own.
 | Heading | `Heading.h1(text)…h6(text)` — `id`, `href` with `rel`/`newTab`, `lang`, `srOnly` | `heading :: headingEl` | `heading.css` |
 | Caption | `Caption.eyebrow/subtitle/label/meta(text)` — `time`, `lang` | `caption :: captionEl` | `caption.css` |
 | Hero | `Hero.of(Element<Heading>)` — eyebrow, subtitle, meta lines, a `statusBadgeEl` badge and an `actionsEl` row of your own | `hero :: heroEl` | `hero.css` |
-| Md | `Md.of(markdown)` — title, empty state, empty-state action, `linkRel` | `md-section :: mdSectionEl` | `md-section.css` |
+| Md | `Md.of(markdown)` — title, empty state, empty-state action, `linkRel` | `md-section :: mdEl` | `md.css` |
 | Canvas | `PageModel.of(model)` — own page classes, flow of elements, `render(view)`; renders as the `page` element | `canvas :: canvasEl` | `canvas.css` |
 | — | `Composable<K>` — whatever becomes an element; `ElementContract` — the walk over a triple, for your elements as much as ours | — | — |
 | Head | filled by the canvas — title, description, canonical, image, `robots`; renders as the `head` element | `head :: headEl` | — (it prints tags, not looks) |
@@ -412,8 +411,9 @@ instead of navigating (`javascript:`, `data:`, `vbscript:`, and the spellings a 
 `java\tscript:`) is refused where it is written, and `rel` or `newTab` on
 a heading that is not a link is refused too, rather than printed nowhere.
 
-A section takes a name from the heading you gave an address: write `Heading.h2("Composition").id("composition")`
-and the section around it carries `aria-labelledby`, so it becomes a region a screen reader can jump to
+A section is an element of its own: a heading and a slot for whatever belongs under it — a markdown
+block, a row of cards, several of them. It takes a name from the heading you gave an address: write
+`Section.of(Heading.h2("Composition").id("composition"))` and the section carries `aria-labelledby`, so it becomes a region a screen reader can jump to
 and a place a link can point at. Say nothing and it stays an ordinary box — landmarks are worth having
 few of, and the decision that a section stands on its own is the consumer's, not the kit's. The kit
 never invents the id itself: an address is a promise to whoever saved the link, and a slug made from a

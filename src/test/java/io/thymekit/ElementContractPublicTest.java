@@ -36,13 +36,14 @@ class ElementContractPublicTest {
         ElementContract.of(
                 Heading.h2("Section"),
                 Caption.meta("12 entries"),
-                Md.of("**text**").title(Heading.h3("Description")),
+                Md.of("**text**"),
+                Section.of(Heading.h3("Description")).add(Md.of("text under it")),
                 Hero.of(Heading.h1("Title")).subtitle(Caption.subtitle("RA-101")))
             .renderedBy(ENGINE)
             .styledBy("static/thymekit/ui.css", "static/thymekit/canvas.css",
                 "static/thymekit/section.css", "static/thymekit/hero.css",
                 "static/thymekit/heading.css", "static/thymekit/caption.css",
-                "static/thymekit/md-section.css")
+                "static/thymekit/md.css")
             .check();
     }
 

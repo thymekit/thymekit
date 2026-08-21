@@ -8,8 +8,9 @@ import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
 /**
- * A markdown block as a page element: optional section heading plus text rendered by the {@code #md}
- * dialect, sanitised on the way out.
+ * The text of a page: markdown rendered by the {@code #md} dialect and sanitised on the way out, or an
+ * empty state when nothing has been written yet. It is content — a heading and a section around it
+ * belong to {@link Section}, which this goes inside.
  *
  * <p>The text belongs to whoever wrote it, and its headings keep their shape: {@link MarkdownRenderer}
  * lowers the topmost authored level to a ceiling (h2 by default) and moves the rest by the same amount,
@@ -36,19 +37,11 @@ public final class Md {
         private final boolean hasText;
 
         private Builder(@Nullable String markdown) {
-            this.b = Element.Descriptor.<Md>of("thymekit/md-section", "mdSectionEl");
+            this.b = Element.Descriptor.<Md>of("thymekit/md", "mdEl");
             this.hasText = markdown != null;
             if (hasText) {
                 b.with("markdown", markdown);
             }
-        }
-
-        /** Section heading; the author names the level according to the outline. */
-        public Builder title(Composable<Heading> heading) {
-            Element<Heading> settled = Element.settle(heading, "heading");
-            Element.requireAdapter(settled, "headingEl", "Md.title accepts a heading only");
-            b.with("heading", settled.asMap());
-            return this;
         }
 
         /** Empty-state text, shown instead of the block when there is no markdown. */

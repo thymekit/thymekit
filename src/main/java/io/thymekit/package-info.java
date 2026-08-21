@@ -40,9 +40,13 @@
  *       machine-readable {@code time} and a {@code lang} of its own.</li>
  *   <li>{@link io.thymekit.Hero} — the header of the page: a heading group, an optional badge and an
  *       optional action row; its core is the H1 alone, and the rule under the group is drawn by CSS.</li>
- *   <li>{@link io.thymekit.Md} — a markdown block with an optional heading, empty state and add
- *       affordance; rendered by the {@code #md} dialect and sanitised. {@code linkRel} says what the
- *       links of somebody else's text are.</li>
+ *   <li>{@link io.thymekit.Md} — the text of a page: markdown rendered by the {@code #md} dialect and
+ *       sanitised, or an empty state with an affordance beside it. {@code linkRel} says what the links
+ *       of somebody else's text are. Content, not structure — a heading around it belongs to
+ *       {@link io.thymekit.Section}.</li>
+ *   <li>{@link io.thymekit.Section} — a titled part of a page: a heading and a slot for whatever goes
+ *       under it. Anything needing a titled area composes this instead of writing its own
+ *       {@code <section>}.</li>
  *   <li>{@link io.thymekit.PageModel} — the page canvas. It builds two elements: the page itself, which
  *       draws the {@code <main>} landmark with the flow inside it, and the head of the document (title,
  *       description, canonical, image, {@link io.thymekit.PageModel.Robots}). Both go through the same

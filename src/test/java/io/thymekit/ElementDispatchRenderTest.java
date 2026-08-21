@@ -140,8 +140,7 @@ class ElementDispatchRenderTest {
     void tidyDialect_collapsesFormattingWhitespace_keepsPreAndInlineSpace() {
         var ctx = new Context();
         ctx.setVariable("businessZone", ZoneId.of("UTC"));
-        ctx.setVariable("e", Md.of("# Heading\n\n```java\nclass A {\n    void b() {}\n}\n```")
-            .title(Heading.h2("Code").build()).build().asMap());
+        ctx.setVariable("e", Md.of("# Heading\n\n```java\nclass A {\n    void b() {}\n}\n```").build().asMap());
         String md = ENGINE.process("test/harness", Set.of("one"), ctx);      // no compaction here: the raw output is the point
         assertThat(md).contains("<pre><code class=\"language-java\">class A {\n    void b() {}\n}\n</code></pre>");   // pre untouched
         assertThat(md.lines().filter(String::isBlank).count()).isZero();                                                // no leftovers
@@ -194,14 +193,14 @@ class ElementDispatchRenderTest {
     /** A section is named when its heading was given an id, and stays an ordinary box when it was not. */
     @Test
     void mdSection_isNamedByTheHeadingThatHasAnAddress() {
-        String named = renderAll(List.of(Md.of("Text").title(Heading.h2("Composition").id("composition").build()).build()));
+        String named = renderAll(List.of(Section.of(Heading.h2("Composition").id("composition")).add(Md.of("Text")).build()));
         assertThat(named).contains("<section class=\"tk-section\" aria-labelledby=\"composition\">")
             .contains("<h2 class=\"tk-heading tk-heading--2\" id=\"composition\">Composition</h2>");
 
-        String plain = renderAll(List.of(Md.of("Text").title(Heading.h2("Composition").build()).build()));
+        String plain = renderAll(List.of(Section.of(Heading.h2("Composition")).add(Md.of("Text")).build()));
         assertThat(plain).contains("<section class=\"tk-section\">").doesNotContain("aria-labelledby");
 
-        String headless = renderAll(List.of(Md.of("Text").build()));
+        String headless = renderAll(List.of(Section.of(Heading.h2("No address")).build()));
         assertThat(headless).contains("<section class=\"tk-section\">").doesNotContain("aria-labelledby");
     }
 
