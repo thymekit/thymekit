@@ -180,6 +180,75 @@ class CanonTest {
         });
     }
 
+    /**
+     * Nothing in the kit is written for a caller that does not exist. Asked of package-private methods
+     * only: what is public may be there for a consumer, and what is hidden has no audience but the kit
+     * itself — so a hidden method nobody calls is a plan, not a feature, and a plan belongs in a
+     * branch. The import leaves tests out on purpose: a method alive only in its own test is exactly
+     * the shape this looks for.
+     */
+    @Test
+    void nothingHiddenIsWrittenForNobody() {
+        methods().that().arePackagePrivate().and().areDeclaredInClassesThat().resideInAPackage("io.thymekit")
+            .should(new com.tngtech.archunit.lang.ArchCondition<com.tngtech.archunit.core.domain.JavaMethod>(
+                "be called by something in the kit") {
+                @Override
+                public void check(com.tngtech.archunit.core.domain.JavaMethod method,
+                                  com.tngtech.archunit.lang.ConditionEvents events) {
+                    if (method.getModifiers().contains(com.tngtech.archunit.core.domain.JavaModifier.SYNTHETIC)) {
+                        return;
+                    }
+                    if (method.getAccessesToSelf().isEmpty()) {
+                        events.add(com.tngtech.archunit.lang.SimpleConditionEvent.violated(method,
+                            method.getFullName() + " is hidden and called by nothing in the kit"));
+                    }
+                }
+            })
+            .because("a hidden method with no caller is a plan, and a plan is not shipped")
+            .check(KIT);
+    }
+
+    /**
+     * The rule above about holding a Composable, read once more: a collection of them is holding them
+     * too. Written by hand over the generic type, because the erased one says only List.
+     */
+    @Test
+    void noCollectionHoldsAComposableEither() {
+        fields().should(new com.tngtech.archunit.lang.ArchCondition<com.tngtech.archunit.core.domain.JavaField>(
+            "not hold a Composable, whatever it is wrapped in") {
+            @Override
+            public void check(com.tngtech.archunit.core.domain.JavaField field,
+                              com.tngtech.archunit.lang.ConditionEvents events) {
+                if (field.getType().toString().contains(Composable.class.getName())) {
+                    events.add(com.tngtech.archunit.lang.SimpleConditionEvent.violated(field,
+                        field.getFullName() + " holds a Composable: settle it where it is taken"));
+                }
+            }
+        }).check(KIT);
+    }
+
+    /**
+     * A space at the end of a line is a change nobody made, shown to whoever reads the next diff. The
+     * kit's own sources are held to it, tests included: they are read as often as the main code.
+     */
+    @Test
+    void sourcesCarryNoTrailingWhitespace() throws java.io.IOException {
+        java.util.List<String> found = new java.util.ArrayList<>();
+        for (String root : java.util.List.of("src/main/java", "src/test/java")) {
+            try (var files = java.nio.file.Files.walk(java.nio.file.Path.of(root))) {
+                for (java.nio.file.Path file : files.filter(f -> f.toString().endsWith(".java")).toList()) {
+                    java.util.List<String> lines = java.nio.file.Files.readAllLines(file);
+                    for (int i = 0; i < lines.size(); i++) {
+                        if (!lines.get(i).isEmpty() && lines.get(i).charAt(lines.get(i).length() - 1) == ' ') {
+                            found.add(file + ":" + (i + 1));
+                        }
+                    }
+                }
+            }
+        }
+        assertThat(found).as("lines ending in a space").isEmpty();
+    }
+
     /** The model belongs to the canvas: one place writes it, so a document knows what to expect. */
     @Test
     void onlyTheCanvasWritesTheModel() {

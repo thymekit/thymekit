@@ -40,10 +40,7 @@ class ElementContractPublicTest {
                 Section.of(Heading.h3("Description")).add(Md.of("text under it")),
                 Hero.of(Heading.h1("Title")).subtitle(Caption.subtitle("RA-101")))
             .renderedBy(ENGINE)
-            .styledBy("static/thymekit/ui.css", "static/thymekit/canvas.css",
-                "static/thymekit/section.css", "static/thymekit/hero.css",
-                "static/thymekit/heading.css", "static/thymekit/caption.css",
-                "static/thymekit/md.css")
+            .styledBy(CssCanonTest.stylesheets())
             .check();
     }
 
@@ -76,6 +73,62 @@ class ElementContractPublicTest {
         // and an adapter that declares nothing is simply not checked for keys
         ElementContract.of(Element.raw("test/pieces", "echoEl").with("text", "x").with("anything", 1).build())
             .coveringEveryKey().check();
+    }
+
+    /**
+     * A declaration stands above one fragment and speaks for it alone. The fragment after it declares
+     * nothing of its own, so nothing about it is checked — rather than the keys of its neighbour.
+     */
+    @Test
+    void aDeclarationSpeaksForOneFragmentOnly() {
+        ElementContract.of(Element.raw("test/pieces", "undeclaredEl").with("anything", 1).build()).check();
+
+        assertThatThrownBy(() -> ElementContract.of(
+                Element.raw("test/pieces", "declaredEl").with("anything", 1).build()).check())
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("carries the key \"anything\"");
+    }
+
+    /** A fragment named in a comment is prose: the walk reads the template without its comments. */
+    @Test
+    void aFragmentNamedOnlyInACommentIsNotAFragment() {
+        assertThatThrownBy(() -> ElementContract.of(Element.raw("test/pieces", "ghostEl").build()).check())
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("declares no fragment ghostEl");
+    }
+
+    /** A slot is declared like a key, and an element that fills one nobody renders is named. */
+    @Test
+    void slotsAreDeclaredAndMatched() {
+        Element<?> strangeSlot = Element.raw("thymekit/section", "sectionEl")
+            .with("heading", Heading.h2("Title").build().asMap())
+            .slot("extra", java.util.List.of(Md.of("text")))
+            .build();
+        assertThatThrownBy(() -> ElementContract.of(strangeSlot).check())
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("fills the slot \"extra\" that its adapter does not render");
+
+        // and the other direction, when the samples claim to cover the adapter
+        assertThatThrownBy(() -> ElementContract.of(Element.raw("thymekit/section", "sectionEl")
+                .with("heading", Heading.h2("Title").build().asMap()).build())
+                .coveringEveryKey().check())
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("slot items");
+    }
+
+    /**
+     * Data that travels for nothing: the element carries a key, and the page is byte for byte the same
+     * without it. Built by hand, since a builder that guards against it cannot produce one.
+     */
+    @Test
+    void aKeyThatChangesNothingIsNamed() {
+        Element<?> dead = Element.raw("thymekit/md", "mdEl")
+            .with("markdown", "text a visitor wrote")
+            .with("addAction", Caption.label("Add").build().asMap())
+            .build();
+        assertThatThrownBy(() -> ElementContract.of(dead).renderedBy(ENGINE).check())
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("addAction").hasMessageContaining("renders exactly the same without it");
     }
 
     @Test

@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -67,6 +68,13 @@ public final class Element<K> implements Composable<K> {
         Map<String, List<Map<String, Object>>> slots = (Map<String, List<Map<String, Object>>>) m.get("slots");
         List<Map<String, Object>> items = slots == null ? null : slots.get(Objects.requireNonNull(name, "name"));
         return items == null ? List.of() : items;
+    }
+
+    /** Names of the slots this element fills, in the order they were filled; empty when it fills none. */
+    @SuppressWarnings("unchecked")
+    public Set<String> slotNames() {
+        Map<String, List<Map<String, Object>>> slots = (Map<String, List<Map<String, Object>>>) m.get("slots");
+        return slots == null ? Set.of() : new LinkedHashSet<>(slots.keySet());
     }
 
     /**

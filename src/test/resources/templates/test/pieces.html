@@ -16,6 +16,14 @@
 <th:block th:fragment="inline(e)"><span>a</span>
 <span>b</span></th:block>
 
+<!--/* a declaration belongs to the fragment under it and to no other: the one below declares a key,
+       the one after it declares nothing and inherits nothing */-->
+<!--/* keys: text */-->
+<th:block th:fragment="declaredEl(e)"><i class="echo" th:text="${e['text']}"></i></th:block>
+<th:block th:fragment="undeclaredEl(e)"><i class="echo" th:text="${e['text']}"></i></th:block>
+
+<!--/* a fragment named in a comment defines nothing: th:fragment="ghostEl(e)" is prose, not markup */-->
+
 <!--/* samples for TidyDialect: preserved zones, standalone tag, comment, inline space */-->
 <th:block th:fragment="tidy(e)">
     <div class="a">

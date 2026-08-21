@@ -34,15 +34,23 @@ class ElementContractTest {
     private static final Pattern ADAPTER_NAME = Pattern.compile("^[a-z][A-Za-z0-9]*El(V\\d+)?$");
 
     /**
-     * Where an element's CSS lives, by template name. Every file of the triple now shares one suffix
-     * path — {@code io/thymekit/Heading.java}, {@code templates/thymekit/heading.html},
-     * {@code static/thymekit/heading.css} — so this map holds one exception only: the head prints tags
-     * a browser never shows and has no look at all.
+     * Every file of the triple shares one suffix path — {@code io/thymekit/Heading.java},
+     * {@code templates/thymekit/heading.html}, {@code static/thymekit/heading.css} — so an element's
+     * stylesheet is its name, and the manifest is asked whether it is there. One element is exempt: the
+     * head prints tags a browser never shows and has no look at all. A list of the rest is not kept
+     * here on purpose; a list is a thing to forget, and forgetting it is how a file escapes the walk.
      */
-    private static final Map<String, String> CSS_BY_TEMPLATE = Map.of(
-        "heading", "heading.css", "caption", "caption.css",
-        "hero", "hero.css", "md", "md.css",
-        "canvas", "canvas.css");
+    private static final Set<String> WITHOUT_A_LOOK = Set.of("head");
+
+    /**
+     * Classes the kit prints that do not carry its prefix. Two of them are decisions — {@code
+     * rich-content} is the open surface a theme styles directly, and the page-level names came with the
+     * canvas — and {@code detail-empty-hint} is a name left over from the application the kit was cut
+     * out of. Pinned rather than allowed: nothing new joins this list without somebody saying so.
+     */
+    private static final Set<String> OUTSIDE_THE_PREFIX = Set.of(
+        "rich-content", "detail-empty-hint",
+        "page-canvas", "page-hero", "page-hero-group", "page-hero-status", "page-hero-actions");
 
     /**
      * One live element per adapter — including the two a page is made of, since the page is an element
@@ -170,10 +178,7 @@ class ElementContractTest {
         ElementContract.of(samples().toArray(Composable<?>[]::new))
             .coveringEveryKey()
             .renderedBy(ENGINE)
-            .styledBy("static/thymekit/ui.css", "static/thymekit/canvas.css",
-                "static/thymekit/section.css", "static/thymekit/hero.css",
-                "static/thymekit/heading.css", "static/thymekit/caption.css",
-                "static/thymekit/md.css")
+            .styledBy(CssCanonTest.stylesheets())
             .check();
     }
 
@@ -215,19 +220,32 @@ class ElementContractTest {
 
     @Test
     void css_perElement_inManifest_withStockScope() throws IOException {
-        String manifest = resource("static/thymekit/ui.css");
-        Set<String> seen = new java.util.HashSet<>();
         for (Element<?> e : samples()) {
-            String name = e.template().substring("thymekit/".length());
-            String css = CSS_BY_TEMPLATE.get(name);
-            if (css == null || !seen.add(css)) {
-                continue;                                  // the head prints tags, not looks: no stylesheet of its own
+            String element = e.template().substring("thymekit/".length());
+            if (WITHOUT_A_LOOK.contains(element)) {
+                continue;                                  // the head prints tags, not looks
             }
-            assertThat(manifest).as("manifest ui.css imports %s", css).contains("@import url(\"" + css + "\")");
+            String css = element + ".css";
+            assertThat(CssCanonTest.manifest()).as("the manifest imports %s", css).contains(css);
             assertThat(resource("static/thymekit/" + css)).as("stock scope .tk-defaults in %s", css).contains(".tk-defaults");
         }
-        assertThat(CSS_BY_TEMPLATE.keySet()).as("a template with a stylesheet is listed here")
-            .containsExactlyInAnyOrder("heading", "caption", "hero", "md", "canvas");
+    }
+
+    /** Whatever the prefix is for, the classes outside it are the few that were decided, and no more. */
+    @Test
+    void css_classesOutsideThePrefix_areTheOnesDecided() {
+        Set<String> strangers = new java.util.LinkedHashSet<>();
+        for (Element<?> e : samples()) {
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile("class=\"([^\"]+)\"").matcher(render(e));
+            while (m.find()) {
+                for (String name : m.group(1).trim().split("\\s+")) {
+                    if (!name.startsWith("tk-")) {
+                        strangers.add(name);
+                    }
+                }
+            }
+        }
+        assertThat(strangers).containsExactlyInAnyOrderElementsOf(OUTSIDE_THE_PREFIX);
     }
 
     /**
@@ -239,10 +257,9 @@ class ElementContractTest {
     @Test
     void css_everyClassAnElementPrints_hasARule() throws IOException {
         StringBuilder kitCss = new StringBuilder();
-        for (String file : List.of("ui.css", "canvas.css", "section.css", "hero.css",
-                "heading.css", "caption.css", "md.css")) {
+        for (String resource : CssCanonTest.stylesheets()) {
             // comments name classes too, and a class documented but not styled is exactly what this looks for
-            kitCss.append(resource("static/thymekit/" + file).replaceAll("(?s)/\\*.*?\\*/", " "));
+            kitCss.append(resource(resource).replaceAll("(?s)/\\*.*?\\*/", " "));
         }
         Set<String> printed = new java.util.LinkedHashSet<>();
         for (Element<?> e : samples()) {

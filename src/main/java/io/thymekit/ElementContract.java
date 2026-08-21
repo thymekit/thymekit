@@ -7,8 +7,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import io.thymekit.Element.Script;
@@ -67,6 +69,15 @@ public final class ElementContract {
 
     /** What an adapter says it reads: a comment above the fragment, stripped before rendering. */
     private static final Pattern DECLARED_KEYS = Pattern.compile("keys:\\s*([A-Za-z0-9_,\\s]+?)\\s*\\*/");
+
+    /** The other half of the declaration: the slots the adapter renders, named the same way. */
+    private static final Pattern DECLARED_SLOTS = Pattern.compile("slots:\\s*([A-Za-z0-9_,\\s]+?)\\s*\\*/");
+
+    /** A comment declares; a comment does not define. Fragment lookup reads the template without them. */
+    private static final Pattern COMMENT = Pattern.compile("(?s)<!--.*?-->");
+
+    /** Where one adapter's declaration ends: the fragment before the one being looked at. */
+    private static final Pattern ANY_FRAGMENT = Pattern.compile("th:fragment=\"");
 
     private final List<Element<?>> elements;
     private final @Nullable ITemplateEngine engine;
@@ -141,8 +152,8 @@ public final class ElementContract {
         Set<String> printedClasses = new LinkedHashSet<>();
         // what each adapter declares and what the elements given carried, gathered as the walk goes:
         // local, because a walk is one run and holds nothing between two of them
-        java.util.Map<String, Set<String>> declaredByAdapter = new java.util.LinkedHashMap<>();
-        java.util.Map<String, Set<String>> carriedByAdapter = new java.util.LinkedHashMap<>();
+        Map<String, Set<String>> declaredByAdapter = new LinkedHashMap<>();
+        Map<String, Set<String>> carriedByAdapter = new LinkedHashMap<>();
         for (Element<?> element : elements) {
             String address = element.template() + " :: " + element.fragment();
             if (!ADAPTER.matcher(element.fragment()).matches()) {
@@ -152,12 +163,16 @@ public final class ElementContract {
                 failures.add(address + " — a script element does not belong among elements; declare it with requires()");
             }
             declaresItself(element, address, failures);
-            declaredKeysMatch(element, address, failures, declaredByAdapter, carriedByAdapter);
+            declarationMatches(element, address, failures, declaredByAdapter, carriedByAdapter);
             for (Element<Script> asset : element.assets()) {   // requires() already refuses anything but a script
                 declaresItself(asset, address + " — its script " + asset.template() + " :: " + asset.fragment(), failures);
             }
             if (engine != null) {
-                printedClasses.addAll(renderAndCollect(element, address, failures));
+                String html = renderAndReport(element, address, failures);
+                if (html != null) {
+                    printedClasses.addAll(classesIn(html));
+                    everyKeyChangesTheOutput(element, address, html, failures);
+                }
             }
         }
         if (!stylesheets.isEmpty()) {
@@ -183,19 +198,25 @@ public final class ElementContract {
         if (template == null) {
             failures.add(address + " — no template on the classpath at " + element.template() + ".html"
                 + " (looked under " + String.join(", ", templateRoots.stream().map(r -> r.isEmpty() ? "the address itself" : r).toList()) + ")");
-        } else if (!template.contains("th:fragment=\"" + element.fragment() + "(")) {
+            // a fragment named in a comment defines nothing, so the lookup reads the template without them
+        } else if (!COMMENT.matcher(template).replaceAll(" ").contains("th:fragment=\"" + element.fragment() + "(")) {
             failures.add(address + " — the template declares no fragment " + element.fragment()
                 + "(e); the dispatcher calls an adapter with the descriptor, so it takes one argument");
         }
     }
 
     /**
-     * The keys an adapter says it reads against the keys the element actually carries. Both directions
-     * are silent failures otherwise: data nobody reads, and a template branch nothing can reach.
+     * What an adapter says it reads against what the element actually carries — keys and slots alike.
+     * Both directions are silent failures otherwise: data nobody reads, and a template branch nothing
+     * can reach.
+     *
+     * <p>A declaration belongs to the fragment it stands above and to no other: the window searched
+     * ends at the previous fragment of the same file, so an adapter that declares nothing inherits
+     * nothing from the one before it and is simply left unchecked.
      */
-    private void declaredKeysMatch(Element<?> element, String address, List<String> failures,
-                                   java.util.Map<String, Set<String>> declaredByAdapter,
-                                   java.util.Map<String, Set<String>> carriedByAdapter) {
+    private void declarationMatches(Element<?> element, String address, List<String> failures,
+                                    Map<String, Set<String>> declaredByAdapter,
+                                    Map<String, Set<String>> carriedByAdapter) {
         String template = read(element.template() + ".html");
         if (template == null) {
             return;                                   // already reported by declaresItself
@@ -204,48 +225,107 @@ public final class ElementContract {
         if (fragmentAt == -1) {
             return;                                   // same
         }
-        Matcher declaration = DECLARED_KEYS.matcher(template.substring(0, fragmentAt));
-        String last = null;
-        while (declaration.find()) {
-            last = declaration.group(1);              // the one nearest the fragment
-        }
-        if (last == null) {
+        String window = declarationWindow(template, fragmentAt);
+        Set<String> declaredKeys = named(DECLARED_KEYS, window);
+        Set<String> declaredSlots = named(DECLARED_SLOTS, window);
+        if (declaredKeys.isEmpty() && declaredSlots.isEmpty()) {
             return;                                   // nothing declared, nothing checked
         }
-        Set<String> declared = new LinkedHashSet<>(List.of(last.trim().split("\\s*,\\s*")));
         Set<String> carried = new LinkedHashSet<>(element.asMap().keySet());
         carried.removeAll(Element.RESERVED);
         for (String key : carried) {
-            if (!declared.contains(key)) {
+            if (!declaredKeys.contains(key)) {
                 failures.add(address + " — carries the key \"" + key + "\" that its adapter does not read;"
                     + " declare it above the fragment or stop putting it in");
             }
         }
-        declaredByAdapter.computeIfAbsent(address, a -> new LinkedHashSet<>()).addAll(declared);
+        Set<String> filled = element.slotNames();
+        for (String slot : filled) {
+            if (!declaredSlots.contains(slot)) {
+                failures.add(address + " — fills the slot \"" + slot + "\" that its adapter does not render;"
+                    + " declare it above the fragment or stop filling it");
+            }
+        }
+        declaredByAdapter.computeIfAbsent(address, a -> new LinkedHashSet<>()).addAll(declaredKeys);
+        declaredByAdapter.get(address).addAll(declaredSlots.stream().map(s -> "slot " + s).toList());
         carriedByAdapter.computeIfAbsent(address, a -> new LinkedHashSet<>()).addAll(carried);
+        carriedByAdapter.get(address).addAll(filled.stream().map(s -> "slot " + s).toList());
+    }
+
+    /** The text a declaration may stand in: after the previous fragment of the file, before this one. */
+    private static String declarationWindow(String template, int fragmentAt) {
+        Matcher previous = ANY_FRAGMENT.matcher(template.substring(0, fragmentAt));
+        int from = 0;
+        while (previous.find()) {
+            from = previous.end();
+        }
+        return template.substring(from, fragmentAt);
+    }
+
+    /** The last declaration of its kind in the window — the one nearest the fragment. */
+    private static Set<String> named(Pattern declaration, String window) {
+        Matcher m = declaration.matcher(window);
+        String last = null;
+        while (m.find()) {
+            last = m.group(1);
+        }
+        return last == null ? Set.of() : new LinkedHashSet<>(List.of(last.trim().split("\\s*,\\s*")));
     }
 
     /** Renders one element through the single dispatcher, exactly as a page would. */
-    private Set<String> renderAndCollect(Element<?> element, String address, List<String> failures) {
-        Context context = new Context();
-        context.setVariable("e", element.asMap());
+    private @Nullable String renderAndReport(Element<?> element, String address, List<String> failures) {
         String html;
         try {
-            html = Objects.requireNonNull(engine).process("thymekit/element", Set.of("render"), context);
+            html = render(element.asMap());
         } catch (RuntimeException notRendered) {
             failures.add(address + " — does not render: " + notRendered.getMessage());
-            return Set.of();
+            return null;
         }
         if (html.isBlank() || !html.contains("<")) {
             failures.add(address + " — renders nothing a browser would show");
-            return Set.of();
+            return null;
         }
+        return html;
+    }
+
+    private String render(Map<String, Object> descriptor) {
+        Context context = new Context();
+        context.setVariable("e", descriptor);
+        return Objects.requireNonNull(engine).process("thymekit/element", Set.of("render"), context);
+    }
+
+    private static Set<String> classesIn(String html) {
         Set<String> classes = new LinkedHashSet<>();
         Matcher m = CLASS_ATTRIBUTE.matcher(html);
         while (m.find()) {
             classes.addAll(List.of(m.group(1).trim().split("\\s+")));
         }
         return classes;
+    }
+
+    /**
+     * Data that travels for nothing: a key the element carries and the adapter renders the same page
+     * without. Declaring a key says the adapter reads it; printing the same html with it taken away
+     * says it does not — a condition upstream of it, or a branch that never runs. Where taking the key
+     * away breaks the adapter instead, the key is read, and loudly.
+     */
+    private void everyKeyChangesTheOutput(Element<?> element, String address, String whole, List<String> failures) {
+        Set<String> carried = new LinkedHashSet<>(element.asMap().keySet());
+        carried.removeAll(Element.RESERVED);
+        for (String key : carried) {
+            Map<String, Object> without = new LinkedHashMap<>(element.asMap());
+            without.remove(key);
+            String reduced;
+            try {
+                reduced = render(without);
+            } catch (RuntimeException readAndLoudly) {
+                continue;
+            }
+            if (whole.equals(reduced)) {
+                failures.add(address + " — carries the key \"" + key + "\" and renders exactly the same"
+                    + " without it: the adapter prints it nowhere, or a condition keeps it off the page");
+            }
+        }
     }
 
     /** Every class an element printed has a rule; comments are stripped, since a name in a header styles nothing. */
