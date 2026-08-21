@@ -5,7 +5,6 @@ package io.thymekit;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * Owner of the section concept: a part of a page with a heading and whatever belongs under it. Anything

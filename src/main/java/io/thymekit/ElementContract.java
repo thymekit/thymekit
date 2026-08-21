@@ -5,6 +5,7 @@ package io.thymekit;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -13,7 +14,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import io.thymekit.Element.Script;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
@@ -164,7 +164,7 @@ public final class ElementContract {
             }
             declaresItself(element, address, failures);
             declarationMatches(element, address, failures, declaredByAdapter, carriedByAdapter);
-            for (Element<Script> asset : element.assets()) {   // requires() already refuses anything but a script
+            for (Element<Element.Script> asset : element.assets()) {   // requires() already refuses anything but a script
                 declaresItself(asset, address + " — its script " + asset.template() + " :: " + asset.fragment(), failures);
             }
             if (engine != null) {
@@ -359,7 +359,7 @@ public final class ElementContract {
                     return new String(in.readAllBytes(), StandardCharsets.UTF_8);
                 }
             } catch (IOException unreadable) {   // a resource that exists and cannot be read is not a verdict to swallow
-                throw new java.io.UncheckedIOException("cannot read " + candidate, unreadable);
+                throw new UncheckedIOException("cannot read " + candidate, unreadable);
             }
         }
         return null;

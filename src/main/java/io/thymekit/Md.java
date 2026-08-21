@@ -23,7 +23,7 @@ public final class Md {
     private Md() {}
 
     /**
-     * The text may be absent ({@code null} — nothing written yet): then the section shows its
+     * The text may be absent ({@code null} — nothing written yet): then the block shows its
      * {@link Builder#emptyHint}, and without a hint it is not rendered at all.
      */
     public static Builder of(@Nullable String markdown) {
@@ -55,7 +55,7 @@ public final class Md {
 
         /**
          * An affordance shown next to the empty state — any element, rendered through the dispatcher.
-         * The section does not know what it is, so the wording and the shape stay with the consumer.
+         * The block does not know what it is, so the wording and the shape stay with the consumer.
          */
         public Builder addAction(Composable<?> action) {
             b.with("addAction", Element.requireRenderableElement(Element.settle(action, "action"), "Md.addAction").asMap());
@@ -86,8 +86,8 @@ public final class Md {
             }
             if (!linkRel.isEmpty()) {
                 if (!hasText) {
-                    throw new IllegalStateException("linkRel on a section with no text: the policy would apply to "
-                        + "nothing — give the section its markdown, or drop the policy");
+                    throw new IllegalStateException("linkRel on a block with no text: the policy would apply to "
+                        + "nothing — give the block its markdown, or drop the policy");
                 }
                 b.with("linkRel", Rel.tokens(linkRel));
             }

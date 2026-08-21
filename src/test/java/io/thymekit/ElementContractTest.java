@@ -150,7 +150,6 @@ class ElementContractTest {
 
     private static String render(Element<?> e) {
         var ctx = new Context();
-        ctx.setVariable("businessZone", java.time.ZoneId.of("UTC"));
         ctx.setVariable("e", e.asMap());
         return ENGINE.process("test/harness", Set.of("one"), ctx).replaceAll("\\s+", " ").strip();
     }
@@ -195,8 +194,7 @@ class ElementContractTest {
     void adapters_renderTidy_noBlankLines() {
         for (Element<?> e : samples()) {
             var ctx = new Context();
-            ctx.setVariable("businessZone", java.time.ZoneId.of("UTC"));
-            ctx.setVariable("e", e.asMap());
+                ctx.setVariable("e", e.asMap());
             String html = ENGINE.process("test/harness", Set.of("one"), ctx).strip();
             assertThat(outsidePreserved(html).lines().filter(String::isBlank).count())
                 .as("blank lines rendering %s :: %s%n%s", e.template(), e.fragment(), html).isZero();

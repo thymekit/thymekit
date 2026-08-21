@@ -32,8 +32,28 @@ class ShowcaseSnapshotTest {
 
     private static final Path OUT = Path.of("build/showcase/index.html");
 
+    /** Adapters the kit ships, less the two a page is made of: the canvas and the head are not elements of it. */
+    private static int elementsInTheKit() throws Exception {
+        var dir = Path.of(ShowcaseSnapshotTest.class.getResource("/templates/thymekit").toURI());
+        try (var files = Files.list(dir)) {
+            long adapters = files.filter(Files::isRegularFile)
+                .flatMap(file -> {
+                    try {
+                        return java.util.regex.Pattern.compile("th:fragment=\"([a-zA-Z0-9]+El)\\(")
+                            .matcher(Files.readString(file)).results();
+                    } catch (IOException unreadable) {
+                        throw new java.io.UncheckedIOException(unreadable);
+                    }
+                })
+                .map(m -> m.group(1)).distinct()
+                .filter(name -> !name.equals("headEl") && !name.equals("canvasEl"))
+                .count();
+            return (int) adapters;
+        }
+    }
+
     @Test
-    void showcase_rendersToAFileAndCarriesItsElements() throws IOException {
+    void showcase_rendersToAFileAndCarriesItsElements() throws Exception {
         var engine = new SpringTemplateEngine();
         var resolver = new ClassLoaderTemplateResolver();
         resolver.setPrefix("templates/");
@@ -79,6 +99,9 @@ class ShowcaseSnapshotTest {
             .contains("rel=\"ugc nofollow\"")                                 // links of somebody else's text
             .contains("detail-empty-hint")                                     // the empty state
             .contains("thymekitDemo");                                         // the script, collected once
+
+        assertThat(html).as("the number the page states about itself, against the adapters in the jar")
+            .contains(elementsInTheKit() + " elements, a canvas and a head");
 
         Files.createDirectories(OUT.getParent());
         Files.writeString(OUT, html);

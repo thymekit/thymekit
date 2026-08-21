@@ -41,7 +41,7 @@ class CanonTest {
      * a container. They hand out no elements, so this rule never looks at them.
      */
     @Test
-    void aFactoryIsAnamespace_finalAndUninstantiable() {
+    void aFactoryIsANamespace_finalAndUninstantiable() {
         classes().should(new com.tngtech.archunit.lang.ArchCondition<com.tngtech.archunit.core.domain.JavaClass>(
             "be final with a private constructor, if they hand out elements") {
             @Override

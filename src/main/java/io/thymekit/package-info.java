@@ -9,7 +9,7 @@
  *
  * <h2>The canon</h2>
  * <ul>
- *   <li><b>A element owns its concept.</b> If a concept has an element — heading, caption, button —
+ *   <li><b>An element owns its concept.</b> If a concept has an element — heading, caption, section —
  *       everything that needs it composes that element instead of writing its own markup. A new
  *       element is therefore always followed by a pass over the existing ones.</li>
  *   <li><b>Shape:</b> {@code factory(core) → options → build()} yields {@link io.thymekit.Element}, the

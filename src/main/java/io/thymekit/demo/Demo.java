@@ -38,6 +38,12 @@ public final class Demo {
 
     private static final String VIEW = "thymekit/demo";
 
+    /**
+     * How many elements the kit has, said on the page. A number the showcase states about itself is a
+     * claim like any other, so the snapshot test counts the adapters in the jar and holds this to it.
+     */
+    private static final int ELEMENTS = 5;
+
     private Demo() {}
 
     /**
@@ -93,8 +99,7 @@ public final class Demo {
             .add(Hero.of(Heading.h1("thymekit"))
                 .eyebrow(Caption.eyebrow("showcase"))
                 .subtitle(Caption.subtitle("the elements on this page are composed in Java and rendered by the kit itself"))
-                .meta(Caption.meta("four elements, a canvas and a head"),
-                      Caption.meta("built 21 August 2026").time(LocalDate.of(2026, 8, 21)))
+                .meta(Caption.meta(ELEMENTS + " elements, a canvas and a head"))
                 .badge(Element.Descriptor.of(PARTS, "statusBadgeEl").with("text", "0.1.0"))
                 .actions(Element.Descriptor.of(PARTS, "actionsEl")
                     .with("text", "the source, and every number on this page")

@@ -7,7 +7,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -51,7 +50,6 @@ class ElementDispatchRenderTest {
             ctx.setVariable("items", null);
             return compact(ENGINE.process("test/harness", Set.of("all"), ctx));
         }
-        ctx.setVariable("businessZone", ZoneId.of("UTC"));   // consumer contract of the date fragment
         ctx.setVariable("items", items.stream().map(e -> e == null ? null : e.asMap()).toList());
         return compact(ENGINE.process("test/harness", Set.of("all"), ctx));
     }
@@ -139,7 +137,6 @@ class ElementDispatchRenderTest {
     @Test
     void tidyDialect_collapsesFormattingWhitespace_keepsPreAndInlineSpace() {
         var ctx = new Context();
-        ctx.setVariable("businessZone", ZoneId.of("UTC"));
         ctx.setVariable("e", Md.of("# Heading\n\n```java\nclass A {\n    void b() {}\n}\n```").build().asMap());
         String md = ENGINE.process("test/harness", Set.of("one"), ctx);      // no compaction here: the raw output is the point
         assertThat(md).contains("<pre><code class=\"language-java\">class A {\n    void b() {}\n}\n</code></pre>");   // pre untouched
@@ -192,7 +189,7 @@ class ElementDispatchRenderTest {
 
     /** A section is named when its heading was given an id, and stays an ordinary box when it was not. */
     @Test
-    void mdSection_isNamedByTheHeadingThatHasAnAddress() {
+    void section_isNamedByTheHeadingThatHasAnAddress() {
         String named = renderAll(List.of(Section.of(Heading.h2("Composition").id("composition")).add(Md.of("Text")).build()));
         assertThat(named).contains("<section class=\"tk-section\" aria-labelledby=\"composition\">")
             .contains("<h2 class=\"tk-heading tk-heading--2\" id=\"composition\">Composition</h2>");
@@ -250,9 +247,9 @@ class ElementDispatchRenderTest {
         assertThat(Rel.NOREFERRER.token()).isEqualTo("noreferrer");
     }
 
-    /** The section hands the policy of its links down to the renderer. */
+    /** The block hands the policy of its links down to the renderer. */
     @Test
-    void mdSection_marksOutgoingLinksWhenTold() {
+    void md_marksOutgoingLinksWhenTold() {
         String review = renderAll(List.of(Md.of("Try [this](https://spam.example/x)").linkRel(Rel.UGC, Rel.NOFOLLOW).build()));
         assertThat(review).contains("rel=\"ugc nofollow\"");
 
