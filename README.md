@@ -93,19 +93,47 @@ yours wins; tidy rendering switches off with `thymekit.tidy.enabled=false`.
 
 ```html
 <head>
-  <title th:text="${pageTitle}">Page</title>
+  <th:block th:replace="~{fragments/thymekit/element :: render(${head})}"/>
 </head>
 <body>
-  <div class="page" th:classappend="${pageClass}">
-    <th:block th:replace="~{fragments/thymekit/element :: renderAll(${elements})}"/>
-  </div>
+  <th:block th:replace="~{fragments/thymekit/element :: render(${page})}"/>
   <th:block th:replace="~{fragments/thymekit/element :: scripts(${assets})}"/>
 </body>
 ```
 
-The canvas fills four model keys and expects nothing else: `pageTitle`, `pageClass`, `elements` and
-`assets`. The only class it puts there by itself is `page-canvas`; anything your theme hooks onto —
-an audience, a section of the site — you add with `pageClass("...")`.
+Both lines render an element. The page is one — it carries an adapter address, holds its flow as data
+and goes through the same dispatcher as a heading does — and so is the head, so what the page says
+about itself is said once, in Java, and printed in one place. The `<main>` landmark comes with the
+page: it is not something a kit should trust every document to remember.
+
+```java
+PageModel.of(model)
+    .title(it.name())                                   // the tab, and the title of a link preview
+    .description(it.summary())                          // the sentence under a search result
+    .canonical("https://shop/ingredients/" + it.slug())  // when more than one address leads here
+    .image(it.photoUrl())                               // the picture a messenger shows
+    .robots(NOINDEX)                                    // a draft, a filtered listing, a page for one visitor
+```
+
+`Robots` carries the four directives that change what a visitor sees in a search result — `NOINDEX`,
+`NOFOLLOW`, `NOARCHIVE`, `MAX_IMAGE_PREVIEW_LARGE` — and one of them arrives without being asked: a
+page that was given a picture and is not kept out of the index also says `max-image-preview:large`,
+because the consumer has already declared a picture worth showing and a search engine's own default is
+a thumbnail. That is the only opinion the head holds, and it is inferred from something already said.
+
+Absent parts print nothing: a page without a description is honest, a page with an empty description
+tag is not. The kit never guesses the canonical address — only the consumer knows where a page lives —
+but it does insist that the two addresses which leave the page are absolute. A relative `og:image` is
+not a smaller picture, it is no preview at all, and a canonical link travels as `og:url` to a scraper
+that has no document to resolve it against. So `image("/img/baobab.jpg")` is refused where it is
+written, rather than silently producing a page whose preview never appears.
+
+The canvas fills four model keys and expects nothing else: `page` and `head`, the two elements above;
+`assets`, the scripts of the tree; and `pageTitle` — the bare string, for a document that wants to show
+the title somewhere of its own. The tag itself is printed by the head element alone, so the two cannot
+disagree. The only class it puts there by itself is `page-canvas`; anything your theme
+hooks onto — an audience, a section of the site — you add with `pageClass("...")`, and the column it
+draws is tuned by `--tk-page-width` and `--tk-page-padding`.
 
 Name it as you like and pass the name to `render(view)`; `render()` without arguments looks for a
 template called `page`. The kit ships no page document for your pages, so it never dictates a layout —
@@ -123,8 +151,9 @@ things look:
 
 ## See it live
 
-The kit ships with its own showcase. Mount it with one controller method and every element is there,
-live — rendered by your engine, served by your static handling, wearing your theme:
+The kit ships with its own showcase. Mount it with one controller method and the elements are there,
+live — rendered by your engine, served by your static handling, wearing your theme, with a frame in the
+stock scope beside them showing what they look like when a theme says nothing at all:
 
 ```java
 @GetMapping("/thymekit-demo")
@@ -145,7 +174,9 @@ flowchart LR
 ```
 
 Java, template and CSS are no longer three places to keep in sync by hand: they are one element with
-one address, and a contract test walks every element to prove the triple still holds.
+one address, and a contract test walks every element to prove the triple still holds — every adapter
+the kit declares, since the test reads the fragments rather than a list somebody maintains, and every
+class an element prints has to have a rule in its stylesheet.
 
 ## Elements of elements
 
@@ -183,6 +214,105 @@ flowchart LR
     C --> R
 ```
 
+## Theming
+
+An element ships structure and nothing else. Its look comes from handles — CSS custom properties named
+after the element, `--tk-heading-*`, `--tk-caption-*` — and a theme is a file that hands them values.
+There are no shared design tokens in the kit: an element is tuned through its own handles only, listed
+at the top of its CSS file, so a theme keeps its own vocabulary to itself.
+
+```css
+:root {
+    --tk-heading-font: 'Cormorant Garamond', serif;
+    --tk-heading-size-1: 36px;
+    --tk-heading-size-2: 26px;
+    --tk-heading-tracking: 1px;
+    --tk-caption-eyebrow-transform: uppercase;
+}
+```
+
+That much is ordinary. What matters is the rule the kit exists to enforce: **a look is declared once,
+for the element, and reused — not restated per place.** The application this kit grew out of had
+seventy CSS rules describing eleven distinct heading looks; the other fifty-nine were the same looks
+re-derived in another context, with the letter-spacing drifting between 0.4px and 3px along the way.
+Nobody decided that. It is what happens when there is no object to hold the decision.
+
+So the kit asks a theme to keep four rules:
+
+**One scale, set once.** Six heading levels get six values in `:root`. A level *is* the look: there is
+no separate design for "the H1 inside the hero", because a page has one H1 — the canvas enforces that —
+and the hero is merely where it lives.
+
+**One axis of deviation: the kind of page.** A landing page may legitimately want a louder H1 than an
+inner page. The canvas already marks the page with a class of your choosing, so the theme writes
+`.page-home { --tk-heading-size-1: 64px }`. One axis, named, declared where the canvas puts its marker.
+
+**The host dresses what it hosts.** A page has more than one kind of heading — the title, the section
+titles, the chapters an author writes inside a text. They differ not by level and not by place on the
+screen, but by the element they live in, and in this kit every place a heading can appear is an element
+itself. So an element that hosts headings may dress them, in its own CSS, under its own name:
+
+```css
+/* hero.css — the hero dressing the title of the page */
+.page-hero-group > .tk-heading {
+    --tk-heading-host-font: var(--tk-hero-heading-font, var(--tk-heading-font, inherit));
+}
+```
+
+Two rules keep this from becoming the disease it cures. The host may only pass on a value **its own
+handle was given** — it never invents a literal, so a theme that said nothing about heroes still gets
+its site scale in the hero, untouched. And the order of precedence is declared once, by the heading
+element itself: host over site, site over browser.
+
+**A theme writes no selectors over the kit's classes.** No `.page-hero .tk-heading { … }`. Wanting to
+is the signal that something is missing — an element, or a handle on one — and that is what to fix.
+This is the rule that catches the disease at the door, because every context-specific rule looks
+harmless on the day it is written.
+
+There is one place where the answer is the opposite, and it is worth knowing why. Inside
+`.rich-content` the markup belongs to whoever wrote the text — tables, quotes, code, whatever markdown
+allows and whatever it allows next — and no set of handles can cover a space that has no edges. So the
+kit keeps only what stops a page from breaking there (an image that would overflow its column, a code
+block that would push the layout sideways) and a theme styles the rest directly. Rule four protects
+the kit's own elements from rules about places; content was never one of them.
+
+What the kit's own stylesheets may hold follows from the same line. Containment, always: it is what
+keeps a page whole. Anatomy — which part of an element sits above which, and how far apart — also,
+since it is what the element is. The space *around* an element, no: whoever places it decides that,
+which is why the page gap is a handle on the canvas rather than a margin on a hero. And a look, no
+either: it is a handle, or it is the browser's. Where the kit removes something the browser gives — a
+link's underline — it gives a handle to put it back.
+
+```mermaid
+flowchart TD
+    T["theme — <code>:root</code><br/>the site's scale and voice<br/><code>--tk-heading-*</code>"] --> H["<b>heading</b><br/>host over site,<br/>site over browser"]
+    K["kind of page<br/><code>.page-home</code>"] --> T
+    HO["host element's own CSS<br/><code>--tk-hero-heading-*</code><br/><code>--tk-md-heading-*</code>"] --> H
+    T -.->|falls through where<br/>the host was given nothing| HO
+    H --> R["every heading on the site"]
+    X["a theme's context rule<br/><code>.page-hero .tk-heading { … }</code>"] -.->|not this| R
+```
+
+Two notes about delivery, since a theme is also a file a browser has to fetch. `ui.css` imports one
+file per element — a shape that is easy to read and six requests to fetch; if that matters on your
+pages, bundle it in your build, it is plain CSS with no processing behind it. And if your theme wants
+a webfont, link it in the document rather than `@import` it from inside a stylesheet, where it costs a
+round trip before the first line can be drawn. The kit's own showcase asks for no webfont at all: it is
+mounted inside somebody else's application, and sending their visitors to a third-party host is not a
+decision a library gets to make for them.
+
+Every element file also resets its own handles inside `.tk-defaults`, so a frame carrying that class is
+a place a theme cannot reach — useful for a style guide that wants to show the stock beside the dressed
+version, which is exactly what the showcase does with it.
+
+The showcase is the worked example, and it shows all three at once:
+[`demo.css`](src/main/resources/static/thymekit/demo.css) gives the site a voice — section titles as
+small tracked gold labels — then lets the hero dress the page title in a serif display face and the
+markdown section dress an author's chapters in a quieter scale of its own.
+[Look at it](https://thymekit.github.io/thymekit/main/showcase/): three faces on one page, and not a
+single rule in that file names a place. Its whole vocabulary is blocks of handle values plus two rules
+for the showcase's own document, `body` and the page column.
+
 ## Writing your own element
 
 An element of your own is written exactly the way the kit's own are — same triple, same guards:
@@ -207,14 +337,54 @@ of your own.
 
 | Element | Factory | Adapter | CSS |
 |---|---|---|---|
-| Heading | `Heading.h1(text)…h6(text)` — `id`, `href`, `srOnly` | `heading :: headingEl` | `heading.css` |
-| Caption | `Caption.eyebrow/subtitle/label/meta(text)` | `caption :: captionEl` | `caption.css` |
-| Hero | `Hero.of(Element<Heading>)` — eyebrow, subtitle, meta lines | `hero :: heroEl` | `hero.css` |
-| Md | `Md.of(markdown)` — title, empty state, empty-state action | `md-section :: mdSectionEl` | `md-section.css` |
-| Canvas | `PageModel.of(model)` — title, own page classes, flow of elements, `render(view)` | — | — |
+| Heading | `Heading.h1(text)…h6(text)` — `id`, `href` with `rel`/`newTab`, `lang`, `srOnly` | `heading :: headingEl` | `heading.css` |
+| Caption | `Caption.eyebrow/subtitle/label/meta(text)` — `time`, `lang` | `caption :: captionEl` | `caption.css` |
+| Hero | `Hero.of(Element<Heading>)` — eyebrow, subtitle, meta lines, a `statusBadgeEl` badge and an `actionsEl` row of your own | `hero :: heroEl` | `hero.css` |
+| Md | `Md.of(markdown)` — title, empty state, empty-state action, `linkRel` | `md-section :: mdSectionEl` | `md-section.css` |
+| Canvas | `PageModel.of(model)` — own page classes, flow of elements, `render(view)`; renders as the `page` element | `canvas :: canvasEl` | `base/canvas.css` |
+| Head | filled by the canvas — title, description, canonical, image, `robots`; renders as the `head` element | `head :: headEl` | — (it prints tags, not looks) |
 
-Headings, captions and hero form the outline of a page, and the canvas guards it: at most one H1 per
-page, and a caption never joins the outline at all.
+Text written by visitors says so: `Md.of(review).linkRel(UGC, NOFOLLOW)` marks the links that leave
+the site, and only those — an address starting with `/` or `#` is your own, and holding back its weight
+would be a wound self-inflicted. The kit has no default here, because a review and an editor's article
+need opposite ones and only the consumer knows which is on the page.
+
+Text carries what machines need beside what people read. `Caption.meta("12 March 2026").time(LocalDate.of(2026, 3, 12))`
+prints `<time datetime="2026-03-12">12 March 2026</time>` — the wording, the language and the format
+stay yours, the attribute is what a search engine and a screen reader understand, and it takes a
+`LocalDate` or an `Instant` rather than a string, so "yesterday" cannot get in. `lang("la")` on a
+heading or a caption marks the Latin name inside a Russian catalogue as Latin. A heading that is a link
+says what it is with `rel(NOFOLLOW, UGC)`, and `newTab()` brings `noopener` along whichever order they
+are written in — without it the opened page can reach back through `window.opener`, and remembering
+that at every link by hand is the kind of vigilance the kit exists to remove. An `href` that executes
+instead of navigating (`javascript:`, `data:`, `vbscript:`, and the spellings a browser unpicks, like
+`java\tscript:`) is refused where it is written, and `rel` or `newTab` on
+a heading that is not a link is refused too, rather than printed nowhere.
+
+A section takes a name from the heading you gave an address: write `Heading.h2("Composition").id("composition")`
+and the section around it carries `aria-labelledby`, so it becomes a region a screen reader can jump to
+and a place a link can point at. Say nothing and it stays an ordinary box — landmarks are worth having
+few of, and the decision that a section stands on its own is the consumer's, not the kit's. The kit
+never invents the id itself: an address is a promise to whoever saved the link, and a slug made from a
+heading breaks the day someone edits the text.
+
+Headings, captions and hero form the outline of a page, and the canvas guards it before rendering: at
+most one H1 per page, no heading level skipped — a page that uses h4 while nothing on it is an h3 has a
+hole a screen reader falls straight through — no level outside h1..h6, since the adapter renders
+nothing at all for a seventh, and a caption never joins the outline at all.
+
+Headings an author wrote inside markdown are placed under the page rather than beside it: the topmost
+level found in the text is lowered to a ceiling — h2 by default — and the rest move by the same amount,
+never past h6. A `#` in the description of an ingredient is therefore an h2 in the page, not a second
+H1. The relative shape of the text is what survives; that is what a level means in markdown, where the
+same document may be shown inside a page, inside a card or inside a letter. The ceiling belongs to the
+renderer (`new MarkdownRenderer(3)`, and `1` renders the text exactly as authored, for pages written
+entirely in markdown); replace the bean and the whole site follows.
+
+What the kit does not do is close a hole the author left. Write `#` and then `###` and the gap travels
+with the text into the page, and the canvas guard never sees it — content is data, it arrives as HTML
+long after the guard has run. Where an editor lets authors write headings, that is where the levels
+they may use are worth constraining.
 
 ## Contributing
 
@@ -231,5 +401,6 @@ yourself. What must stay open is this library's own files: change one of them, p
 ## What it is not
 
 It is not a replacement for Thymeleaf — it is a discipline on top of it. Server-rendered HTML, no
-client framework. Theming happens through `--tk-*` handles in your own stylesheet; the library is
-never edited to change how things look.
+client framework. Theming happens through `--tk-*` handles in your own stylesheet — with one
+exception, the markup inside `.rich-content`, which belongs to whoever wrote the text and is styled
+directly. The library is never edited to change how things look.

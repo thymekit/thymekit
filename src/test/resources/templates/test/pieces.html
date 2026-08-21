@@ -8,6 +8,9 @@
 <div class="body"><th:block th:replace="~{fragments/thymekit/element :: slot(${e}, 'body')}"/></div>
 <div class="tail"><th:block th:replace="~{fragments/thymekit/element :: slot(${e}, 'tail')}"/></div></th:block>
 <th:block th:fragment="echo(e)"><i class="echo" th:text="${e['text']}"></i></th:block>
+<!--/* the names the hero's guards ask for: the elements themselves live in consumer code */-->
+<th:block th:fragment="statusBadgeEl(e)"><span class="badge" th:text="${e['text']}"></span></th:block>
+<th:block th:fragment="actionsEl(e)"><div class="actions" th:text="${e['text']}"></div></th:block>
 <th:block th:fragment="inline(e)"><span>a</span>
 <span>b</span></th:block>
 

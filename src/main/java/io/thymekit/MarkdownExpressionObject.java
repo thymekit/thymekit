@@ -26,4 +26,16 @@ public class MarkdownExpressionObject {
     public String toHtmlSafe(String source) {
         return markdownRenderer.toHtmlSafe(source);
     }
+
+    /**
+     * Converts markdown source into safe HTML, marking the links that leave the site.
+     *
+     * @param source markdown text; {@code null} or blank yields an empty string
+     * @param linkRel value for the {@code rel} attribute of outgoing links; {@code null} marks nothing
+     * @return sanitised HTML
+     * @see MarkdownRenderer#toHtmlSafe(String, String)
+     */
+    public String toHtmlSafe(String source, String linkRel) {
+        return markdownRenderer.toHtmlSafe(source, linkRel);
+    }
 }

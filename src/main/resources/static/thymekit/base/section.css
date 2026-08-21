@@ -6,20 +6,18 @@
    (a heading element; here only the rhythm around it) and a quiet empty state.
    Not an element but shared structure.
 
-   Classes: .tk-related · .tk-related > .tk-heading · .detail-empty-hint
+   Classes: .tk-section · .tk-section > .tk-heading · .detail-empty-hint
 
    Handles:
       --tk-section-empty-fg   --tk-section-link-fg
    ============================================================================= */
-.tk-related { margin-bottom: 24px; }
-.tk-related > .tk-heading { margin: 0 0 10px; }
+/* Between the parts of the section — its own business. Around it — the page's, so no outer margin. */
+.tk-section > .tk-heading { margin: 0 0 10px; }
 .detail-empty-hint {
     margin: 0;
     color: var(--tk-section-empty-fg, inherit);
-    font-size: 13px;
     display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
 }
-.detail-empty-hint a { color: var(--tk-section-link-fg, inherit); text-decoration: none; }
-.detail-empty-hint a:hover { text-decoration: underline; }
+.detail-empty-hint a { color: var(--tk-section-link-fg, inherit); }
 
 .tk-defaults { --tk-section-empty-fg: initial; --tk-section-link-fg: initial; }

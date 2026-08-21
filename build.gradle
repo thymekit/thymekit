@@ -18,6 +18,7 @@ java {
 
 tasks.withType(JavaCompile).configureEach {
     options.release = 21
+    options.compilerArgs << '-parameters'   // parameter names in the jar: Spring reads them for SpEL and injection
     options.encoding = 'UTF-8'
 }
 

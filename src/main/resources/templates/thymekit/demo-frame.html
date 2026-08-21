@@ -1,0 +1,22 @@
+<!--/* This Source Code Form is subject to the terms of the Mozilla Public
+       License, v. 2.0. If a copy of the MPL was not distributed with this
+       file, You can obtain one at https://mozilla.org/MPL/2.0/. */-->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+
+<!--/*
+    Furniture of the showcase, not an element of the kit: a frame that carries .tk-defaults, the stock
+    scope every element file resets its handles in. Inside it the theme reaches nothing, so the same
+    elements render as the browser would draw them — which is what the page claims two paragraphs
+    above, and now shows.
+
+    The frame is built as an illustration, so the H1 inside it is a sample rather than the title of the
+    page and the outline guard steps over it.
+*/-->
+<div th:fragment="stockFrame(e)" class="tk-demo-stock tk-defaults">
+    <th:block th:replace="~{fragments/thymekit/element :: slot(${e}, 'items')}"/>
+</div>
+
+</body>
+</html>

@@ -13,12 +13,20 @@
       render(e)        one element, ONE tag and null-safe: e == null renders nothing, which is why
                        adapters never wrap nested elements in th:if
       renderAll(items) a flow in collection order; th:each over null iterates zero times
-      slot(e, name)    a named slot (note SpEL: map[ident] reads the identifier as a literal key,
-                       hence .get(name))
-      scripts(items)   behaviour scripts, called without arguments
+      slot(e, name)    a named slot, null-safe in both the element and the slot (note SpEL:
+                       map[ident] reads the identifier as a literal key, hence .get(name))
+      scripts(items)   behaviour scripts, called without arguments; a null in the list renders nothing
 
     The one-tag form is deliberate: it removes both Thymeleaf traps at once — "th:if under th:replace"
     and "th:each under th:replace" — and with them the wrappers that used to leave blank lines behind.
+
+    What it expects is a descriptor built in java (Element.asMap()): the address is read out of it and
+    turned into a fragment expression, so a hand-made map missing template or fragment fails as a
+    template that cannot be resolved rather than as something friendlier.
+
+    A flow separates its elements with a newline. Every element of the kit is block-level, where that
+    is nothing; an inline element of your own would show it as a space, which is the one thing to know
+    before writing one.
 */-->
 <th:block th:fragment="nothing(e)"></th:block>
 
@@ -27,9 +35,9 @@
 <th:block th:fragment="renderAll(items)"><th:block th:each="i : ${items}">
 <th:block th:replace="~{fragments/thymekit/element :: render(${i})}"></th:block></th:block></th:block>
 
-<th:block th:fragment="slot(e, slotName)" th:replace="~{fragments/thymekit/element :: renderAll(${e['slots'] == null ? null : e['slots'].get(slotName)})}"></th:block>
+<th:block th:fragment="slot(e, slotName)" th:replace="~{fragments/thymekit/element :: renderAll(${e == null or e['slots'] == null ? null : e['slots'].get(slotName)})}"></th:block>
 
-<th:block th:fragment="scripts(items)"><th:block th:each="s : ${items}"><th:block th:replace="__${s['template']}__ :: __${s['fragment']}__"></th:block></th:block></th:block>
+<th:block th:fragment="scripts(items)"><th:block th:each="s : ${items}" th:if="${s != null}"><th:block th:replace="__${s['template']}__ :: __${s['fragment']}__"></th:block></th:block></th:block>
 
 </body>
 </html>

@@ -32,16 +32,23 @@
  *
  * <ul>
  *   <li>{@link io.thymekit.Heading} — owner of headings: {@code h1(text)…h6(text)} with an anchor id, a
- *       link and screen-reader-only. No default level: it decides the outline, so the author states it.
- *       Outline guard — {@link io.thymekit.Element#assertSingleH1}.</li>
+ *       link ({@code href} plus {@link io.thymekit.Rel} values and {@code newTab}), the language of the
+ *       text and screen-reader-only. No default level: it decides the outline, so the author states it.
+ *       Outline guard — {@link io.thymekit.Element#assertOutline}.</li>
  *   <li>{@link io.thymekit.Caption} — owner of captions in four roles (eyebrow, subtitle, label, meta):
- *       short text attached to something, never a heading and never a form label.</li>
- *   <li>{@link io.thymekit.Hero} — the page hero: a heading group, a divider, an optional badge and an
- *       optional action row; its core is the H1 alone.</li>
+ *       short text attached to something, never a heading and never a form label. A caption may carry a
+ *       machine-readable {@code time} and a {@code lang} of its own.</li>
+ *   <li>{@link io.thymekit.Hero} — the header of the page: a heading group, an optional badge and an
+ *       optional action row; its core is the H1 alone, and the rule under the group is drawn by CSS.</li>
  *   <li>{@link io.thymekit.Md} — a markdown block with an optional heading, empty state and add
- *       affordance; rendered by the {@code #md} dialect and sanitised.</li>
- *   <li>{@link io.thymekit.PageModel} — the page canvas: document properties plus an ordered flow of
- *       elements. {@code render()} uses the default document, {@code render(view)} one of your own.</li>
+ *       affordance; rendered by the {@code #md} dialect and sanitised. {@code linkRel} says what the
+ *       links of somebody else's text are.</li>
+ *   <li>{@link io.thymekit.PageModel} — the page canvas. It builds two elements: the page itself, which
+ *       draws the {@code <main>} landmark with the flow inside it, and the head of the document (title,
+ *       description, canonical, image, {@link io.thymekit.PageModel.Robots}). Both go through the same
+ *       dispatcher as everything else, so composition is closed at the top as well as at the bottom.
+ *       {@code render()} uses the default document, {@code render(view)} one of your own.</li>
+ *   <li>{@link io.thymekit.Rel} — what a link says about itself, shared by every element that links.</li>
  *   <li>{@code Element.raw(template, fragment)} wraps a consumer fragment as an element,
  *       {@code Element.script(...)} a behaviour script, and {@code Element.Descriptor.of(...)} is how a
  *       consumer mints an element of its own.</li>

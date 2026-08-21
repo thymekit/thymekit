@@ -23,10 +23,19 @@ import org.springframework.cache.annotation.Cacheable;
  * authored as markup survives the parser; jsoup then cleans the output against a relaxed safelist. Two
  * independent layers, because one of them may be misconfigured some day.
  *
- * <p>{@code toHtmlSafe} is annotated {@code @Cacheable} keyed by the source text: with Spring Cache
- * enabled the result is cached and editing the text is a natural cache miss; without a cache manager
- * the annotation is a no-op. If a consumer post-processes the HTML with data outside the text (say,
- * resolving image ids), invalidating that cache is the consumer's business.
+ * <p>Both {@code toHtmlSafe} overloads are annotated {@code @Cacheable} and share one key — the source
+ * text together with the link policy, so the same text under two policies cannot come back with the
+ * wrong attributes. Both carry the annotation on purpose: a method calling its neighbour inside the
+ * same object would go past the Spring proxy and lose the cache silently.
+ *
+ * <p>The key names its arguments by position ({@code #p0}, {@code #p1}) rather than by name. A library
+ * jar carries parameter names only if it was compiled with {@code -parameters}; where it was not, a key
+ * written as {@code #source} evaluates to {@code null} for every call, every text lands on one entry,
+ * and the second page rendered shows the text of the first. By position that cannot happen, whoever
+ * compiles the consumer and however. With Spring Cache enabled
+ * editing the text is a natural miss; without a cache manager the annotation is a no-op. If a consumer
+ * post-processes the HTML with data outside the text (say, resolving image ids), invalidating that
+ * cache is the consumer's business.
  *
  * @see MarkdownDialect for the {@code #md} template integration
  */
@@ -42,6 +51,9 @@ public class MarkdownRenderer {
      */
     private static final Pattern WHITESPACE_ONLY_LINE =
         Pattern.compile("(?m)^[\\s\\u00A0]+$");
+
+    /** An address that names its own scheme — {@code https:}, {@code mailto:}, anything — leaves this site. */
+    private static final Pattern SCHEME = Pattern.compile("^[A-Za-z][A-Za-z0-9+.-]*:");
 
     private final Parser parser;
     private final HtmlRenderer renderer;
@@ -81,22 +93,70 @@ public class MarkdownRenderer {
     /**
      * Converts markdown source into safe HTML.
      *
-     * <p>Pipeline: flexmark Parser → HtmlRenderer → jsoup Safelist.relaxed().
+     * <p>Pipeline: flexmark Parser → HtmlRenderer → jsoup Safelist.relaxed(), plus a pass that marks
+     * outgoing links when a policy was given.
      *
      * @param source markdown text; {@code null} or blank yields an empty string
      * @return sanitised HTML ready for {@code th:utext}
      */
-    @Cacheable(value = "markdown.htmlSafe", key = "#source")
+    @Cacheable(value = "markdown.htmlSafe", key = "{#p0, null}")
     public String toHtmlSafe(@Nullable String source) {
+        return render(source, null);
+    }
+
+    /**
+     * The same, with what the links of this text say about themselves — {@code "ugc nofollow"} for a
+     * review, nothing for text your own editors wrote.
+     *
+     * <p>Marked are the links that leave the site: an address carrying a scheme ({@code https://…}) or
+     * an authority ({@code //host/…}). A path of the site's own ({@code /x}, {@code #x}, {@code ../x})
+     * is left alone, since holding back the weight of your own links is a wound self-inflicted. The one
+     * case this cannot tell apart is a link written absolutely to your own site: it is marked with the
+     * rest.
+     *
+     * @param source markdown text; {@code null} or blank yields an empty string
+     * @param linkRel value for the {@code rel} attribute of outgoing links; {@code null} marks nothing
+     */
+    @Cacheable(value = "markdown.htmlSafe", key = "{#p0, #p1}")
+    public String toHtmlSafe(@Nullable String source, @Nullable String linkRel) {
+        return render(source, linkRel);
+    }
+
+    /** The pipeline itself; both public methods are cached entry points into it. */
+    private String render(@Nullable String source, @Nullable String linkRel) {
         if (source == null || source.isBlank()) {
             return "";
         }
         String normalized = WHITESPACE_ONLY_LINE.matcher(source).replaceAll("");
         Node document = parser.parse(normalized);
         demoteHeadings(document);
-        String unsafeHtml = renderer.render(document);
-        String safeHtml = Jsoup.clean(unsafeHtml, safelist);
-        return safeHtml;
+        String safeHtml = Jsoup.clean(renderer.render(document), safelist);
+        if (linkRel == null) {
+            return safeHtml;
+        }
+        // A second parse, and deliberately so: Jsoup.clean keeps a relative href alive, while a Cleaner
+        // driven by hand over a parsed document drops it. The cost is paid only by text that carries a
+        // link policy, and jsoup's own output settings are left alone so both paths serialise alike.
+        org.jsoup.nodes.Document marked = Jsoup.parseBodyFragment(safeHtml);
+        markOutgoing(marked, linkRel);
+        return marked.body().html();
+    }
+
+    /**
+     * Puts the given rel on every link that leaves the site. Leaving means carrying a scheme
+     * ({@code https://…}, and any other) or an authority ({@code //host/…}); a path of the site's own
+     * ({@code /x}, {@code #x}, {@code ../x}) is left alone, because holding back the weight of your own
+     * links is a wound self-inflicted. A protocol-relative address counts as outgoing: it is somebody
+     * else's host written without a scheme, and in text a visitor wrote it is exactly the shape spam
+     * takes to slip past a check for {@code http}.
+     */
+    private static void markOutgoing(org.jsoup.nodes.Document doc, String linkRel) {
+        for (org.jsoup.nodes.Element a : doc.select("a[href]")) {
+            String href = a.attr("href").strip();
+            if (href.startsWith("//") || SCHEME.matcher(href).find()) {
+                a.attr("rel", linkRel);
+            }
+        }
     }
 
     /**
@@ -142,6 +202,10 @@ public class MarkdownRenderer {
      */
     private static Safelist createSafelist() {
         return Safelist.relaxed()
+            .preserveRelativeLinks(true)   // without it a link to your own site loses its href: jsoup
+                                           // resolves relative addresses against a base document, and
+                                           // here there is none. The protocol list still applies, so
+                                           // javascript: and data: are dropped as before.
             .addAttributes("a", "rel", "target")
             .addAttributes("img", "loading", "decoding")
             .addAttributes("code", "class");

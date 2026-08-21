@@ -6,6 +6,7 @@ package io.thymekit;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -17,6 +18,17 @@ class PageModelTest {
 
     private final Model model = new ConcurrentModel();
 
+    /** The page under the key "page" is an element like any other: an address, and its flow as data. */
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> page(Model model) {
+        return (Map<String, Object>) model.asMap().get("page");
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<Map<String, Object>> flowOf(Model model) {
+        return (List<Map<String, Object>>) page(model).get("elements");
+    }
+
     @Test @SuppressWarnings("unchecked")
     void render_titlePageClassAndElementsInAddOrder() {
         String view = PageModel.of(model).pageClass("page-public").title("Showcase")
@@ -25,13 +37,16 @@ class PageModelTest {
             .render();
         assertThat(view).isEqualTo("page");
         assertThat(model.asMap().get("pageTitle")).isEqualTo("Showcase");
-        assertThat(model.asMap().get("pageClass")).isEqualTo("page-public page-canvas");
-        List<Map<String, Object>> elements = (List<Map<String, Object>>) model.asMap().get("elements");   
-        assertThat(elements).extracting(e -> e.get("fragment")).containsExactly("intro", "outro");
+        assertThat(page(model)).containsEntry("template", "fragments/thymekit/canvas")
+            .containsEntry("fragment", "canvasEl").containsEntry("pageClass", "page-public page-canvas");
+        var padded = new ConcurrentModel();                                  // the consumer's own classes are trimmed
+        PageModel.of(padded).pageClass(" page-public ").title("T").render();
+        assertThat(page(padded)).containsEntry("pageClass", "page-public page-canvas");
+        assertThat(flowOf(model)).extracting(e -> e.get("fragment")).containsExactly("intro", "outro");
         // a script element does not belong in the flow: its place is assets, declared via requires
         assertThatThrownBy(() -> PageModel.of(new ConcurrentModel()).title("T").add(Element.script("t", "js")))
             .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("script element").hasMessageContaining("requires");
-        assertThatThrownBy(() -> elements.add(Map.of())).isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(() -> flowOf(model).add(Map.of())).isInstanceOf(UnsupportedOperationException.class);
     }
 
     /** Own document: the model is filled the same way, the given view name is returned. */
@@ -41,7 +56,7 @@ class PageModelTest {
             .add(Element.raw("uikit/sections", "intro").build())
             .render("thymekit/demo");
         assertThat(view).isEqualTo("thymekit/demo");
-        assertThat(model.asMap()).containsKeys("pageTitle", "pageClass", "elements", "assets");
+        assertThat(model.asMap()).containsKeys("pageTitle", "head", "page", "assets");
         assertThatThrownBy(() -> PageModel.of(new ConcurrentModel()).title("T").render(null))
             .isInstanceOf(NullPointerException.class).hasMessageContaining("view");
     }
@@ -49,8 +64,8 @@ class PageModelTest {
     @Test
     void admin_pageClass_emptyCollectionLegal() {
         assertThat(PageModel.of(model).pageClass("page-admin").title("t").render()).isEqualTo("page");
-        assertThat(model.asMap().get("pageClass")).isEqualTo("page-admin page-canvas");
-        assertThat((List<?>) model.asMap().get("elements")).isEmpty();
+        assertThat(page(model)).containsEntry("pageClass", "page-admin page-canvas");
+        assertThat(flowOf(model)).isEmpty();                                   // a page with nothing on it is legal
     }
 
     @Test
@@ -64,10 +79,98 @@ class PageModelTest {
         assertThatThrownBy(() -> PageModel.of(null)).isInstanceOf(NullPointerException.class).hasMessageContaining("model");
         assertThatThrownBy(() -> PageModel.of(model).pageClass(null))
             .isInstanceOf(NullPointerException.class).hasMessageContaining("classes");
-        // без своих классов канвас ставит только свой маркер
+        // with no classes of its own the canvas puts down only its marker
         var bare = new ConcurrentModel();
         PageModel.of(bare).title("T").render();
-        assertThat(bare.getAttribute("pageClass")).isEqualTo("page-canvas");
+        assertThat(page(bare)).containsEntry("pageClass", "page-canvas");
+    }
+
+    /** What the page says about itself: one source for the tab, the search result and the preview. */
+    @Test @SuppressWarnings("unchecked")
+    void head_carriesWhatWasSaid_andNothingElse() {
+        PageModel.of(model).title("Baobab").description("An oil from the tree of life")
+            .canonical("https://shop/ingredients/baobab").image("https://shop/img/baobab.jpg").render();
+        Map<String, Object> head = (Map<String, Object>) model.asMap().get("head");
+        assertThat(head).containsEntry("template", "fragments/thymekit/head").containsEntry("fragment", "headEl")
+            .containsEntry("title", "Baobab").containsEntry("description", "An oil from the tree of life")
+            .containsEntry("canonical", "https://shop/ingredients/baobab")
+            .containsEntry("image", "https://shop/img/baobab.jpg")
+            .containsEntry("robots", "max-image-preview:large");   // a picture was declared; see below
+
+        var bare = new ConcurrentModel();
+        PageModel.of(bare).title("Draft").robots(PageModel.Robots.NOINDEX).render();
+        Map<String, Object> quiet = (Map<String, Object>) bare.asMap().get("head");
+        assertThat(quiet).containsEntry("title", "Draft").containsEntry("robots", "noindex")
+            .doesNotContainKeys("description", "canonical", "image");   // said nothing, so nothing is printed
+    }
+
+    @Test @SuppressWarnings("unchecked")
+    void head_refusesNullAndBlank() {
+        PageModel.Canvas canvas = PageModel.of(model).title("t");
+        assertThatThrownBy(() -> canvas.title("   ")).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("title");
+        assertThatThrownBy(() -> canvas.pageClass("  ")).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("classes");
+        var padded = new ConcurrentModel();                                  // a space at the end of a title is never meant
+        PageModel.of(padded).title(" Baobab ").description(" An oil ").render();
+        assertThat((Map<String, Object>) padded.asMap().get("head"))
+            .containsEntry("title", "Baobab").containsEntry("description", "An oil");
+        assertThatThrownBy(() -> canvas.description(null)).isInstanceOf(NullPointerException.class).hasMessageContaining("description");
+        assertThatThrownBy(() -> canvas.canonical(null)).isInstanceOf(NullPointerException.class).hasMessageContaining("canonical");
+        assertThatThrownBy(() -> canvas.image(null)).isInstanceOf(NullPointerException.class).hasMessageContaining("image");
+        assertThatThrownBy(() -> canvas.description(" ")).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("description");
+        assertThatThrownBy(() -> canvas.canonical("")).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("canonical");
+        assertThatThrownBy(() -> canvas.image("  ")).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("image");
+    }
+
+    /** The robots line: what was said, in the order it was said, without repetitions. */
+    @Test @SuppressWarnings("unchecked")
+    void robots_saysWhatWasSaid() {
+        PageModel.of(model).title("t")
+            .robots(PageModel.Robots.NOFOLLOW, PageModel.Robots.NOARCHIVE, PageModel.Robots.NOFOLLOW).render();
+        assertThat((Map<String, Object>) model.asMap().get("head")).containsEntry("robots", "nofollow, noarchive");
+        assertThat(PageModel.Robots.MAX_IMAGE_PREVIEW_LARGE.directive()).isEqualTo("max-image-preview:large");
+        assertThat(PageModel.Robots.NOINDEX.directive()).isEqualTo("noindex");
+
+        PageModel.Canvas canvas = PageModel.of(new ConcurrentModel()).title("t");
+        assertThatThrownBy(canvas::robots).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("without a directive");
+        assertThatThrownBy(() -> canvas.robots((PageModel.Robots[]) null)).isInstanceOf(NullPointerException.class);
+
+        var twice = new ConcurrentModel();                                   // the last call is the whole line
+        PageModel.of(twice).title("t").robots(PageModel.Robots.NOARCHIVE).robots(PageModel.Robots.NOFOLLOW).render();
+        assertThat((Map<String, Object>) twice.asMap().get("head")).containsEntry("robots", "nofollow");
+    }
+
+    /** A picture the consumer already declared is worth showing large, unless the page is not indexed at all. */
+    @Test @SuppressWarnings("unchecked")
+    void robots_largePreviewFollowsThePicture() {
+        PageModel.of(model).title("t").image("https://shop/img.jpg").render();
+        assertThat((Map<String, Object>) model.asMap().get("head")).containsEntry("robots", "max-image-preview:large");
+
+        var withDirectives = new ConcurrentModel();
+        PageModel.of(withDirectives).title("t").image("https://shop/img.jpg").robots(PageModel.Robots.NOFOLLOW).render();
+        assertThat((Map<String, Object>) withDirectives.asMap().get("head"))
+            .containsEntry("robots", "nofollow, max-image-preview:large");
+
+        var hidden = new ConcurrentModel();                       // not indexed: the size of a preview is moot
+        PageModel.of(hidden).title("t").image("https://shop/img.jpg").robots(PageModel.Robots.NOINDEX).render();
+        assertThat((Map<String, Object>) hidden.asMap().get("head")).containsEntry("robots", "noindex");
+
+        var plain = new ConcurrentModel();                        // no picture, nothing said: no tag at all
+        PageModel.of(plain).title("t").render();
+        assertThat((Map<String, Object>) plain.asMap().get("head")).doesNotContainKey("robots");
+    }
+
+    /** An address that leaves the page is absolute or it is broken: no document, nothing to resolve against. */
+    @Test
+    void head_refusesARelativeAddressWhereItWouldNotBeResolved() {
+        PageModel.Canvas canvas = PageModel.of(model).title("t");
+        for (String relative : List.of("/ingredients/baobab", "ingredients/baobab", "//shop/img.jpg", "ftp://shop/img.jpg")) {
+            assertThatThrownBy(() -> canvas.canonical(relative))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("canonical").hasMessageContaining(relative);
+            assertThatThrownBy(() -> canvas.image(relative))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("image");
+        }
+        canvas.canonical("https://shop/baobab").image("HTTP://shop/img.jpg");     // the scheme is not case-sensitive
+        canvas.canonical("http://shop/baobab").image("HTTPS://shop/img.jpg");
     }
 
     @Test
@@ -86,6 +189,15 @@ class PageModelTest {
         assertThat(js.asMap()).containsEntry("bare", true);
         assertThatThrownBy(() -> Element.raw(null, "x")).isInstanceOf(NullPointerException.class).hasMessageContaining("template");
         assertThatThrownBy(() -> Element.script("x", null)).isInstanceOf(NullPointerException.class).hasMessageContaining("fragment");
+        // the dispatcher turns the address into an expression, so an address is a path and a name and nothing else
+        for (String bad : List.of("", " ", "t :: f", "t' + ${T(java.lang.Runtime)} + '", "-t", "t\n")) {
+            assertThatThrownBy(() -> Element.raw(bad, "f")).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("adapter address");
+            assertThatThrownBy(() -> Element.raw("t", bad)).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("adapter address");
+        }
+        assertThatThrownBy(() -> Element.raw("t", "f-g")).isInstanceOf(IllegalArgumentException.class);   // a fragment is a java-ish name
+        assertThat(Element.raw("fragments/my/card-v2.inner", "cardEl").build().fragment()).isEqualTo("cardEl");
     }
 
     @Test
@@ -128,7 +240,7 @@ class PageModelTest {
         Element<Caption> b = Caption.label("x").build();
         assertThat(a).isEqualTo(b).hasSameHashCodeAs(b).isNotEqualTo(Caption.label("y").build()).isNotEqualTo("x");
         assertThat(a.hashCode()).isEqualTo(a.asMap().hashCode()).isNotZero();   // hash comes from the descriptor
-        assertThat(new java.util.HashSet<>(List.of(a, b))).hasSize(1);
+        assertThat(new HashSet<>(List.of(a, b))).hasSize(1);
         assertThat(a.toString()).startsWith("Element{").contains("text=x");
     }
 
@@ -151,22 +263,66 @@ class PageModelTest {
 
     /** Outline guard: at most one H1 in the tree; illustrations do not count; no H1 is legal. */
     @Test
-    void assertSingleH1_guard_skipsIllustrations() {
+    void assertOutline_singleH1_skipsIllustrations() {
         Element<?> hero = Hero.of(Heading.h1("Page").build()).eyebrow(Caption.eyebrow("l").build()).build();
         assertThatThrownBy(() -> PageModel.of(new ConcurrentModel()).title("T").add(hero).add(Heading.h1("Second").build()).render())
             .isInstanceOf(IllegalStateException.class).hasMessageContaining("more than one H1").hasMessageContaining("Second");
         // an H1 nested in a container is seen by the guard too
-        assertThatThrownBy(() -> Element.assertSingleH1(List.of(hero,
+        assertThatThrownBy(() -> Element.assertOutline(List.of(hero,
             Element.raw("t", "row").slot("items", List.of(Heading.h1("x").build())).build())))
             .isInstanceOf(IllegalStateException.class);
         // an illustration is not structure: a hero inside a sample does not count
         Element<?> sample = Element.raw("t", "sample").illustration()
             .slot("live", List.of(Hero.of(Heading.h1("sample").build()).eyebrow(Caption.eyebrow("l").build()).build())).build();
-        Element.assertSingleH1(List.of(hero, sample));
-        Element.assertSingleH1(List.of());                                                                 // no H1 is legal
+        Element.assertOutline(List.of(hero, sample));
+        Element.assertOutline(List.of());                                                                 // no H1 is legal
         assertThatThrownBy(() -> Element.raw("t", "f").with("illustration", true)).isInstanceOf(IllegalArgumentException.class);   // reserved key
         assertThat(Element.raw("t", "f").illustration().build().asMap()).containsEntry("illustration", true);
         assertThat(PageModel.of(new ConcurrentModel()).title("T").add(hero).add(sample).render()).isEqualTo("page");
+    }
+
+    /** A level counts however it was written, and a level html does not have is refused. */
+    @Test
+    void assertOutline_readsLevelsHoweverWritten_andRefusesOnesHtmlHasNot() {
+        Element<?> hero = Hero.of(Heading.h1("Page").build()).build();
+        Element<?> textLevel = Element.raw("fragments/thymekit/heading", "headingEl")
+            .with("level", "1").with("text", "sneaky").build();          // renders <h1>, written as text
+        assertThatThrownBy(() -> Element.assertOutline(List.of(hero, textLevel)))
+            .isInstanceOf(IllegalStateException.class).hasMessageContaining("more than one H1").hasMessageContaining("sneaky");
+
+        Element.assertOutline(List.of(hero, Element.raw("fragments/thymekit/heading", "headingEl")
+            .with("level", " 2 ").with("text", "spaced").build()));       // text with spaces still reads as a level
+
+        for (Object impossible : List.of(7, "7", 0L)) {
+            assertThatThrownBy(() -> Element.assertOutline(List.of(Element.raw("fragments/thymekit/heading", "headingEl")
+                .with("level", impossible).with("text", "x").build())))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("outside h1..h6");
+        }
+        Element.assertOutline(List.of(Heading.h1("a").build(), Heading.h2("b").build(), Heading.h3("c").build(),
+            Heading.h4("d").build(), Heading.h5("e").build(), Heading.h6("f").build()));   // all six are legal
+        Element.assertOutline(List.of(Element.raw("fragments/thymekit/heading", "headingEl")
+            .with("level", "two").with("text", "x").build()));            // not a level at all: not the guard's business
+        Element.assertOutline(List.of(Element.raw("fragments/thymekit/heading", "headingEl")
+            .with("text", "x").build()));                                 // no level key either
+    }
+
+    /** The other half of the outline: the levels a page uses have to be contiguous, wherever they stand. */
+    @Test
+    void assertOutline_refusesASkippedLevel() {
+        Element<?> hero = Hero.of(Heading.h1("Page").build()).build();
+        Element.assertOutline(List.of(hero, Heading.h2("Section").build(), Heading.h3("Under it").build()));
+        Element.assertOutline(List.of(Heading.h2("A").build(), Heading.h3("B").build()));   // a page may start at h2
+        Element.assertOutline(List.of(hero));                                          // one level alone is contiguous
+
+        assertThatThrownBy(() -> Element.assertOutline(List.of(hero, Heading.h3("Deep").build())))
+            .isInstanceOf(IllegalStateException.class).hasMessageContaining("h2").hasMessageContaining("[1, 3]");
+        assertThatThrownBy(() -> Element.assertOutline(List.of(hero, Heading.h2("S").build(), Heading.h4("Deep").build())))
+            .isInstanceOf(IllegalStateException.class).hasMessageContaining("h3");
+        // the hole is found wherever the heading sits: nesting does not hide it, and order does not matter
+        assertThatThrownBy(() -> PageModel.of(new ConcurrentModel()).title("T")
+            .add(Element.raw("t", "row").slot("items", List.of(Heading.h4("Deep").build())).build())
+            .add(hero).render())
+            .isInstanceOf(IllegalStateException.class).hasMessageContaining("h2");
     }
 
     @Test
@@ -248,5 +404,26 @@ class PageModelTest {
         assertThatThrownBy(() -> Heading.h2("x").href(null)).isInstanceOf(NullPointerException.class).hasMessageContaining("href");
     }
 
+    /** An element is its descriptor: a collection handed to the builder cannot change it afterwards. */
+    @Test @SuppressWarnings("unchecked")
+    void element_valuesAreSnapshots_howeverDeep() {
+        var items = new java.util.ArrayList<>(List.of("a"));
+        var nested = new java.util.HashMap<String, Object>();
+        nested.put("inner", items);
+        Element<Element.Raw> e = Element.raw("t", "f").with("items", items).with("nested", nested).build();
 
+        items.add("b");                                                   // the caller keeps mutating what it passed
+        nested.put("late", "x");
+        assertThat((List<String>) e.asMap().get("items")).containsExactly("a");
+        assertThat((Map<String, Object>) e.asMap().get("nested")).containsOnlyKeys("inner");
+        assertThat((List<String>) ((Map<String, Object>) e.asMap().get("nested")).get("inner")).containsExactly("a");
+        assertThat(e).isEqualTo(Element.raw("t", "f").with("items", List.of("a"))
+            .with("nested", Map.of("inner", List.of("a"))).build());      // still equal to its twin
+
+        assertThatThrownBy(() -> ((List<String>) e.asMap().get("items")).add("c"))
+            .isInstanceOf(UnsupportedOperationException.class);
+        assertThat(Element.raw("t", "f").with("holes", java.util.Arrays.asList("a", null)).build().asMap())
+            .containsEntry("holes", java.util.Arrays.asList("a", null));   // a list with a hole is a page's business
+        assertThat(Element.raw("t", "f").with("n", 42).build().asMap()).containsEntry("n", 42);
+    }
 }

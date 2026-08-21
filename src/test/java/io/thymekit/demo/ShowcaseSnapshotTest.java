@@ -57,11 +57,17 @@ class ShowcaseSnapshotTest {
 
         String html = engine.process(view, context);
 
-        assertThat(html).contains("<h1 class=\"tk-heading tk-heading--1\">thymekit</h1>")
+        assertThat(html).contains("<main class=\"page-canvas\">")   // the canvas puts down the landmark itself
+            .contains("<h1 class=\"tk-heading tk-heading--1\">thymekit</h1>")
             .contains("tk-caption--eyebrow")
             .contains("rich-content")
             .contains("/thymekit/ui.css")
-            .contains("/thymekit/demo.css");
+            .contains("/thymekit/demo.css")
+            .contains("<meta name=\"description\"")            // the head of the page is the head element's work
+            .contains("<meta property=\"og:title\"")
+            // the page claims the theme can be taken away; the frame in the stock scope shows it
+            .contains("<div class=\"tk-demo-stock tk-defaults\">")
+            .containsPattern("tk-demo-stock[\\s\\S]*<h1 class=\"tk-heading tk-heading--1\">thymekit</h1>");
 
         Files.createDirectories(OUT.getParent());
         Files.writeString(OUT, html);

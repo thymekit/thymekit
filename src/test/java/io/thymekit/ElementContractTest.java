@@ -33,18 +33,73 @@ class ElementContractTest {
 
     private static final Pattern ADAPTER_NAME = Pattern.compile("^[a-z][A-Za-z0-9]*El(V\\d+)?$");
 
-    /** Template name to CSS file name, when they differ. */
-    private static final Map<String, String> CSS_BY_TEMPLATE = Map.of("drawer", "toolbar-drawer");
+    /**
+     * Where an element's CSS lives, by template name. The page parts are not in {@code elements/}: the
+     * canvas describes the column a page is drawn in, and the head has no look at all — it prints tags
+     * a browser never shows.
+     */
+    private static final Map<String, String> CSS_BY_TEMPLATE = Map.of(
+        "heading", "elements/heading.css", "caption", "elements/caption.css",
+        "hero", "elements/hero.css", "md-section", "elements/md-section.css",
+        "canvas", "base/canvas.css");
 
-    /** One live element per element; URLs are absolute because there is no web context here. */
+    /**
+     * One live element per adapter — including the two a page is made of, since the page is an element
+     * too. {@link #everyAdapterHasASample()} checks that this list left nothing out.
+     */
     static List<Element<?>> samples() {
+        var model = new org.springframework.ui.ConcurrentModel();
+        PageModel.of(model).title("Page").add(Heading.h1("Title").build()).render();
         return List.of(
             Heading.h3("Section").build(),
             Caption.eyebrow("Product").build(), Caption.subtitle("RA-101").build(),
             Caption.label("label").build(), Caption.meta("meta").build(),
             Md.of("**text**").title(Heading.h2("Description").build()).build(),
             Hero.of(Heading.h1("Title").build()).eyebrow(Caption.eyebrow("Label").build())
-                .subtitle(Caption.subtitle("RA-101").build()).meta(Caption.meta("/slug").build()).build());
+                .subtitle(Caption.subtitle("RA-101").build()).meta(Caption.meta("/slug").build()).build(),
+            fromModel(model, "head"), fromModel(model, "page"));
+    }
+
+    /**
+     * An element the canvas built, taken back out of the model it was written into. Data is copied key
+     * by key, so a page part that grew a slot or a script dependency would be rebuilt without it —
+     * which would make this sample quietly unlike the real thing, and is refused instead.
+     */
+    @SuppressWarnings("unchecked")
+    private static Element<?> fromModel(org.springframework.ui.Model model, String key) {
+        Map<String, Object> descriptor = (Map<String, Object>) model.asMap().get(key);
+        assertThat(descriptor).as("a page part with slots or assets needs a sample of its own, not this rebuild")
+            .doesNotContainKeys("slots", "assets");
+        Element.Descriptor<Element.Raw> rebuilt =
+            Element.raw((String) descriptor.get("template"), (String) descriptor.get("fragment"));
+        descriptor.forEach((k, v) -> {
+            if (!Element.RESERVED.contains(k)) {
+                rebuilt.with(k, v);
+            }
+        });
+        return rebuilt.build();
+    }
+
+    /**
+     * The claim in the readme — that a contract test walks every element — held only as long as somebody
+     * remembered to add one to {@link #samples()}. Now the templates are asked instead: every adapter
+     * declared in the kit's fragments has a sample, or this fails with its name.
+     */
+    @Test
+    void everyAdapterHasASample() throws Exception {
+        var dir = java.nio.file.Path.of(getClass().getResource("/templates/fragments/thymekit").toURI());
+        Set<String> declared = new java.util.TreeSet<>();
+        try (var files = java.nio.file.Files.list(dir)) {
+            for (java.nio.file.Path file : files.toList()) {
+                java.util.regex.Matcher m = java.util.regex.Pattern.compile("th:fragment=\"([a-zA-Z0-9]+El)\\(")
+                    .matcher(java.nio.file.Files.readString(file));
+                while (m.find()) {
+                    declared.add(m.group(1));
+                }
+            }
+        }
+        assertThat(declared).contains("headingEl", "captionEl", "heroEl", "mdSectionEl", "headEl", "canvasEl");
+        assertThat(samples()).extracting(Element::fragment).containsAll(declared);
     }
 
     private static final SpringTemplateEngine ENGINE = engine();
@@ -131,13 +186,42 @@ class ElementContractTest {
         Set<String> seen = new java.util.HashSet<>();
         for (Element<?> e : samples()) {
             String name = e.template().substring("fragments/thymekit/".length());
-            String css = CSS_BY_TEMPLATE.getOrDefault(name, name);
-            if (!seen.add(css)) {
-                continue;
+            String css = CSS_BY_TEMPLATE.get(name);
+            if (css == null || !seen.add(css)) {
+                continue;                                  // the head prints tags, not looks: no stylesheet of its own
             }
-            String file = resource("static/thymekit/elements/" + css + ".css");
-            assertThat(manifest).as("manifest ui.css imports %s", css).contains("@import url(\"elements/" + css + ".css\")");
-            assertThat(file).as("stock scope .tk-defaults in %s.css", css).contains(".tk-defaults");
+            assertThat(manifest).as("manifest ui.css imports %s", css).contains("@import url(\"" + css + "\")");
+            assertThat(resource("static/thymekit/" + css)).as("stock scope .tk-defaults in %s", css).contains(".tk-defaults");
+        }
+        assertThat(CSS_BY_TEMPLATE.keySet()).as("a template with a stylesheet is listed here")
+            .containsExactlyInAnyOrder("heading", "caption", "hero", "md-section", "canvas");
+    }
+
+    /**
+     * The narrowest joint of the triple: a class an element prints has a rule in the kit's CSS. The
+     * names are assembled at render time — {@code 'tk-caption tk-caption--' + role} — so nothing else
+     * ties the stylesheet to the code that can produce it, and a class renamed in one of the two would
+     * otherwise travel unnoticed.
+     */
+    @Test
+    void css_everyClassAnElementPrints_hasARule() throws IOException {
+        StringBuilder kitCss = new StringBuilder();
+        for (String file : List.of("ui.css", "base/canvas.css", "base/section.css", "elements/hero.css",
+                "elements/heading.css", "elements/caption.css", "elements/md-section.css")) {
+            // comments name classes too, and a class documented but not styled is exactly what this looks for
+            kitCss.append(resource("static/thymekit/" + file).replaceAll("(?s)/\\*.*?\\*/", " "));
+        }
+        Set<String> printed = new java.util.LinkedHashSet<>();
+        for (Element<?> e : samples()) {
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile("class=\"([^\"]+)\"").matcher(render(e));
+            while (m.find()) {
+                printed.addAll(List.of(m.group(1).trim().split("\\s+")));
+            }
+        }
+        assertThat(printed).isNotEmpty();
+        for (String className : printed) {
+            assertThat(kitCss.toString()).as("class %s printed by an element has no rule in the kit's css", className)
+                .containsPattern("\\." + java.util.regex.Pattern.quote(className) + "(?![\\w-])");
         }
     }
 

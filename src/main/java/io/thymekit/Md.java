@@ -3,12 +3,19 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 package io.thymekit;
 
+import java.util.LinkedHashSet;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
 /**
  * A markdown block as a page element: optional section heading plus text rendered by the {@code #md}
  * dialect, sanitised on the way out.
+ *
+ * <p>The text belongs to whoever wrote it, and its headings keep their shape: {@link MarkdownRenderer}
+ * lowers the topmost authored level to a ceiling (h2 by default) and moves the rest by the same amount,
+ * so a {@code #} in the source becomes an h2 under the page rather than a second H1. What the author
+ * nested stays nested; what the author skipped stays skipped, and {@link Element#assertOutline} never
+ * sees any of it.
  */
 public final class Md {
 
@@ -25,10 +32,13 @@ public final class Md {
     public static final class Builder {
 
         private final Element.Descriptor<Md> b;
+        private final LinkedHashSet<Rel> linkRel = new LinkedHashSet<>();
+        private final boolean hasText;
 
         private Builder(@Nullable String markdown) {
             this.b = Element.Descriptor.<Md>of("fragments/thymekit/md-section", "mdSectionEl");
-            if (markdown != null) {
+            this.hasText = markdown != null;
+            if (hasText) {
                 b.with("markdown", markdown);
             }
         }
@@ -55,7 +65,29 @@ public final class Md {
             return this;
         }
 
+        /**
+         * What the links of this text say about themselves: {@code linkRel(UGC, NOFOLLOW)} for text a
+         * visitor wrote, nothing for text your own editors wrote. The kit has no opinion about whose
+         * text this is — only the consumer knows, and both defaults would be wrong for the other case.
+         *
+         * <p>Marked are the links that leave the site — anything carrying a scheme ({@code https://…})
+         * or an authority ({@code //host/…}). A path of your own ({@code /ingredients/baobab},
+         * {@code #composition}, {@code ../sibling}) keeps its weight, since holding that back would be
+         * a wound self-inflicted.
+         */
+        public Builder linkRel(Rel... values) {
+            linkRel.addAll(Rel.required(values, "linkRel"));
+            return this;
+        }
+
         public Element<Md> build() {
+            if (!linkRel.isEmpty()) {
+                if (!hasText) {
+                    throw new IllegalStateException("linkRel on a section with no text: the policy would apply to "
+                        + "nothing — give the section its markdown, or drop the policy");
+                }
+                b.with("linkRel", Rel.tokens(linkRel));
+            }
             return b.build();
         }
     }

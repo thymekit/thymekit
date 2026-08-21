@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
+import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -99,37 +101,113 @@ public final class Element<K> {
         }
     }
 
+    private static final Pattern LANGUAGE_TAG = Pattern.compile("[A-Za-z0-9]+(-[A-Za-z0-9]+)*");
+
+    /** A template path and a fragment name, as a template resolver would accept them. */
+    private static final Pattern TEMPLATE = Pattern.compile("[A-Za-z0-9_][A-Za-z0-9/_.-]*");
+    private static final Pattern FRAGMENT = Pattern.compile("[A-Za-z0-9_][A-Za-z0-9_]*");
+
     /**
-     * Outline guard: at most one first-level heading per page. Illustration subtrees are skipped — a
-     * sample framed for display is not page structure. No H1 at all is legal.
+     * A language tag, the way {@code lang} wants it: letters, digits and hyphens, nothing else. Not the
+     * full BCP-47 grammar — just enough that a sentence, a translation or an empty string never ends up
+     * in the attribute, where it would silently make the page claim a language it does not speak.
      */
-    public static void assertSingleH1(Collection<?> roots) {
-        List<String> found = new ArrayList<>();
-        collectH1(roots, found);
-        if (found.size() > 1) {
-            throw new IllegalStateException("more than one H1 on the page: " + found
-                + " — only the page hero carries an H1, sections start at h2");
+    static String requireTag(String tag, String name) {
+        Objects.requireNonNull(tag, name);
+        if (!LANGUAGE_TAG.matcher(tag).matches()) {
+            throw new IllegalArgumentException(name + " is not a language tag: \"" + tag + "\"");
+        }
+        return tag;
+    }
+
+    /**
+     * Outline guard, run by the canvas before a page is rendered. Two things are checked, and both are
+     * defects a reader or a crawler would meet on the finished page rather than opinions about style:
+     *
+     * <ul>
+     *   <li>at most one first-level heading — the title of a page is one thing, not several;</li>
+     *   <li>no level skipped — a page that uses h4 while nothing on it is an h3 has a hole in its
+     *       outline, and a screen reader walking headings falls straight through it;</li>
+     *   <li>no level outside h1..h6 — html has six, and the adapter renders nothing at all for a
+     *       seventh, which is the kind of silence a page should never ship with.</li>
+     * </ul>
+     *
+     * <p>A level is read however it was written into the descriptor — as a number or as text. The
+     * factories always write a number, but an element minted by hand may not, and a guard that only
+     * understood one of the two would have let a second H1 through while the adapter happily rendered
+     * it.
+     *
+     * <p>The levels a page uses have to be contiguous; where in the flow they stand is not the guard's
+     * business, so nesting an element deeper never trips it. Illustration subtrees are skipped — a
+     * sample framed for display is not page structure — and a page with no headings at all is legal.
+     *
+     * <p>The guarantee stops where the kit stops. A heading an author wrote inside markdown is not seen
+     * here — that text is data and arrives as HTML long after this runs. Such headings are lowered under
+     * the page by {@link MarkdownRenderer} instead, so content does not declare a second H1; a gap the
+     * author left inside the text travels with it, and neither this guard nor the renderer closes it.
+     */
+    public static void assertOutline(Collection<?> roots) {
+        List<String> h1 = new ArrayList<>();
+        TreeSet<Integer> levels = new TreeSet<>();
+        collectHeadings(roots, h1, levels);
+        if (h1.size() > 1) {
+            throw new IllegalStateException("more than one H1 on the page: " + h1
+                + " — the title of a page is one thing; sections start at h2");
+        }
+        if (levels.isEmpty()) {
+            return;
+        }
+        if (levels.first() < 1 || levels.last() > 6) {
+            throw new IllegalStateException("heading level outside h1..h6 on the page: " + levels
+                + " — html has six, and the adapter renders nothing at all for anything else");
+        }
+        for (int level = levels.first(); level < levels.last(); level++) {
+            if (!levels.contains(level + 1)) {
+                throw new IllegalStateException("heading level h" + (level + 1) + " is missing on a page that uses "
+                    + levels + " — an outline with a hole in it is a page a screen reader falls through");
+            }
         }
     }
 
-    private static void collectH1(@Nullable Object node, List<String> found) {
+    /** A level as the descriptor happens to carry it: a number, or text that reads as one. */
+    private static @Nullable Integer levelOf(@Nullable Object raw) {
+        if (raw instanceof Number number) {
+            return number.intValue();
+        }
+        if (raw instanceof String text) {
+            try {
+                return Integer.valueOf(text.strip());
+            } catch (NumberFormatException notALevel) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    private static void collectHeadings(@Nullable Object node, List<String> h1, Set<Integer> levels) {
         if (node instanceof Element<?> e) {
-            collectH1(e.m, found);
+            collectHeadings(e.m, h1, levels);
         } else if (node instanceof Map<?, ?> map) {
             if (Boolean.TRUE.equals(map.get("illustration"))) {
                 return;
             }
-            if ("headingEl".equals(map.get("fragment")) && Integer.valueOf(1).equals(map.get("level"))) {
-                found.add(String.valueOf(map.get("text")));
+            if ("headingEl".equals(map.get("fragment"))) {
+                Integer level = levelOf(map.get("level"));
+                if (level != null) {
+                    levels.add(level);
+                    if (level == 1) {
+                        h1.add(String.valueOf(map.get("text")));
+                    }
+                }
             }
             for (Map.Entry<?, ?> en : map.entrySet()) {
                 if (!"assets".equals(en.getKey())) {
-                    collectH1(en.getValue(), found);
+                    collectHeadings(en.getValue(), h1, levels);
                 }
             }
         } else if (node instanceof Collection<?> c) {
             for (Object o : c) {
-                collectH1(o, found);
+                collectHeadings(o, h1, levels);
             }
         }
     }
@@ -206,10 +284,23 @@ public final class Element<K> {
 
         private final LinkedHashMap<String, Object> d = new LinkedHashMap<>();
 
+        /**
+         * The address is checked for shape, and not out of tidiness: the dispatcher builds a fragment
+         * expression out of it, so a name assembled from data would be evaluated rather than read.
+         */
         Descriptor(String template, String fragment) {
-            d.put("template", Objects.requireNonNull(template, "template"));
-            d.put("fragment", Objects.requireNonNull(fragment, "fragment"));
+            d.put("template", address(template, "template", TEMPLATE));
+            d.put("fragment", address(fragment, "fragment", FRAGMENT));
             d.put("bare", false);
+        }
+
+        private static String address(String value, String name, Pattern shape) {
+            Objects.requireNonNull(value, name);
+            if (!shape.matcher(value).matches()) {
+                throw new IllegalArgumentException(name + " is not an adapter address: \"" + value
+                    + "\" — the dispatcher turns it into an expression, so it may only be a path and a name");
+            }
+            return value;
         }
 
         /**
@@ -221,14 +312,44 @@ public final class Element<K> {
             return new Descriptor<>(template, fragment);
         }
 
-        /** Element data; the adapter reads it as {@code ${e['key']}}. Reserved keys are rejected. */
+        /**
+         * Element data; the adapter reads it as {@code ${e['key']}}. Reserved keys are rejected.
+         *
+         * <p>A collection handed in here is copied, however deep it goes. An element is its descriptor —
+         * that is what makes two of them equal and what asset deduplication counts on — so a list the
+         * caller still holds must not be able to change the element after it was built.
+         */
         public Descriptor<K> with(String key, Object value) {
             Objects.requireNonNull(key, "key");
             if (RESERVED.contains(key)) {
                 throw new IllegalArgumentException("key \"" + key + "\" is reserved by the descriptor");
             }
-            d.put(key, Objects.requireNonNull(value, () -> "value of key \"" + key + "\""));
+            d.put(key, snapshot(Objects.requireNonNull(value, () -> "value of key \"" + key + "\"")));
             return this;
+        }
+
+        /**
+         * A value that cannot be changed from outside afterwards. Collections are copied and wrapped,
+         * their contents with them; anything else is taken as it is, since a descriptor carries text,
+         * numbers and elements, and those are values already.
+         *
+         * <p>Copied rather than handed to {@code List.copyOf}: a page may legitimately carry a list with
+         * a hole in it, and refusing that here would turn a rendering decision into an exception.
+         */
+        private static @Nullable Object snapshot(@Nullable Object value) {
+            if (value instanceof Map<?, ?> map) {
+                LinkedHashMap<Object, Object> copy = new LinkedHashMap<>();
+                map.forEach((k, v) -> copy.put(k, snapshot(v)));
+                return Collections.unmodifiableMap(copy);
+            }
+            if (value instanceof Collection<?> collection) {
+                List<Object> copy = new ArrayList<>(collection.size());
+                for (Object item : collection) {
+                    copy.add(snapshot(item));
+                }
+                return Collections.unmodifiableList(copy);
+            }
+            return value;
         }
 
         /**
@@ -260,7 +381,7 @@ public final class Element<K> {
             return this;
         }
 
-        /** Marks the element as an illustration: its contents are not page structure (see {@link #assertSingleH1}). */
+        /** Marks the element as an illustration: its contents are not page structure (see {@link #assertOutline}). */
         public Descriptor<K> illustration() {
             d.put("illustration", true);
             return this;
