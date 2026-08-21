@@ -33,13 +33,18 @@ class CaptionTest {
 
     @Test @SuppressWarnings("unchecked")
     void requireRole_guard_typeAdapterRole() {
-        Caption.requireRole(Caption.eyebrow("x").build(), Caption.EYEBROW, "ok");
-        assertThatThrownBy(() -> Caption.requireRole(Caption.meta("x").build(), Caption.EYEBROW, "Hero.eyebrow accepts a caption"))
+        assertThat(Caption.inRole(Caption.eyebrow("x"), Caption.EYEBROW, "ok").asMap())
+            .containsEntry("role", Caption.EYEBROW);                       // a builder is settled by the guard
+        assertThat(Caption.inRole(Caption.eyebrow("x").build(), Caption.EYEBROW, "ok").asMap())
+            .containsEntry("text", "x");                                   // and an element passes through it
+        assertThatThrownBy(() -> Caption.inRole(Caption.meta("x"), Caption.EYEBROW, "Hero.eyebrow accepts a caption"))
             .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("eyebrow").hasMessageContaining("meta");
         Element<Caption> notCaption = (Element<Caption>) (Element<?>) Element.raw("t", "f").build();
-        assertThatThrownBy(() -> Caption.requireRole(notCaption, Caption.LABEL, "something"))
+        assertThatThrownBy(() -> Caption.inRole(notCaption, Caption.LABEL, "something"))
             .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("f");
-        assertThatThrownBy(() -> Caption.requireRole(null, Caption.LABEL, "x")).isInstanceOf(NullPointerException.class).hasMessageContaining("caption");
+        assertThatThrownBy(() -> Caption.inRole(null, Caption.LABEL, "x")).isInstanceOf(NullPointerException.class).hasMessageContaining("caption");
+        assertThatThrownBy(() -> Caption.inRole(() -> null, Caption.LABEL, "x"))
+            .isInstanceOf(NullPointerException.class).hasMessageContaining("built nothing");
         assertThatThrownBy(() -> Caption.roleOf(null)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> Caption.label(null)).isInstanceOf(NullPointerException.class).hasMessageContaining("text");
         assertThatThrownBy(() -> Caption.subtitle(null)).isInstanceOf(NullPointerException.class);

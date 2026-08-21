@@ -25,12 +25,21 @@ import org.thymeleaf.model.IText;
  * rebuilding the tag, since whitespace between attributes is insignificant. The rebuild only happens
  * when it is provably safe: every attribute value in double quotes, no minimised attributes.
  *
- * <p>State is per render, kept in a thread local, because Thymeleaf creates a handler per template
- * while nested templates must indent from the depth of their insertion point. The boundary of a render
- * is recognised by its context: a different one means a new render, so the depth starts at zero.
- * Counting closes instead would not work — a render that fails on an expression error never sends its
- * end events, and its depth would leak into the next render on the same thread. The reference to the
- * context is weak, so a pooled thread does not keep a finished render alive.
+ * <p>What the handler sees, checked by rendering rather than assumed: one instance is given the whole
+ * render, nested templates included — a {@code <pre>} in one file whose content comes from another
+ * keeps that content untouched, which only happens if the same handler is still counting. And a render
+ * that fails part-way leaves nothing behind for the next one. Both are pinned in
+ * {@code TidyDialectTest}, because both are promises this class makes to a page.
+ *
+ * <p>Depth is kept in a thread local keyed by the render's context, and not in a field, so that the
+ * promise holds even where the first sentence does not: an instance handed a second render, or reused
+ * by a pool, starts from zero because the context it sees is a different object. Counting closes
+ * instead would not do — a render that dies on an expression error never sends its end events, and its
+ * depth would travel into whatever renders next on that thread. The reference is weak, so a finished
+ * render is not kept alive by a thread that has moved on.
+ *
+ * <p>The class is public because Thymeleaf builds the post-processor by class name, not because a
+ * consumer has any use for it.
  */
 public final class WhitespaceHandler extends AbstractTemplateHandler {
 

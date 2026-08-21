@@ -233,6 +233,24 @@ class PageModelTest {
         assertThatThrownBy(() -> e.slot(null)).isInstanceOf(NullPointerException.class).hasMessageContaining("name");
     }
 
+    /** Whatever becomes an element is taken; what has become one is taken too, and nothing half-made is kept. */
+    @Test @SuppressWarnings("unchecked")
+    void composable_isAcceptedAndSettledAtOnce() {
+        var builder = Caption.meta("first");
+        PageModel.of(model).title("T").add(builder).add(Caption.meta("second").build()).render();
+        assertThat(flowOf(model)).extracting(e -> e.get("text")).containsExactly("first", "second");
+
+        builder.time(java.time.LocalDate.of(2026, 3, 12));                 // the maker goes on; the page does not
+        assertThat(flowOf(model).get(0)).doesNotContainKey("datetime");
+
+        Element<Caption> settled = Caption.label("x").build();
+        assertThat(settled.build()).isSameAs(settled);                     // an element has already become one
+        assertThatThrownBy(() -> PageModel.of(new ConcurrentModel()).title("T").add(() -> null))
+            .isInstanceOf(NullPointerException.class).hasMessageContaining("built nothing");
+        assertThatThrownBy(() -> PageModel.of(new ConcurrentModel()).title("T").add((Composable<?>) null))
+            .isInstanceOf(NullPointerException.class).hasMessageContaining("element");
+    }
+
     /** Value semantics: equal descriptors mean equal elements, which is what deduplication relies on. */
     @Test
     void element_valueSemantics_equalsHashToString() {

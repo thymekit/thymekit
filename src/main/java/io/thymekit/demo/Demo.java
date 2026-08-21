@@ -44,9 +44,9 @@ public final class Demo {
     private static Element<Demo> stockSample() {
         return Element.Descriptor.<Demo>of("thymekit/demo-frame", "stockFrame").illustration()
             .slot("items", java.util.List.of(
-                Caption.eyebrow("showcase").build(),
-                Heading.h1("thymekit").build(),
-                Caption.subtitle("the same elements, with nothing said about them").build()))
+                Caption.eyebrow("showcase"),
+                Heading.h1("thymekit"),
+                Caption.subtitle("the same elements, with nothing said about them")))
             .build();
     }
 
@@ -56,16 +56,15 @@ public final class Demo {
             .title("thymekit — element showcase")
             .description("Every element of the kit, rendered by the kit itself: the page you are "
                 + "looking at is composed in Java and dressed by one stylesheet of handle values.")
-            .add(Hero.of(Heading.h1("thymekit").build())
-                .eyebrow(Caption.eyebrow("showcase").build())
-                .subtitle(Caption.subtitle("the elements on this page are composed in Java and rendered by the kit itself").build())
-                .build())
+            .add(Hero.of(Heading.h1("thymekit"))
+                .eyebrow(Caption.eyebrow("showcase"))
+                .subtitle(Caption.subtitle("the elements on this page are composed in Java and rendered by the kit itself")))
             .add(Md.of("""
                 This page is composed **declaratively in Java** and rendered by the kit. Its look comes
                 from one stylesheet, `thymekit/demo.css`, which hands values to element handles and
                 touches nothing else — no override of the kit's markup, no rule the kit knows about.
                 Take that file away and the very same page renders as plain HTML.
-                """).title(Heading.h2("What this page is").build()).build())
+                """).title(Heading.h2("What this page is")))
             .add(Md.of("""
                 Three headings on this page wear three different faces, and no stylesheet rule mentions
                 where any of them sits.
@@ -84,12 +83,12 @@ public final class Demo {
                 section hosts them, so it dresses them — quieter, in its own scale, through
                 `--tk-md-heading-*`. Where the theme says nothing, the site's values come through
                 untouched.
-                """).title(Heading.h2("Who dresses whom").id("who-dresses-whom").build()).build())
+                """).title(Heading.h2("Who dresses whom").id("who-dresses-whom")))
             .add(Md.of("""
                 Every element file resets its handles inside `.tk-defaults`, so a frame carrying that class
                 is a place the theme cannot reach. The same three elements are below, in it: this is the
                 page with `demo.css` taken away, and the claim above stops being a promise.
-                """).title(Heading.h2("The theme, taken away").build()).build())
+                """).title(Heading.h2("The theme, taken away")))
             .add(stockSample())
             .render(VIEW);
     }

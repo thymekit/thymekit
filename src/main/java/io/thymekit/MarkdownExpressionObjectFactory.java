@@ -9,7 +9,10 @@ import org.thymeleaf.expression.IExpressionObjectFactory;
 
 /**
  * Registers {@code #md} as an expression object name. Not cacheable at the Thymeleaf level: caching
- * happens inside the renderer, keyed by the source text.
+ * happens inside the renderer, keyed by the text and the link policy together.
+ *
+ * <p>The expression object is built once and handed out again: it holds a renderer and nothing else,
+ * so there is nothing for a second instance to hold differently.
  */
 public class MarkdownExpressionObjectFactory implements IExpressionObjectFactory {
 
@@ -17,10 +20,10 @@ public class MarkdownExpressionObjectFactory implements IExpressionObjectFactory
     private static final Set<String> ALL_EXPRESSION_OBJECT_NAMES =
             Set.of(MARKDOWN_EXPRESSION_OBJECT_NAME);
 
-    private final MarkdownRenderer markdownRenderer;
+    private final MarkdownExpressionObject markdown;
 
     public MarkdownExpressionObjectFactory(MarkdownRenderer markdownRenderer) {
-        this.markdownRenderer = markdownRenderer;
+        this.markdown = new MarkdownExpressionObject(markdownRenderer);
     }
 
     @Override
@@ -31,7 +34,7 @@ public class MarkdownExpressionObjectFactory implements IExpressionObjectFactory
     @Override
     public Object buildObject(IExpressionContext context, String expressionObjectName) {
         if (MARKDOWN_EXPRESSION_OBJECT_NAME.equals(expressionObjectName)) {
-            return new MarkdownExpressionObject(markdownRenderer);
+            return markdown;
         }
         return null;
     }

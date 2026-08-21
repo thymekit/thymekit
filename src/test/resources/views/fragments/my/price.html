@@ -1,0 +1,7 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+<!--/* an element of a consumer whose templates do not live under templates/ */-->
+<span th:fragment="priceEl(e)" class="my-price" th:text="${e['amount']}"></span>
+</body>
+</html>

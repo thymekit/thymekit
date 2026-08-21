@@ -144,6 +144,22 @@ class ElementContractTest {
             .replaceAll("(?s)<!--.*?-->", "[comment]");
     }
 
+    /**
+     * The kit takes the walk it hands to a consumer, over its own elements: the address points at a
+     * fragment that declares itself, the adapter is named like an adapter, nothing renders empty, and
+     * every class printed has a rule. What stays below is what only the kit can check about itself.
+     */
+    @Test
+    void theKitKeepsTheContractItPublishes() {
+        ElementContract.of(samples().toArray(Composable<?>[]::new))
+            .renderedBy(ENGINE)
+            .styledBy("static/thymekit/ui.css", "static/thymekit/base/canvas.css",
+                "static/thymekit/base/section.css", "static/thymekit/elements/hero.css",
+                "static/thymekit/elements/heading.css", "static/thymekit/elements/caption.css",
+                "static/thymekit/elements/md-section.css")
+            .check();
+    }
+
     @Test
     void adapterNames_versionable() {
         for (Element<?> e : samples()) {
