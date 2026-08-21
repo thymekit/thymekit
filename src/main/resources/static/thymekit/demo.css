@@ -86,6 +86,11 @@
 
     --tk-caption-meta-size:  13px;
     --tk-caption-meta-color: var(--demo-light);
+    /* A heading that is a link keeps the browser's underline; only its colour is the theme's */
+    --tk-heading-link-color: var(--demo-gold);
+    /* The empty state: quiet text, and a link in the site's accent */
+    --tk-section-empty-fg:  var(--demo-light);
+    --tk-section-link-fg:   var(--demo-gold);
     /* Markdown output, so the prose under the hero belongs to the same page */
     --tk-md-fg:        var(--demo-mid);
     --tk-md-strong-fg: var(--demo-dark);

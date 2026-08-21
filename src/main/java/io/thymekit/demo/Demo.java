@@ -77,7 +77,9 @@ public final class Demo {
                 Caption.subtitle("subtitle — the line under a title"),
                 Caption.label("label"),
                 Caption.meta("meta · 21 August 2026").time(LocalDate.of(2026, 8, 21)),
-                Caption.subtitle("Adansonia digitata").lang("la")))
+                Caption.subtitle("Adansonia digitata").lang("la"),
+                Heading.h5("The fifth level, and the sixth below it"),
+                Heading.h6("Six is where html stops, and so does the scale")))
             .build();
     }
 
@@ -129,8 +131,9 @@ public final class Demo {
                     A caption comes in four roles and carries what a machine needs beside what a person
                     reads: a date as `<time datetime="…">`, a phrase marked with the language it is in.
                     A heading may be a link — this one says `rel="nofollow"` and opens in a new tab,
-                    which is why it also says `noopener`, whichever order the two were written in. And a
+                    which is why it also says `noopener`, whichever order the two were written in. A
                     heading may be there only for the outline: the frame below holds one no eye finds.
+                    And the scale has six levels, the last two of them here.
                     """))
                 .add(textSample()))
             .add(Section.of(Heading.h2("Whose text this is"))
@@ -147,6 +150,18 @@ public final class Demo {
                         .with("text", "write it")
                         .with("href", "https://github.com/thymekit/thymekit")
                         .requires(Element.script(PARTS, "demoJs")))))
+            .add(Section.of(Heading.h2("What this page cannot show"))
+                .add(Md.of("""
+                    Three things the canvas can say are missing here on purpose. `canonical(...)` and
+                    `image(...)` need an address this page cannot know — and this page is mounted inside
+                    somebody else's application, where declaring *our* address would send *their*
+                    crawler to *our* site; the copy published on the project's own pages gets its
+                    canonical from the script that hands the addresses out. `robots(...)` is missing for
+                    a simpler reason: every directive it can carry would be a false statement about a
+                    page that wants to be read. A showcase that lied in its own markup would be a poor
+                    argument for a kit whose whole claim is markup you can stand behind.
+                    """))
+            )
             .add(Section.of(Heading.h2("The theme, taken away"))
                 .add(Md.of("""
                     Every element file resets its handles inside `.tk-defaults`, so a frame carrying
