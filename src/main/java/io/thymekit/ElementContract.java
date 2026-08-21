@@ -162,10 +162,12 @@ public final class ElementContract {
             if (element.bare()) {
                 failures.add(address + " — a script element does not belong among elements; declare it with requires()");
             }
-            declaresItself(element, address, failures);
-            declarationMatches(element, address, failures, declaredByAdapter, carriedByAdapter);
+            String template = read(element.template() + ".html");   // once per element, for both walks below
+            declaresItself(element, template, address, failures);
+            declarationMatches(element, template, address, failures, declaredByAdapter, carriedByAdapter);
             for (Element<Element.Script> asset : element.assets()) {   // requires() already refuses anything but a script
-                declaresItself(asset, address + " — its script " + asset.template() + " :: " + asset.fragment(), failures);
+                declaresItself(asset, read(asset.template() + ".html"),
+                    address + " — its script " + asset.template() + " :: " + asset.fragment(), failures);
             }
             if (engine != null) {
                 String html = renderAndReport(element, address, failures);
@@ -193,8 +195,7 @@ public final class ElementContract {
     }
 
     /** The address points at a template that exists, and the template declares the fragment it names. */
-    private void declaresItself(Element<?> element, String address, List<String> failures) {
-        String template = read(element.template() + ".html");
+    private void declaresItself(Element<?> element, @Nullable String template, String address, List<String> failures) {
         if (template == null) {
             failures.add(address + " — no template on the classpath at " + element.template() + ".html"
                 + " (looked under " + String.join(", ", templateRoots.stream().map(r -> r.isEmpty() ? "the address itself" : r).toList()) + ")");
@@ -214,10 +215,10 @@ public final class ElementContract {
      * ends at the previous fragment of the same file, so an adapter that declares nothing inherits
      * nothing from the one before it and is simply left unchecked.
      */
-    private void declarationMatches(Element<?> element, String address, List<String> failures,
+    private void declarationMatches(Element<?> element, @Nullable String template, String address,
+                                    List<String> failures,
                                     Map<String, Set<String>> declaredByAdapter,
                                     Map<String, Set<String>> carriedByAdapter) {
-        String template = read(element.template() + ".html");
         if (template == null) {
             return;                                   // already reported by declaresItself
         }
@@ -346,14 +347,10 @@ public final class ElementContract {
         }
     }
 
-    /** A classpath resource, tried under every root the caller named and then as given. */
+    /** A classpath resource, tried under every root the caller named — the last of which is no root at all. */
     private @Nullable String read(String resource) {
-        List<String> candidates = new ArrayList<>();
         for (String root : templateRoots) {
-            candidates.add(root + resource);
-        }
-        candidates.add(resource);
-        for (String candidate : candidates) {
+            String candidate = root + resource;
             try (InputStream in = ElementContract.class.getClassLoader().getResourceAsStream(candidate)) {
                 if (in != null) {
                     return new String(in.readAllBytes(), StandardCharsets.UTF_8);
