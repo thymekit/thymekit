@@ -40,13 +40,15 @@ public final class Heading {
      * The level of a heading in a descriptor, or {@code null} where the descriptor is not one.
      *
      * <p>Recognising a heading is this element's business and nobody else's: it owns the adapter, so it
-     * owns the name of it. The outline of a page asks here rather than knowing the answer.
+     * owns the name of it. The outline of a page asks here rather than knowing the answer, and so may a
+     * check of yours walking a page with {@link Element#walk} — the three readers below are published
+     * together, since a check that can read the text of a heading but not its level is half a gift.
      *
      * <p>A level counts however it was written — as a number or as text. The factories above always
      * write a number, but an element minted by hand may not, and a guard that understood only one of
      * the two would let a second H1 through while the adapter rendered it happily.
      */
-    static @Nullable Integer levelIn(Map<?, ?> descriptor) {
+    public static @Nullable Integer levelIn(Map<?, ?> descriptor) {
         if (!"headingEl".equals(descriptor.get("fragment"))) {
             return null;
         }
@@ -64,8 +66,17 @@ public final class Heading {
         return null;
     }
 
+    /**
+     * The anchor of a heading in a descriptor, or {@code null} where there is none — the heading was
+     * given no id, or the descriptor is not a heading at all. Recognising one is this element's business
+     * for the same reason its level is: it owns the adapter, so it owns what the keys mean.
+     */
+    public static @Nullable String idIn(Map<?, ?> descriptor) {
+        return levelIn(descriptor) == null ? null : (String) descriptor.get("id");
+    }
+
     /** What such a heading says, for a message a person will read. */
-    static String textIn(Map<?, ?> descriptor) {
+    public static String textIn(Map<?, ?> descriptor) {
         return String.valueOf(descriptor.get("text"));
     }
 

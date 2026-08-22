@@ -257,6 +257,15 @@ None of them names a class: a rule that lists what it applies to is a list to fo
 failure this canon exists to remove. Each is a test, and each was made to fail before it was kept — a
 rule that cannot fail states nothing.
 
+The same thinking decides what the kit checks about a page and what it simply makes impossible.
+**A requirement an element can make unrepresentable is not a check.** A caption takes a `LocalDate`
+rather than a string, so "yesterday" never reaches a `datetime` attribute; `newTab()` brings `noopener`
+with it, so a link cannot lose it; a heading has no default level, so nothing lands in the outline by
+accident. When the picture element arrives, its alternative text will be an argument to the factory and
+not an option — and no page will ever need to be scanned for pictures without one. What is left for a
+check is what no single element can see: the outline of the whole page, and its anchors. Those two the
+canvas asks before it renders, and a page that fails either does not ship.
+
 ## Theming
 
 An element ships structure and nothing else. Its look comes from handles — CSS custom properties named
@@ -424,6 +433,7 @@ front of it, exactly as they do for the kit's own.
 | Canvas | `PageModel.of(model)` — own page classes, flow of elements, `render(view)`; renders as the `page` element | `canvas :: canvasEl` | `canvas.css` |
 | — | `Element<K>` — the currency itself: an address, data, and value semantics. `Element.Descriptor.of(...)` mints one, `Element.raw/script(...)` wrap a fragment of yours, and the guards a host needs — `settle`, `requireAdapter`, `requireRenderable`, `requireTag` — are public beside them | — | — |
 | — | `Outline` — the headings of a page and whether they add up: one H1, no level skipped, none html does not have. The canvas checks it before rendering | — | — |
+| — | `Anchors` — the addresses inside a page: no two things answering to one name. Checked by the canvas beside the outline | — | — |
 | — | `Composable<K>` — whatever becomes an element; `ElementContract` — the walk over a triple, for your elements as much as ours | — | — |
 | — | `Rel` — what a link says about itself, with the policy that goes with it: `Rel.of(...)` guards and orders, `Rel.forNewTab(...)` cannot lose `noopener`, `Rel.tokens(...)` writes the attribute | — | — |
 | Head | filled by the canvas — title, description, canonical, image, `robots`; renders as the `head` element | `head :: headEl` | — (it prints tags, not looks) |

@@ -304,6 +304,7 @@ public final class PageModel {
                 throw new IllegalStateException("page without a title: call title(...) before render()");
             }
             Outline.requireSound(elements);
+            Anchors.requireDistinct(elements);
             model.addAttribute("pageTitle", title);
             model.addAttribute("head", head());
             model.addAttribute("page", page());

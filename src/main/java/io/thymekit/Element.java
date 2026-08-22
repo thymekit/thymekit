@@ -114,10 +114,8 @@ public final class Element<K> implements Composable<K> {
 
     @SuppressWarnings("unchecked")
     private static void collectAssets(@Nullable Object node, Map<String, Element<Script>> acc) {
-        if (node instanceof Element<?> e) {
-            collectAssets(e.m, acc);
-        } else if (node instanceof Map<?, ?> map) {
-            if (map.get("assets") instanceof List<?> declared) {
+        walk(node, descriptor -> {
+            if (descriptor.get("assets") instanceof List<?> declared) {
                 for (Object a : declared) {
                     Map<String, Object> d = (Map<String, Object>) a;
                     String t = (String) d.get("template");
@@ -125,14 +123,45 @@ public final class Element<K> implements Composable<K> {
                     acc.putIfAbsent(t + " :: " + f, script(t, f));
                 }
             }
-            for (Map.Entry<?, ?> en : map.entrySet()) {
-                if (!"assets".equals(en.getKey())) {
-                    collectAssets(en.getValue(), acc);
+            return true;
+        });
+    }
+
+    /**
+     * Every descriptor of a tree, whatever the tree is made of: elements, the maps they are, and
+     * collections of either, at any depth. The visitor is handed each descriptor and answers whether to
+     * go deeper into it — an illustration is a place one walker stops and another does not.
+     *
+     * <pre>{@code
+     * Element.walk(page, descriptor -> {
+     *     if (myKit.isPicture(descriptor) && descriptor.get("alt") == null) {
+     *         throw new IllegalStateException("a picture with nothing said about it");
+     *     }
+     *     return true;
+     * });
+     * }</pre>
+     *
+     * <p>Here because the shape of the tree is what a descriptor is, and this class is the descriptor.
+     * Written once because it is the kind of code that goes subtly wrong in a copy: a walk that misses a
+     * branch finds nothing there and says nothing about it, which is the quietest way for a check to
+     * stop checking. Public for the same reason the guards are — a check of your own over a page of
+     * yours is written the way the kit writes its own, and {@link Outline} and {@link Anchors} are the
+     * two examples.
+     */
+    public static void walk(@Nullable Object node, java.util.function.Predicate<Map<?, ?>> visit) {
+        if (node instanceof Element<?> element) {
+            walk(element.m, visit);
+        } else if (node instanceof Map<?, ?> map) {
+            // a descriptor is a map that names an adapter; the others a tree holds — the slots of an
+            // element, data of your own — are passed through rather than offered to the visitor
+            if (!map.containsKey("fragment") || visit.test(map)) {
+                for (Object value : map.values()) {
+                    walk(value, visit);
                 }
             }
-        } else if (node instanceof Collection<?> c) {
-            for (Object o : c) {
-                collectAssets(o, acc);
+        } else if (node instanceof Collection<?> items) {
+            for (Object item : items) {
+                walk(item, visit);
             }
         }
     }

@@ -56,6 +56,9 @@
  *       reader can walk. Checked by the canvas before rendering; it lives apart from the currency
  *       because an outline is a property of a page, and because knowing what a heading is belongs to
  *       the element that owns headings.</li>
+ *   <li>{@link io.thymekit.Anchors} — the addresses inside a page, and whether two things answer to
+ *       one of them. Counts the anchors the kit puts down, not every key called {@code id}: what that
+ *       word means in an element of yours is yours to say.</li>
  *   <li>{@link io.thymekit.Rel} — what a link says about itself, and the policy that goes with it:
  *       the guards and the order of the values, the {@code noopener} a new tab cannot lose, and the
  *       attribute they are written as. Public, so an element of yours links exactly as the kit's do.</li>

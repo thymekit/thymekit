@@ -6,10 +6,8 @@ package io.thymekit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-import org.jspecify.annotations.Nullable;
 
 /**
  * The outline of a page: the headings on it, and whether they add up to something a reader can walk.
@@ -47,7 +45,19 @@ public final class Outline {
     public static void requireSound(Collection<?> roots) {
         List<String> h1 = new ArrayList<>();
         TreeSet<Integer> levels = new TreeSet<>();
-        collect(roots, h1, levels);
+        Element.walk(roots, descriptor -> {
+            if (Element.isIllustration(descriptor)) {
+                return false;                       // a sample framed for display is not the page
+            }
+            Integer level = Heading.levelIn(descriptor);
+            if (level != null) {
+                levels.add(level);
+                if (level == 1) {
+                    h1.add(Heading.textIn(descriptor));
+                }
+            }
+            return true;
+        });
 
         if (h1.size() > 1) {
             throw new IllegalStateException("more than one H1 on the page: " + h1
@@ -68,27 +78,4 @@ public final class Outline {
         }
     }
 
-    private static void collect(@Nullable Object node, List<String> h1, Set<Integer> levels) {
-        if (node instanceof Element<?> element) {
-            collect(element.asMap(), h1, levels);
-        } else if (node instanceof Map<?, ?> descriptor) {
-            if (Element.isIllustration(descriptor)) {
-                return;
-            }
-            Integer level = Heading.levelIn(descriptor);
-            if (level != null) {
-                levels.add(level);
-                if (level == 1) {
-                    h1.add(Heading.textIn(descriptor));
-                }
-            }
-            for (Object value : descriptor.values()) {
-                collect(value, h1, levels);
-            }
-        } else if (node instanceof Collection<?> items) {
-            for (Object item : items) {
-                collect(item, h1, levels);
-            }
-        }
-    }
 }
