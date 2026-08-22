@@ -74,6 +74,24 @@ class ElementGuardsTest {
     }
 
     /**
+     * Text a page will show is given and is not empty. Two elements refuse the same thing for the same
+     * reason, which by the canon makes it one rule rather than two spellings — and what is given is kept
+     * exactly, since a space inside a line belongs to whoever wrote the line.
+     */
+    @Test
+    void textAPageWillShowIsNotNothing() {
+        assertThat(Element.requireText("Baobab", "text")).isEqualTo("Baobab");
+        assertThat(Element.requireText("  kept  ", "text")).isEqualTo("  kept  ");
+
+        for (String nothing : java.util.List.of("", " ", "\t\n ")) {
+            assertThatThrownBy(() -> Element.requireText(nothing, "text"))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("text is blank");
+        }
+        assertThatThrownBy(() -> Element.requireText(null, "text"))
+            .isInstanceOf(NullPointerException.class).hasMessageContaining("text");
+    }
+
+    /**
      * A language tag goes into an attribute that tells a screen reader how to pronounce a phrase, so a
      * sentence or an empty string must not reach it — a page that claims a language it does not speak is
      * worse than one that claims none.
@@ -101,7 +119,7 @@ class ElementGuardsTest {
     @Test
     void theGuardsAreAsPublicAsTheHostsThatNeedThem() {
         for (String guard : java.util.List.of("settle", "requireRenderable", "requireRenderableElement",
-                "requireAdapter", "requireTag")) {
+                "requireAdapter", "requireTag", "requireText")) {
             assertThat(java.util.Arrays.stream(Element.class.getDeclaredMethods())
                     .filter(m -> m.getName().equals(guard))
                     .allMatch(m -> Modifier.isPublic(m.getModifiers())))

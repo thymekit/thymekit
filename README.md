@@ -426,7 +426,7 @@ front of it, exactly as they do for the kit's own.
 
 | Element | Factory | Adapter | CSS |
 |---|---|---|---|
-| Heading | `Heading.h1(text)…h6(text)` — `id`, `href` with `rel`/`newTab`, `lang`, `srOnly` | `heading :: headingEl` | `heading.css` |
+| Heading | `Heading.h1(text)…h6(text)` — an anchor `id`, `href` with `rel`/`newTab`, `lang`, `srOnly`; `Heading.levelIn/idIn/textIn(...)` read a heading back out of a descriptor, for a check of your own | `heading :: headingEl` | `heading.css` |
 | Caption | `Caption.eyebrow/subtitle/label/meta(text)` — `time`, `lang`; `Caption.inRole(...)` is the guard a host of yours uses to ask for one | `caption :: captionEl` | `caption.css` |
 | Hero | `Hero.of(Element<Heading>)` — eyebrow, subtitle, meta lines, a `statusBadgeEl` badge and an `actionsEl` row of your own | `hero :: heroEl` | `hero.css` |
 | Md | `Md.of(markdown)` — title, empty state, empty-state action, `linkRel` | `md-section :: mdEl` | `md.css` |

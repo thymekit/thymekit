@@ -34,6 +34,9 @@ public final class Heading {
      */
     private static final Set<String> EXECUTING_SCHEMES = Set.of("javascript:", "data:", "vbscript:");
 
+    /** An anchor is an address inside a page: whatever it is made of, it holds together as one word. */
+    private static final Pattern BREAKS_AN_ANCHOR = Pattern.compile("\\s");
+
     private Heading() {}
 
     /**
@@ -97,12 +100,17 @@ public final class Heading {
         private Builder(int level, String text) {
             this.b = Element.Descriptor.<Heading>of("thymekit/heading", "headingEl")
                 .with("level", level)
-                .with("text", Objects.requireNonNull(text, "text"));
+                .with("text", Element.requireText(text, "text"));
         }
 
-        /** Anchor id — for table-of-contents links and {@code aria-labelledby}. */
+        /**
+         * The anchor of this heading: what a table of contents links to, and what a section around it
+         * is named by. An address, so no whitespace may be in it — an attribute takes the first word
+         * and what follows becomes something nobody meant. What it is made of otherwise is the
+         * author's: a slug, a number, a word in their own language.
+         */
         public Builder id(String id) {
-            b.with("id", Objects.requireNonNull(id, "id"));
+            b.with("id", anchor(id));
             return this;
         }
 
@@ -168,6 +176,17 @@ public final class Heading {
          * cannot change the result: {@code noopener} joins a new tab whether the tab was asked for
          * before the rel values or after them.
          */
+        /** An anchor is one word: given, not empty, and with nothing in it that ends an attribute. */
+        private static String anchor(String id) {
+            Objects.requireNonNull(id, "id");
+            if (id.isBlank() || BREAKS_AN_ANCHOR.matcher(id).find()) {
+                throw new IllegalArgumentException("not an anchor: \"" + id + "\" — an address inside a "
+                    + "page holds together as one word, and an attribute keeps only what comes before "
+                    + "the first space");
+            }
+            return id;
+        }
+
         @Override
         public Element<Heading> build() {
             if (!linked && (newTab || !rel.isEmpty())) {

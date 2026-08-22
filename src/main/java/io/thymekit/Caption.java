@@ -61,14 +61,9 @@ public final class Caption {
         private final Element.Descriptor<Caption> b;
 
         private Builder(String role, String text) {
-            Objects.requireNonNull(text, "text");
-            if (text.isBlank()) {
-                throw new IllegalArgumentException("text is blank: a caption with nothing to say is an "
-                    + "empty box on the page, and a line a screen reader announces as silence");
-            }
             this.b = Element.Descriptor.<Caption>of("thymekit/caption", "captionEl")
                 .with("role", role)
-                .with("text", text);
+                .with("text", Element.requireText(text, "text"));
         }
 
         /**

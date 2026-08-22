@@ -173,6 +173,24 @@ public final class Element<K> implements Composable<K> {
     private static final Pattern FRAGMENT = Pattern.compile("[A-Za-z0-9_][A-Za-z0-9_]*");
 
     /**
+     * Text a page will show: given, and not empty. Two elements refuse the same thing for the same
+     * reason — a caption with nothing in it is an empty box, a heading with nothing in it is a place in
+     * the outline a screen reader stops at and finds nothing — so the refusal is one rule in one place
+     * rather than two spellings of it.
+     *
+     * <p>What is given is kept exactly: a space inside a line belongs to whoever wrote the line. Only
+     * a text that is nothing at all is refused.
+     */
+    public static String requireText(String text, String name) {
+        Objects.requireNonNull(text, name);
+        if (text.isBlank()) {
+            throw new IllegalArgumentException(name + " is blank: a page shows what it was given, "
+                + "and this is nothing");
+        }
+        return text;
+    }
+
+    /**
      * A language tag, the way {@code lang} wants it: letters, digits and hyphens, nothing else. Not the
      * full BCP-47 grammar — just enough that a sentence, a translation or an empty string never ends up
      * in the attribute, where it would silently make the page claim a language it does not speak.
