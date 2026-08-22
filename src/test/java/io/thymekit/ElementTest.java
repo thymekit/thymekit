@@ -132,6 +132,18 @@ class ElementTest {
         assertThat(Element.raw("t", "cardEl").build().bare()).isFalse();
     }
 
+    /**
+     * An element framed for display says so, and says it to whoever walks the page: what is inside a
+     * sample is a demonstration, not the structure of the page it stands on. The question is asked
+     * here because the key is this class's own; who asks it is somebody else's business.
+     */
+    @Test
+    void anElementFramedForDisplaySaysSo() {
+        assertThat(Element.isIllustration(Element.raw("t", "frameEl").illustration().build().asMap())).isTrue();
+        assertThat(Element.isIllustration(Element.raw("t", "frameEl").build().asMap())).isFalse();
+        assertThat(Element.isIllustration(Map.of())).isFalse();
+    }
+
     /** Read by a person, an element shows what it is and what it carries: it is a value, so it prints as one. */
     @Test
     void anElementPrintsAsWhatItIs() {

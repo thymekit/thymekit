@@ -424,11 +424,12 @@ class CanonTest {
      */
     @Test
     void theReadmeCountsTheRulesCorrectly() throws java.io.IOException {
-        var written = java.util.List.of("zero", "one", "two", "three", "four", "five", "six", "seven",
+        var units = java.util.List.of("zero", "one", "two", "three", "four", "five", "six", "seven",
             "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen",
-            "seventeen", "eighteen", "nineteen", "twenty");
+            "seventeen", "eighteen", "nineteen");
+        var tens = java.util.Map.of("twenty", 20, "thirty", 30, "forty", 40, "fifty", 50);
         String readme = java.nio.file.Files.readString(java.nio.file.Path.of("README.md"));
-        var said = java.util.regex.Pattern.compile("([A-Za-z]+) rules\\s+state what this package is").matcher(readme);
+        var said = java.util.regex.Pattern.compile("([A-Za-z-]+) rules\\s+state what this package is").matcher(readme);
         assertThat(said.find()).as("the readme says how many rules the canon keeps").isTrue();
 
         String source = java.nio.file.Files.readString(
@@ -436,8 +437,11 @@ class CanonTest {
         // the annotation where it stands, at the head of a method — the word elsewhere in this file is
         // this very line, and a rule that counted itself would be off by one
         int rules = (int) java.util.regex.Pattern.compile("(?m)^\\s+@Test$").matcher(source).results().count();
-        assertThat(written.indexOf(said.group(1).toLowerCase(java.util.Locale.ROOT)))
-            .as("the readme says \"%s rules\" and the canon keeps %d", said.group(1), rules)
+        String[] spelled = said.group(1).toLowerCase(java.util.Locale.ROOT).split("-");
+        int counted = units.contains(spelled[0])
+            ? units.indexOf(spelled[0])
+            : tens.getOrDefault(spelled[0], -1) + (spelled.length > 1 ? units.indexOf(spelled[1]) : 0);
+        assertThat(counted).as("the readme says \"%s rules\" and the canon keeps %d", said.group(1), rules)
             .isEqualTo(rules);
     }
 
@@ -526,6 +530,54 @@ class CanonTest {
             }
         }
         assertThat(foreign).as("dialects named without saying whose they are").isEmpty();
+    }
+
+    /**
+     * And no class names another element's adapter, either. The rule above watches template addresses;
+     * a fragment name slipped past it for months — the currency of composition carried the string
+     * {@code "headingEl"}, so the most general type in the kit knew one particular element by name, and
+     * the outline check that needed it was living in the wrong house.
+     *
+     * <p>Two places may say the name: the element that owns the adapter, and a host asking for one
+     * through {@code requireAdapter} — that is a guard saying what it will accept, which is the opposite
+     * of knowing somebody's internals.
+     */
+    @Test
+    void noClassNamesAnotherElementsAdapter() throws java.io.IOException {
+        var templates = java.nio.file.Path.of("src/main/resources/templates/thymekit");
+        var adapters = new java.util.TreeMap<String, String>();            // fragment -> its template address
+        try (var files = java.nio.file.Files.list(templates)) {
+            for (var file : files.filter(java.nio.file.Files::isRegularFile).toList()) {
+                var declared = java.util.regex.Pattern.compile("th:fragment=\"([a-zA-Z0-9]+El)\\(")
+                    .matcher(java.nio.file.Files.readString(file));
+                while (declared.find()) {
+                    adapters.put(declared.group(1), "thymekit/" + file.getFileName().toString().replace(".html", ""));
+                }
+            }
+        }
+        assertThat(adapters).as("the adapters the kit ships").isNotEmpty();
+
+        java.util.List<String> knowing = new java.util.ArrayList<>();
+        try (var files = java.nio.file.Files.walk(java.nio.file.Path.of("src/main/java/io/thymekit"))) {
+            for (var file : files.filter(f -> f.toString().endsWith(".java")).toList()) {
+                // comments say things about adapters and define nothing, javadoc examples above all
+                String source = java.nio.file.Files.readString(file)
+                    .replaceAll("(?s)/\\*.*?\\*/", " ").replaceAll("//.*", " ");
+                for (var adapter : adapters.entrySet()) {
+                    if (!source.contains("\"" + adapter.getKey() + "\"")
+                        || source.contains("\"" + adapter.getValue() + "\"")) {
+                        continue;                                          // not named, or named by its owner
+                    }
+                    boolean asAGuard = source.lines()
+                        .filter(line -> line.contains("\"" + adapter.getKey() + "\""))
+                        .allMatch(line -> line.contains("requireAdapter"));
+                    if (!asAGuard) {
+                        knowing.add(file.getFileName() + " names " + adapter.getKey());
+                    }
+                }
+            }
+        }
+        assertThat(knowing).as("classes knowing an adapter that is not theirs").isEmpty();
     }
 
     /** The model belongs to the canvas: one place writes it, so a document knows what to expect. */

@@ -34,7 +34,7 @@
  *   <li>{@link io.thymekit.Heading} — owner of headings: {@code h1(text)…h6(text)} with an anchor id, a
  *       link ({@code href} plus {@link io.thymekit.Rel} values and {@code newTab}), the language of the
  *       text and screen-reader-only. No default level: it decides the outline, so the author states it.
- *       Outline guard — {@link io.thymekit.Element#assertOutline}.</li>
+ *       The outline of a page they make is checked by {@link io.thymekit.Outline}.</li>
  *   <li>{@link io.thymekit.Caption} — owner of captions in four roles (eyebrow, subtitle, label, meta):
  *       short text attached to something, never a heading and never a form label. A caption may carry a
  *       machine-readable {@code time} and a {@code lang} of its own.</li>
@@ -52,6 +52,10 @@
  *       description, canonical, image, {@link io.thymekit.PageModel.Robots}). Both go through the same
  *       dispatcher as everything else, so composition is closed at the top as well as at the bottom.
  *       {@code render()} uses the default document, {@code render(view)} one of your own.</li>
+ *   <li>{@link io.thymekit.Outline} — the headings of a page, and whether they add up to something a
+ *       reader can walk. Checked by the canvas before rendering; it lives apart from the currency
+ *       because an outline is a property of a page, and because knowing what a heading is belongs to
+ *       the element that owns headings.</li>
  *   <li>{@link io.thymekit.Rel} — what a link says about itself, and the policy that goes with it:
  *       the guards and the order of the values, the {@code noopener} a new tab cannot lose, and the
  *       attribute they are written as. Public, so an element of yours links exactly as the kit's do.</li>

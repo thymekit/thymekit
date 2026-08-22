@@ -5,9 +5,11 @@ package io.thymekit;
 
 import java.util.LinkedHashSet;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Owner of the heading concept: anything with a heading composes this element instead of writing its
@@ -33,6 +35,39 @@ public final class Heading {
     private static final Set<String> EXECUTING_SCHEMES = Set.of("javascript:", "data:", "vbscript:");
 
     private Heading() {}
+
+    /**
+     * The level of a heading in a descriptor, or {@code null} where the descriptor is not one.
+     *
+     * <p>Recognising a heading is this element's business and nobody else's: it owns the adapter, so it
+     * owns the name of it. The outline of a page asks here rather than knowing the answer.
+     *
+     * <p>A level counts however it was written — as a number or as text. The factories above always
+     * write a number, but an element minted by hand may not, and a guard that understood only one of
+     * the two would let a second H1 through while the adapter rendered it happily.
+     */
+    static @Nullable Integer levelIn(Map<?, ?> descriptor) {
+        if (!"headingEl".equals(descriptor.get("fragment"))) {
+            return null;
+        }
+        Object level = descriptor.get("level");
+        if (level instanceof Number number) {
+            return number.intValue();
+        }
+        if (level instanceof String text) {
+            try {
+                return Integer.valueOf(text.strip());
+            } catch (NumberFormatException notALevel) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    /** What such a heading says, for a message a person will read. */
+    static String textIn(Map<?, ?> descriptor) {
+        return String.valueOf(descriptor.get("text"));
+    }
 
     public static Builder h1(String text) { return new Builder(1, text); }
     public static Builder h2(String text) { return new Builder(2, text); }

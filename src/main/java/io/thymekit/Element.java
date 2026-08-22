@@ -40,13 +40,13 @@ import org.jspecify.annotations.Nullable;
  *   <li><b>the guards a host uses</b> — {@link #settle}, {@link #requireRenderable},
  *       {@link #requireRenderableElement}, {@link #requireAdapter}, {@link #requireTag}, all public,
  *       because an element of yours hosts other elements the same way the kit's own do;</li>
- *   <li><b>the outline of a page</b> — {@link #assertOutline}, run by the canvas before rendering;</li>
  *   <li><b>the scripts of a tree</b> — {@link #assets()} and {@link #assetsOf}, so that nobody wires a
  *       behaviour script by hand.</li>
  * </ul>
  *
- * <p>Each is specified by a file of its own next to {@code ElementTest}, which is the shape of the
- * thing: five jobs under one name, kept together for now because they are all about one descriptor.
+ * <p>Each is specified by a file of its own next to {@code ElementTest}. What used to be a fifth thing
+ * here — the outline of a page — lives in {@link Outline} now: it is a property of a page rather than
+ * of an element, and holding it here had taught the currency the name of one element's adapter.
  */
 public final class Element<K> implements Composable<K> {
 
@@ -161,96 +161,11 @@ public final class Element<K> implements Composable<K> {
     }
 
     /**
-     * Outline guard, run by the canvas before a page is rendered. Two things are checked, and both are
-     * defects a reader or a crawler would meet on the finished page rather than opinions about style:
-     *
-     * <ul>
-     *   <li>at most one first-level heading — the title of a page is one thing, not several;</li>
-     *   <li>no level skipped — a page that uses h4 while nothing on it is an h3 has a hole in its
-     *       outline, and a screen reader walking headings falls straight through it;</li>
-     *   <li>no level outside h1..h6 — html has six, and the adapter renders nothing at all for a
-     *       seventh, which is the kind of silence a page should never ship with.</li>
-     * </ul>
-     *
-     * <p>A level is read however it was written into the descriptor — as a number or as text. The
-     * factories always write a number, but an element minted by hand may not, and a guard that only
-     * understood one of the two would have let a second H1 through while the adapter happily rendered
-     * it.
-     *
-     * <p>The levels a page uses have to be contiguous; where in the flow they stand is not the guard's
-     * business, so nesting an element deeper never trips it. Illustration subtrees are skipped — a
-     * sample framed for display is not page structure — and a page with no headings at all is legal.
-     *
-     * <p>The guarantee stops where the kit stops. A heading an author wrote inside markdown is not seen
-     * here — that text is data and arrives as HTML long after this runs. Such headings are lowered under
-     * the page by {@link MarkdownRenderer} instead, so content does not declare a second H1; a gap the
-     * author left inside the text travels with it, and neither this guard nor the renderer closes it.
+     * Whether a descriptor is an illustration: a sample framed for display rather than part of what the
+     * page is. Reserved keys are this class's to know, so whoever walks a tree asks instead of reading.
      */
-    public static void assertOutline(Collection<?> roots) {
-        List<String> h1 = new ArrayList<>();
-        TreeSet<Integer> levels = new TreeSet<>();
-        collectHeadings(roots, h1, levels);
-        if (h1.size() > 1) {
-            throw new IllegalStateException("more than one H1 on the page: " + h1
-                + " — the title of a page is one thing; sections start at h2");
-        }
-        if (levels.isEmpty()) {
-            return;
-        }
-        if (levels.first() < 1 || levels.last() > 6) {
-            throw new IllegalStateException("heading level outside h1..h6 on the page: " + levels
-                + " — html has six, and the adapter renders nothing at all for anything else");
-        }
-        for (int level = levels.first(); level < levels.last(); level++) {
-            if (!levels.contains(level + 1)) {
-                throw new IllegalStateException("heading level h" + (level + 1) + " is missing on a page that uses "
-                    + levels + " — an outline with a hole in it is a page a screen reader falls through");
-            }
-        }
-    }
-
-    /** A level as the descriptor happens to carry it: a number, or text that reads as one. */
-    private static @Nullable Integer levelOf(@Nullable Object raw) {
-        if (raw instanceof Number number) {
-            return number.intValue();
-        }
-        if (raw instanceof String text) {
-            try {
-                return Integer.valueOf(text.strip());
-            } catch (NumberFormatException notALevel) {
-                return null;
-            }
-        }
-        return null;
-    }
-
-    private static void collectHeadings(@Nullable Object node, List<String> h1, Set<Integer> levels) {
-        if (node instanceof Element<?> e) {
-            collectHeadings(e.m, h1, levels);
-        } else if (node instanceof Map<?, ?> map) {
-            if (Boolean.TRUE.equals(map.get("illustration"))) {
-                return;
-            }
-            if ("headingEl".equals(map.get("fragment"))) {
-                Integer level = levelOf(map.get("level"));
-                if (level != null) {
-                    levels.add(level);
-                    if (level == 1) {
-                        h1.add(String.valueOf(map.get("text")));
-                    }
-                }
-            }
-            // every value, assets included: a dependency is an address and nothing else — the guard
-            // that takes one refuses anything with data on it — so there is no heading to find in there
-            // and nothing to skip for
-            for (Map.Entry<?, ?> en : map.entrySet()) {
-                collectHeadings(en.getValue(), h1, levels);
-            }
-        } else if (node instanceof Collection<?> c) {
-            for (Object o : c) {
-                collectHeadings(o, h1, levels);
-            }
-        }
+    static boolean isIllustration(Map<?, ?> descriptor) {
+        return Boolean.TRUE.equals(descriptor.get("illustration"));
     }
 
     /** A script element is rendered as {@code template :: fragment}, everything else as {@code fragment(e)}. */
@@ -437,7 +352,7 @@ public final class Element<K> implements Composable<K> {
             return this;
         }
 
-        /** Marks the element as an illustration: its contents are not page structure (see {@link #assertOutline}). */
+        /** Marks the element as an illustration: its contents are not page structure (see {@link Outline}). */
         public Descriptor<K> illustration() {
             d.put("illustration", true);
             return this;

@@ -15,7 +15,7 @@ import org.jspecify.annotations.Nullable;
  * <p>The text belongs to whoever wrote it, and its headings keep their shape: {@link MarkdownRenderer}
  * lowers the topmost authored level to a ceiling (h2 by default) and moves the rest by the same amount,
  * so a {@code #} in the source becomes an h2 under the page rather than a second H1. What the author
- * nested stays nested; what the author skipped stays skipped, and {@link Element#assertOutline} never
+ * nested stays nested; what the author skipped stays skipped, and {@link Outline} never
  * sees any of it.
  */
 public final class Md {
