@@ -23,6 +23,11 @@ import org.thymeleaf.templatemode.TemplateMode;
  * run of whitespace in HTML is equivalent to one. Between inline elements the newline is kept precisely
  * because there the whitespace is significant.
  *
+ * <p>What it therefore leaves alone: a node that carries words. Its indentation travels with it into the
+ * page, because a space beside a word may be the space between two words, and no rule that might change
+ * what a page says is worth a tidier source. Adapters are made of tags, which is where the thousands of
+ * blank lines came from; prose is written once and read as it stands.
+ *
  * <p>HTML only: a template rendered in the text or javascript mode passes through untouched, since
  * there whitespace is not a matter of formatting but of content.
  */

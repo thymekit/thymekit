@@ -377,6 +377,23 @@ class CanonTest {
         assertThat(wrong).as("cached methods filed under an incomplete question").isEmpty();
     }
 
+    /**
+     * Nothing here outlives the call that made it. A page is rendered by objects a framework builds for
+     * one render and drops; state kept beside them, in a thread, belongs to whatever runs on that thread
+     * next — a pooled thread, a second render, an exception that never sent its closing events. Where a
+     * counter is needed, it is a field of the short-lived object doing the counting, and the counting
+     * ends when the object does.
+     *
+     * <p>Written after a handler carried a thread local, a weak reference and a class to hold them, all
+     * to survive being reused — which the engine that builds it never does.
+     */
+    @Test
+    void nothingKeepsStateBesideTheCallThatMadeIt() {
+        noFields().should().haveRawType(ThreadLocal.class)
+            .because("state that outlives a call belongs to whoever runs next, not to us")
+            .check(KIT);
+    }
+
     /** The model belongs to the canvas: one place writes it, so a document knows what to expect. */
     @Test
     void onlyTheCanvasWritesTheModel() {
