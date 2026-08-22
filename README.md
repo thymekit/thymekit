@@ -427,7 +427,7 @@ front of it, exactly as they do for the kit's own.
 | Element | Factory | Adapter | CSS |
 |---|---|---|---|
 | Heading | `Heading.h1(text)…h6(text)` — `id`, `href` with `rel`/`newTab`, `lang`, `srOnly` | `heading :: headingEl` | `heading.css` |
-| Caption | `Caption.eyebrow/subtitle/label/meta(text)` — `time`, `lang` | `caption :: captionEl` | `caption.css` |
+| Caption | `Caption.eyebrow/subtitle/label/meta(text)` — `time`, `lang`; `Caption.inRole(...)` is the guard a host of yours uses to ask for one | `caption :: captionEl` | `caption.css` |
 | Hero | `Hero.of(Element<Heading>)` — eyebrow, subtitle, meta lines, a `statusBadgeEl` badge and an `actionsEl` row of your own | `hero :: heroEl` | `hero.css` |
 | Md | `Md.of(markdown)` — title, empty state, empty-state action, `linkRel` | `md-section :: mdEl` | `md.css` |
 | Canvas | `PageModel.of(model)` — own page classes, flow of elements, `render(view)`; renders as the `page` element | `canvas :: canvasEl` | `canvas.css` |
