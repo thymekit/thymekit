@@ -580,6 +580,34 @@ class CanonTest {
         assertThat(knowing).as("classes knowing an adapter that is not theirs").isEmpty();
     }
 
+    /**
+     * And an address the readme prints is an address that exists. The table names the adapter of every
+     * element, and one of those names outlived its template by a week: the row still said
+     * {@code md-section :: mdEl} after the markdown block had been split in two and the file renamed.
+     * A reader would have looked for a fragment that was not there, and nothing said a word — the rule
+     * above only asks whether a name appears, not whether it means anything.
+     */
+    @Test
+    void everyAddressTheReadmePrintsExists() throws java.io.IOException {
+        var printed = java.util.regex.Pattern.compile("`([a-z-]+) :: ([a-zA-Z0-9]+)`")
+            .matcher(java.nio.file.Files.readString(java.nio.file.Path.of("README.md")));
+        java.util.List<String> absent = new java.util.ArrayList<>();
+        int found = 0;
+        while (printed.find()) {
+            found++;
+            var template = java.nio.file.Path.of("src/main/resources/templates/thymekit",
+                printed.group(1) + ".html");
+            if (!java.nio.file.Files.exists(template)) {
+                absent.add(printed.group(1) + ".html — no such template");
+            } else if (!java.nio.file.Files.readString(template).contains(
+                    "th:fragment=\"" + printed.group(2) + "(")) {
+                absent.add(printed.group(1) + ".html declares no " + printed.group(2));
+            }
+        }
+        assertThat(found).as("the readme prints the addresses of the kit's adapters").isNotZero();
+        assertThat(absent).as("addresses the readme prints that lead nowhere").isEmpty();
+    }
+
     /** The model belongs to the canvas: one place writes it, so a document knows what to expect. */
     @Test
     void onlyTheCanvasWritesTheModel() {

@@ -228,7 +228,7 @@ flowchart LR
     K --> R
 ```
 
-The last one is worth naming, because it is the part a reader cannot see in the code. Twenty-one rules
+The last one is worth naming, because it is the part a reader cannot see in the code. Twenty-two rules
 state what this package is:
 
 - a class that hands out elements is final and cannot be instantiated;
@@ -251,6 +251,7 @@ state what this package is:
 - one call spelled twice says the same thing about what may be absent;
 - a name the kit puts in somebody else's registry carries the kit's own;
 - no class names another element's adapter, unless it owns it or is asking for one;
+- every adapter address the readme prints leads to a fragment that exists;
 - and no line of the sources ends in a space.
 
 None of them names a class: a rule that lists what it applies to is a list to forget, which is the
@@ -429,7 +430,8 @@ front of it, exactly as they do for the kit's own.
 | Heading | `Heading.h1(text)…h6(text)` — an anchor `id`, `href` with `rel`/`newTab`, `lang`, `srOnly`; `Heading.levelIn/idIn/textIn(...)` read a heading back out of a descriptor, for a check of your own | `heading :: headingEl` | `heading.css` |
 | Caption | `Caption.eyebrow/subtitle/label/meta(text)` — `time`, `lang`; `Caption.inRole(...)` is the guard a host of yours uses to ask for one | `caption :: captionEl` | `caption.css` |
 | Hero | `Hero.of(Element<Heading>)` — eyebrow, subtitle, meta lines, a `statusBadgeEl` badge and an `actionsEl` row of your own | `hero :: heroEl` | `hero.css` |
-| Md | `Md.of(markdown)` — title, empty state, empty-state action, `linkRel` | `md-section :: mdEl` | `md.css` |
+| Md | `Md.of(markdown)` — empty state, empty-state action, `linkRel` | `md :: mdEl` | `md.css` |
+| Section | `Section.of(Composable<Heading>)` — `add(...)` for whatever goes under the heading: a markdown block, a row of cards, another section. Takes its accessible name from the heading's anchor | `section :: sectionEl` | `section.css` |
 | Canvas | `PageModel.of(model)` — own page classes, flow of elements, `render(view)`; renders as the `page` element | `canvas :: canvasEl` | `canvas.css` |
 | — | `Element<K>` — the currency itself: an address, data, and value semantics. `Element.Descriptor.of(...)` mints one, `Element.raw/script(...)` wrap a fragment of yours, and the guards a host needs — `settle`, `requireAdapter`, `requireRenderable`, `requireTag` — are public beside them | — | — |
 | — | `Outline` — the headings of a page and whether they add up: one H1, no level skipped, none html does not have. The canvas checks it before rendering | — | — |
