@@ -421,6 +421,7 @@ front of it, exactly as they do for the kit's own.
 | Hero | `Hero.of(Element<Heading>)` — eyebrow, subtitle, meta lines, a `statusBadgeEl` badge and an `actionsEl` row of your own | `hero :: heroEl` | `hero.css` |
 | Md | `Md.of(markdown)` — title, empty state, empty-state action, `linkRel` | `md-section :: mdEl` | `md.css` |
 | Canvas | `PageModel.of(model)` — own page classes, flow of elements, `render(view)`; renders as the `page` element | `canvas :: canvasEl` | `canvas.css` |
+| — | `Element<K>` — the currency itself: an address, data, and value semantics. `Element.Descriptor.of(...)` mints one, `Element.raw/script(...)` wrap a fragment of yours, and the guards a host needs — `settle`, `requireAdapter`, `requireRenderable`, `requireTag` — are public beside them | — | — |
 | — | `Composable<K>` — whatever becomes an element; `ElementContract` — the walk over a triple, for your elements as much as ours | — | — |
 | — | `Rel` — what a link says about itself, with the policy that goes with it: `Rel.of(...)` guards and orders, `Rel.forNewTab(...)` cannot lose `noopener`, `Rel.tokens(...)` writes the attribute | — | — |
 | Head | filled by the canvas — title, description, canonical, image, `robots`; renders as the `head` element | `head :: headEl` | — (it prints tags, not looks) |

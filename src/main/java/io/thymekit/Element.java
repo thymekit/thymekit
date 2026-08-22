@@ -28,6 +28,25 @@ import org.jspecify.annotations.Nullable;
  * <p>Inside is a descriptor: the address of the element's adapter fragment ({@code template ::
  * fragment(e)}) plus data. Templates read {@link #asMap()}, so the adapter contract does not depend on
  * typing: the data is untyped, the marker is typed.
+ *
+ * <p>Five things live in this file, and a reader arriving at it should know which one they are in:
+ *
+ * <ul>
+ *   <li><b>the value</b> — {@link #asMap()}, {@link #build()}, {@link #template()}, {@link #fragment()},
+ *       {@link #bare()}, {@link #slot(String)}, {@link #slotNames()}, and equality, which is the
+ *       descriptor's;</li>
+ *   <li><b>the maker</b> — {@link Descriptor}, the one way an element is made, here and in consumer
+ *       code, with {@link #raw} and {@link #script} as its two shortcuts;</li>
+ *   <li><b>the guards a host uses</b> — {@link #settle}, {@link #requireRenderable},
+ *       {@link #requireRenderableElement}, {@link #requireAdapter}, {@link #requireTag}, all public,
+ *       because an element of yours hosts other elements the same way the kit's own do;</li>
+ *   <li><b>the outline of a page</b> — {@link #assertOutline}, run by the canvas before rendering;</li>
+ *   <li><b>the scripts of a tree</b> — {@link #assets()} and {@link #assetsOf}, so that nobody wires a
+ *       behaviour script by hand.</li>
+ * </ul>
+ *
+ * <p>Each is specified by a file of its own next to {@code ElementTest}, which is the shape of the
+ * thing: five jobs under one name, kept together for now because they are all about one descriptor.
  */
 public final class Element<K> implements Composable<K> {
 
@@ -128,8 +147,12 @@ public final class Element<K> implements Composable<K> {
      * A language tag, the way {@code lang} wants it: letters, digits and hyphens, nothing else. Not the
      * full BCP-47 grammar — just enough that a sentence, a translation or an empty string never ends up
      * in the attribute, where it would silently make the page claim a language it does not speak.
+     *
+     * <p>Public with the other guards: two elements of the kit already use it, which makes it the policy
+     * of a concept rather than a detail of either, and an element of yours that offers {@code lang}
+     * needs the same check the kit's own make.
      */
-    static String requireTag(String tag, String name) {
+    public static String requireTag(String tag, String name) {
         Objects.requireNonNull(tag, name);
         if (!LANGUAGE_TAG.matcher(tag).matches()) {
             throw new IllegalArgumentException(name + " is not a language tag: \"" + tag + "\"");
@@ -217,10 +240,11 @@ public final class Element<K> implements Composable<K> {
                     }
                 }
             }
+            // every value, assets included: a dependency is an address and nothing else — the guard
+            // that takes one refuses anything with data on it — so there is no heading to find in there
+            // and nothing to skip for
             for (Map.Entry<?, ?> en : map.entrySet()) {
-                if (!"assets".equals(en.getKey())) {
-                    collectHeadings(en.getValue(), h1, levels);
-                }
+                collectHeadings(en.getValue(), h1, levels);
             }
         } else if (node instanceof Collection<?> c) {
             for (Object o : c) {
@@ -281,6 +305,8 @@ public final class Element<K> implements Composable<K> {
      * given element. Public on purpose — consumer elements guard their own narrow points the same way.
      */
     public static void requireAdapter(Element<?> e, String fragment, String what) {
+        Objects.requireNonNull(e, "element");
+        Objects.requireNonNull(fragment, "fragment");
         if (!fragment.equals(e.fragment())) {
             throw new IllegalArgumentException(what + " (got " + e.fragment() + ")");
         }

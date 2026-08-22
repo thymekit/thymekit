@@ -87,8 +87,10 @@ jacocoTestReport {
 // through its own spec while the rest of the project is still on its way there.
 pitest {
     junit5PluginVersion = '1.2.2'
-    targetClasses = [project.findProperty('pitTarget')?.toString() ?: 'io.thymekit.*']
-    targetTests   = [project.findProperty('pitTests')?.toString() ?: 'io.thymekit.*']
+    targetClasses = (project.findProperty('pitTarget')?.toString() ?: 'io.thymekit.*').split(',') as List
+    // both accept a comma-separated list: a class taken through the method may be described by
+    // several spec files, one per job it does
+    targetTests   = (project.findProperty('pitTests')?.toString() ?: 'io.thymekit.*').split(',') as List
     outputFormats = ['HTML', 'XML']
     timestampedReports = false
     threads = 2
