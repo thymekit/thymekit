@@ -30,6 +30,16 @@ import org.thymeleaf.templatemode.TemplateMode;
  *
  * <p>HTML only: a template rendered in the text or javascript mode passes through untouched, since
  * there whitespace is not a matter of formatting but of content.
+ *
+ * <p>Where it sits among other dialects: a post-processor of yours with a lower precedence than
+ * {@link #PRECEDENCE} is handed the template as it was written, one with a higher precedence is handed
+ * the page as it will be served. Both are worth having, so the choice is yours and the number is stated
+ * rather than hidden.
+ *
+ * <p>Which of the two numbers a post-processor carries decides that, checked by rendering rather than
+ * read off the interface: the chain is ordered by the precedence of the processor itself. The one this
+ * dialect declares orders dialects and is the same number, so the two cannot come to disagree about
+ * where the tidying happens.
  */
 public final class TidyDialect extends AbstractDialect implements IPostProcessorDialect {
 
@@ -39,17 +49,25 @@ public final class TidyDialect extends AbstractDialect implements IPostProcessor
      */
     static final int INDENT = 2;
 
+    /**
+     * The place this dialect takes in the chain: lower runs earlier, and 1000 is the ordinary place,
+     * the one Thymeleaf's own dialect takes. Said once and used for both orderings a post-processor
+     * has — among dialects, and among the processors they contribute — because they are one decision
+     * and two numbers would only drift.
+     */
+    public static final int PRECEDENCE = 1000;
+
     public TidyDialect() {
         super("thymekit-tidy");
     }
 
     @Override
     public int getDialectPostProcessorPrecedence() {
-        return 1000;
+        return PRECEDENCE;
     }
 
     @Override
     public Set<IPostProcessor> getPostProcessors() {
-        return Set.of(new PostProcessor(TemplateMode.HTML, WhitespaceHandler.class, 1000));
+        return Set.of(new PostProcessor(TemplateMode.HTML, WhitespaceHandler.class, PRECEDENCE));
     }
 }

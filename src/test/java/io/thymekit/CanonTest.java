@@ -394,6 +394,53 @@ class CanonTest {
             .check(KIT);
     }
 
+    /**
+     * Every class of the kit is described by a spec of its own. A class nobody wrote one for is a class
+     * whose behaviour is whatever it happens to do — the last one found that way had none, and only a
+     * person reading it noticed. What is red here is not a defect but a queue: it is the list of classes
+     * this project has yet to take through, and it shortens by one each time one is taken.
+     */
+    @Test
+    void everyClassOfTheKitHasASpec() throws java.io.IOException {
+        java.util.List<String> unspecified = new java.util.ArrayList<>();
+        for (var type : KIT) {
+            if (!type.getModifiers().contains(com.tngtech.archunit.core.domain.JavaModifier.PUBLIC)
+                || type.getEnclosingClass().isPresent()) {
+                continue;
+            }
+            var spec = java.nio.file.Path.of("src/test/java",
+                type.getPackageName().replace('.', '/'), type.getSimpleName() + "Test.java");
+            if (!java.nio.file.Files.exists(spec)) {
+                unspecified.add(type.getSimpleName());
+            }
+        }
+        assertThat(unspecified).as("classes still waiting for a spec of their own").isEmpty();
+    }
+
+    /**
+     * And the readme counts them right. The canon is the part of this project a reader is asked to take
+     * on trust, so the sentence that introduces it is checked like anything else — a list that grew by
+     * five while its own first word stayed at eight is how a document stops being read.
+     */
+    @Test
+    void theReadmeCountsTheRulesCorrectly() throws java.io.IOException {
+        var written = java.util.List.of("zero", "one", "two", "three", "four", "five", "six", "seven",
+            "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen",
+            "seventeen", "eighteen", "nineteen", "twenty");
+        String readme = java.nio.file.Files.readString(java.nio.file.Path.of("README.md"));
+        var said = java.util.regex.Pattern.compile("([A-Za-z]+) rules\\s+state what this package is").matcher(readme);
+        assertThat(said.find()).as("the readme says how many rules the canon keeps").isTrue();
+
+        String source = java.nio.file.Files.readString(
+            java.nio.file.Path.of("src/test/java/io/thymekit/CanonTest.java"));
+        // the annotation where it stands, at the head of a method — the word elsewhere in this file is
+        // this very line, and a rule that counted itself would be off by one
+        int rules = (int) java.util.regex.Pattern.compile("(?m)^\\s+@Test$").matcher(source).results().count();
+        assertThat(written.indexOf(said.group(1).toLowerCase(java.util.Locale.ROOT)))
+            .as("the readme says \"%s rules\" and the canon keeps %d", said.group(1), rules)
+            .isEqualTo(rules);
+    }
+
     /** The model belongs to the canvas: one place writes it, so a document knows what to expect. */
     @Test
     void onlyTheCanvasWritesTheModel() {

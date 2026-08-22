@@ -81,6 +81,17 @@ also attached to every [release](https://github.com/thymekit/thymekit/releases).
 object and the tidy-render dialect. Each bean is `@ConditionalOnMissingBean` — declare your own and
 yours wins; tidy rendering switches off with `thymekit.tidy.enabled=false`.
 
+Tidy rendering is worth a sentence of its own, since it changes what your pages look like on the wire.
+Adapters are written to be read — indented, one condition per line — and Thymeleaf, having removed its
+own tags, leaves that indentation behind as text: on a page of a hundred elements, thousands of blank
+lines. The dialect turns formatting whitespace between tags into a single newline indented by nesting
+depth, and does nothing else: `pre`, `textarea`, `script` and `style` are untouched, a space between two
+inline elements is untouched because there it means something, and a node that carries words keeps its
+own indentation, because a space beside a word may be the space between two words. HTML only — in a text
+or javascript template whitespace is content, not formatting. A post-processor of your own sees the
+template as written or the page as served depending on which side of `TidyDialect.PRECEDENCE` it
+declares itself.
+
 **2. One stylesheet**, before your own, so your theme can override it:
 
 ```html
@@ -215,12 +226,26 @@ flowchart LR
     K --> R
 ```
 
-The last one is worth naming, because it is the part a reader cannot see in the code. Eight rules state
-what this package is: a class that hands out elements is final and cannot be instantiated; whatever has
-a `build()` returning an element says so by implementing `Composable`; nothing but `Element` hands a
-descriptor out; a `Composable` is settled where it is taken and never held in a field; nothing public
-is mutable; no element names another element's template; the core does not know its own demo exists;
-and the model is written by the canvas alone.
+The last one is worth naming, because it is the part a reader cannot see in the code. Seventeen rules
+state what this package is:
+
+- a class that hands out elements is final and cannot be instantiated;
+- whatever has a `build()` returning an element says so by implementing `Composable`;
+- nothing but `Element` hands a descriptor out;
+- a `Composable` is settled where it is taken and never held in a field;
+- nor inside a collection, which is holding it too;
+- nothing public is mutable;
+- nothing hidden is written for a caller that does not exist;
+- what more than one element uses is public, since two users make a policy and not a detail;
+- nothing keeps state beside the call that made it;
+- a cached answer is filed under the whole question: the arguments by position, and the object asked;
+- no element names another element's template;
+- the core does not know its own demo exists;
+- the model is written by the canvas alone;
+- every element and every vocabulary is listed in the table below;
+- the number of rules in this list is the number of rules there are;
+- every public class of the kit has a spec of its own;
+- and no line of the sources ends in a space.
 
 None of them names a class: a rule that lists what it applies to is a list to forget, which is the
 failure this canon exists to remove. Each is a test, and each was made to fail before it was kept — a
