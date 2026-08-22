@@ -3,17 +3,31 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 package io.thymekit;
 
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
+
 /**
- * The object behind {@code #md} in templates. Methods are instance methods because Thymeleaf calls them
- * reflectively, and the renderer is injected rather than created so that a Spring proxy (and with it
- * {@code @Cacheable}) stays in the call path.
+ * The object behind {@code #md} in templates: {@code <div th:utext="${#md.toHtmlSafe(text)}">}.
+ *
+ * <p>Two methods wide, and deliberately. A template could have been handed the renderer itself, and
+ * then the surface a page is written against would be whatever the renderer happens to hold — today a
+ * ceiling to read, tomorrow whatever else it grows. What crosses this bridge is the text and what the
+ * links of that text say about themselves; the rest stays on the other side.
+ *
+ * <p>Methods are instance methods because Thymeleaf calls them reflectively, and the renderer is
+ * injected rather than created so that a Spring proxy — and with it {@code @Cacheable} — stays in the
+ * call path. Final, unlike the renderer: nothing proxies this one, so nothing needs to extend it.
+ *
+ * <p>Both arguments may be absent, because a page carries absences: nothing written yet, no policy set.
+ * They cross as they are — what an absence means is the renderer's to decide, and it decides the same
+ * way for a template as for java.
  */
-public class MarkdownExpressionObject {
+public final class MarkdownExpressionObject {
 
     private final MarkdownRenderer markdownRenderer;
 
     public MarkdownExpressionObject(MarkdownRenderer markdownRenderer) {
-        this.markdownRenderer = markdownRenderer;
+        this.markdownRenderer = Objects.requireNonNull(markdownRenderer, "markdownRenderer");
     }
 
     /**
@@ -23,7 +37,7 @@ public class MarkdownExpressionObject {
      * @return sanitised HTML
      * @see MarkdownRenderer#toHtmlSafe(String)
      */
-    public String toHtmlSafe(String source) {
+    public String toHtmlSafe(@Nullable String source) {
         return markdownRenderer.toHtmlSafe(source);
     }
 
@@ -35,7 +49,7 @@ public class MarkdownExpressionObject {
      * @return sanitised HTML
      * @see MarkdownRenderer#toHtmlSafe(String, String)
      */
-    public String toHtmlSafe(String source, String linkRel) {
+    public String toHtmlSafe(@Nullable String source, @Nullable String linkRel) {
         return markdownRenderer.toHtmlSafe(source, linkRel);
     }
 }

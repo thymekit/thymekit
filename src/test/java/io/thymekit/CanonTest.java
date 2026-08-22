@@ -441,6 +441,71 @@ class CanonTest {
             .isEqualTo(rules);
     }
 
+    /**
+     * One call spelled twice says the same thing about absence. A bridge that forwards to a renderer, a
+     * builder that forwards to a guard: where the same name takes the same arguments in two places, both
+     * places agree on which of them may be missing. Otherwise the package is {@code @NullMarked} and one
+     * of the two is lying — the one that documents an absence it does not declare.
+     */
+    @Test
+    void oneCallSpelledTwiceSaysTheSameAboutAbsence() {
+        record Signature(String name, java.util.List<Class<?>> parameters) {}
+        var nullableAt = new java.util.LinkedHashMap<Signature, java.util.Map<String, java.util.Set<Integer>>>();
+        for (var type : KIT) {
+            for (var method : type.reflect().getDeclaredMethods()) {
+                if (!java.lang.reflect.Modifier.isPublic(method.getModifiers()) || method.isSynthetic()) {
+                    continue;
+                }
+                var absent = new java.util.LinkedHashSet<Integer>();
+                var parameters = method.getAnnotatedParameterTypes();
+                for (int i = 0; i < parameters.length; i++) {
+                    if (parameters[i].isAnnotationPresent(org.jspecify.annotations.Nullable.class)) {
+                        absent.add(i);
+                    }
+                }
+                nullableAt.computeIfAbsent(
+                        new Signature(method.getName(), java.util.List.of(method.getParameterTypes())),
+                        signature -> new java.util.LinkedHashMap<>())
+                    .put(type.getSimpleName(), absent);
+            }
+        }
+        var disagreeing = nullableAt.entrySet().stream()
+            .filter(e -> e.getValue().size() > 1)
+            .filter(e -> new java.util.HashSet<>(e.getValue().values()).size() > 1)
+            .map(e -> e.getKey().name() + e.getKey().parameters() + " " + e.getValue())
+            .toList();
+        assertThat(disagreeing).as("the same call, spelled twice, disagreeing about what may be absent").isEmpty();
+    }
+
+    /**
+     * What is not meant to be extended says so. A class left open is an invitation, and the only
+     * invitations this kit means are the two it has to make: a bean Spring proxies for its cache, and a
+     * configuration a container subclasses. Everything else is final, and a reader can stop wondering
+     * which of the two it is looking at.
+     */
+    @Test
+    void whatIsNotMeantToBeExtendedSaysSo() {
+        java.util.List<String> open = new java.util.ArrayList<>();
+        for (var type : KIT) {
+            var reflected = type.reflect();
+            if (!java.lang.reflect.Modifier.isPublic(reflected.getModifiers())
+                || reflected.isInterface() || reflected.isEnum() || reflected.isAnnotation()
+                || reflected.getEnclosingClass() != null
+                || java.lang.reflect.Modifier.isFinal(reflected.getModifiers())
+                || java.lang.reflect.Modifier.isAbstract(reflected.getModifiers())) {
+                continue;
+            }
+            boolean proxiedForItsCache = java.util.Arrays.stream(reflected.getDeclaredMethods())
+                .anyMatch(m -> m.isAnnotationPresent(org.springframework.cache.annotation.Cacheable.class));
+            boolean heldByAContainer = reflected.isAnnotationPresent(
+                org.springframework.boot.autoconfigure.AutoConfiguration.class);
+            if (!proxiedForItsCache && !heldByAContainer) {
+                open.add(reflected.getSimpleName());
+            }
+        }
+        assertThat(open).as("public classes left open with nothing to extend them").isEmpty();
+    }
+
     /** The model belongs to the canvas: one place writes it, so a document knows what to expect. */
     @Test
     void onlyTheCanvasWritesTheModel() {

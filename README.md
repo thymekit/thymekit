@@ -226,7 +226,7 @@ flowchart LR
     K --> R
 ```
 
-The last one is worth naming, because it is the part a reader cannot see in the code. Seventeen rules
+The last one is worth naming, because it is the part a reader cannot see in the code. Nineteen rules
 state what this package is:
 
 - a class that hands out elements is final and cannot be instantiated;
@@ -245,6 +245,8 @@ state what this package is:
 - every element and every vocabulary is listed in the table below;
 - the number of rules in this list is the number of rules there are;
 - every public class of the kit has a spec of its own;
+- what is not meant to be extended is final and says so;
+- one call spelled twice says the same thing about what may be absent;
 - and no line of the sources ends in a space.
 
 None of them names a class: a rule that lists what it applies to is a list to forget, which is the

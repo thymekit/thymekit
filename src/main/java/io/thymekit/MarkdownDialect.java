@@ -8,7 +8,7 @@ import org.thymeleaf.dialect.IExpressionObjectDialect;
 import org.thymeleaf.expression.IExpressionObjectFactory;
 
 /**
- * Thymeleaf dialect exposing {@link MarkdownRenderer} as the {@code #md} expression object:
+ * Thymeleaf dialect exposing {@link MarkdownExpressionObject} as the {@code #md} expression object:
  * {@code <div th:utext="${#md.toHtmlSafe(text)}">}. The renderer already sanitises its output, which
  * is what makes {@code th:utext} safe here.
  */
