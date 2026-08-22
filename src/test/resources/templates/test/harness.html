@@ -1,9 +1,0 @@
-<!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="ru">
-<body>
-<!--/* dispatcher harness: all(items) renders a flow, one(e) a single element */-->
-<th:block th:fragment="all"><th:block th:replace="~{thymekit/element :: renderAll(${items})}"/></th:block>
-<th:block th:fragment="one"><th:block th:replace="~{thymekit/element :: render(${e})}"/></th:block>
-<th:block th:fragment="scripts"><th:block th:replace="~{thymekit/element :: scripts(${items})}"/></th:block>
-</body>
-</html>

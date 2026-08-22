@@ -392,6 +392,7 @@ front of it, exactly as they do for the kit's own.
 | Md | `Md.of(markdown)` — title, empty state, empty-state action, `linkRel` | `md-section :: mdEl` | `md.css` |
 | Canvas | `PageModel.of(model)` — own page classes, flow of elements, `render(view)`; renders as the `page` element | `canvas :: canvasEl` | `canvas.css` |
 | — | `Composable<K>` — whatever becomes an element; `ElementContract` — the walk over a triple, for your elements as much as ours | — | — |
+| — | `Rel` — what a link says about itself, with the policy that goes with it: `Rel.of(...)` guards and orders, `Rel.forNewTab(...)` cannot lose `noopener`, `Rel.tokens(...)` writes the attribute | — | — |
 | Head | filled by the canvas — title, description, canonical, image, `robots`; renders as the `head` element | `head :: headEl` | — (it prints tags, not looks) |
 
 Text written by visitors says so: `Md.of(review).linkRel(UGC, NOFOLLOW)` marks the links that leave
@@ -406,7 +407,9 @@ stay yours, the attribute is what a search engine and a screen reader understand
 heading or a caption marks the Latin name inside a Russian catalogue as Latin. A heading that is a link
 says what it is with `rel(NOFOLLOW, UGC)`, and `newTab()` brings `noopener` along whichever order they
 are written in — without it the opened page can reach back through `window.opener`, and remembering
-that at every link by hand is the kind of vigilance the kit exists to remove. An `href` that executes
+that at every link by hand is the kind of vigilance the kit exists to remove — and it is removed from
+your linking elements too, since `Rel` publishes what the kit's own elements use: `Rel.of(values)` for
+the option, `Rel.forNewTab(values)` at build time, `Rel.tokens(values)` for the attribute. An `href` that executes
 instead of navigating (`javascript:`, `data:`, `vbscript:`, and the spellings a browser unpicks, like
 `java\tscript:`) is refused where it is written, and `rel` or `newTab` on
 a heading that is not a link is refused too, rather than printed nowhere.

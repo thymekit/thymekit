@@ -249,6 +249,94 @@ class CanonTest {
         assertThat(found).as("lines ending in a space").isEmpty();
     }
 
+    /**
+     * What the kit shares among its own elements, it shares with everyone. A hidden helper called from
+     * one place is that place's business; called from two, it has stopped being a detail and become the
+     * policy of a concept — and the kit tells whoever writes an element that their element is an element
+     * like its own. A policy reachable only from inside makes that a half-truth: they get the vocabulary
+     * and re-implement the behaviour, which is how two spellings of one rule begin.
+     */
+    @Test
+    void whatMoreThanOneElementUsesIsPublic() {
+        methods().that().arePackagePrivate().and().areDeclaredInClassesThat().resideInAPackage("io.thymekit")
+            .should(new com.tngtech.archunit.lang.ArchCondition<com.tngtech.archunit.core.domain.JavaMethod>(
+                "be public, being used by more than one element") {
+                @Override
+                public void check(com.tngtech.archunit.core.domain.JavaMethod method,
+                                  com.tngtech.archunit.lang.ConditionEvents events) {
+                    if (method.getModifiers().contains(com.tngtech.archunit.core.domain.JavaModifier.SYNTHETIC)) {
+                        return;
+                    }
+                    String home = outermost(method.getOwner()).getName();
+                    java.util.Set<String> callers = method.getAccessesToSelf().stream()
+                        .map(access -> outermost(access.getOriginOwner()).getName())
+                        .filter(name -> !name.equals(home))
+                        .collect(java.util.stream.Collectors.toCollection(java.util.TreeSet::new));
+                    if (callers.size() > 1) {
+                        events.add(com.tngtech.archunit.lang.SimpleConditionEvent.violated(method,
+                            method.getFullName() + " is shared by " + callers + " and hidden from everyone else"));
+                    }
+                }
+            })
+            .because("what two elements need is a policy, and a policy the kit publishes it uses")
+            .check(KIT);
+    }
+
+    /** A nested class is part of what encloses it: Heading and Heading.Builder are one place. */
+    private static com.tngtech.archunit.core.domain.JavaClass outermost(
+            com.tngtech.archunit.core.domain.JavaClass type) {
+        var enclosing = type.getEnclosingClass();
+        return enclosing.map(CanonTest::outermost).orElse(type);
+    }
+
+    /**
+     * The front door lists everything a page is built from, in one table. Named somewhere in the prose
+     * is not the same as listed: whoever arrives reads the table to learn what the kit has, and an
+     * element missing from it does not exist for them. Every one of these was found by a person
+     * reading, which is the arrangement this canon exists to end.
+     */
+    @Test
+    void everyElementAndEveryVocabularyIsListedInTheReadmeTable() throws java.io.IOException {
+        String readme = elementTableOf(java.nio.file.Files.readString(java.nio.file.Path.of("README.md")));
+        java.util.List<String> unmentioned = new java.util.ArrayList<>();
+        for (var type : KIT) {
+            if (!type.getModifiers().contains(com.tngtech.archunit.core.domain.JavaModifier.PUBLIC)
+                || type.getEnclosingClass().isPresent()
+                || type.getPackageName().startsWith("io.thymekit.demo")) {
+                continue;
+            }
+            boolean handsOutElements = type.getMethods().stream()
+                .filter(m -> m.getModifiers().contains(com.tngtech.archunit.core.domain.JavaModifier.PUBLIC))
+                .filter(m -> m.getModifiers().contains(com.tngtech.archunit.core.domain.JavaModifier.STATIC))
+                .anyMatch(m -> m.getRawReturnType().getName().equals(Element.class.getName())
+                    || m.getRawReturnType().getSimpleName().equals("Builder"));
+            // the whole name, not a prefix of a longer one: `ElementContract` does not list Element
+            var listed = java.util.regex.Pattern.compile("`" + type.getSimpleName() + "(?![A-Za-z0-9_])");
+            if ((handsOutElements || type.isEnum()) && !listed.matcher(readme).find()) {
+                unmentioned.add(type.getSimpleName());
+            }
+        }
+        assertThat(unmentioned).as("elements and vocabularies missing from the readme's table").isEmpty();
+    }
+
+    /** The table of elements, and nothing else of the readme: its header row down to the first line that is not one. */
+    private static String elementTableOf(String readme) {
+        java.util.List<String> rows = new java.util.ArrayList<>();
+        boolean inside = false;
+        for (String line : readme.lines().toList()) {
+            if (line.startsWith("| Element ")) {
+                inside = true;
+            } else if (inside && !line.startsWith("|")) {
+                break;
+            }
+            if (inside) {
+                rows.add(line);
+            }
+        }
+        assertThat(rows).as("the readme's table of elements, found by its header row").isNotEmpty();
+        return String.join("\n", rows);
+    }
+
     /** The model belongs to the canvas: one place writes it, so a document knows what to expect. */
     @Test
     void onlyTheCanvasWritesTheModel() {

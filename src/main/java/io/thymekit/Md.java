@@ -74,7 +74,7 @@ public final class Md {
          * a wound self-inflicted.
          */
         public Builder linkRel(Rel... values) {
-            linkRel.addAll(Rel.required(values, "linkRel"));
+            linkRel.addAll(Rel.of(values));
             return this;
         }
 

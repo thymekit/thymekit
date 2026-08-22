@@ -77,11 +77,13 @@ jacocoTestReport {
     reports { xml.required = true; html.required = true }
 }
 
-// Mutation testing (opt-in: `./gradlew pitest`); the module contract is 100%.
+// Mutation testing (opt-in: `./gradlew pitest`); the module contract is 100%. One class at a time
+// with -PpitTarget=io.thymekit.Rel -PpitTests=io.thymekit.RelTest, which is how a class is taken
+// through its own spec while the rest of the project is still on its way there.
 pitest {
     junit5PluginVersion = '1.2.2'
-    targetClasses = ['io.thymekit.*']
-    targetTests   = ['io.thymekit.*']
+    targetClasses = [project.findProperty('pitTarget')?.toString() ?: 'io.thymekit.*']
+    targetTests   = [project.findProperty('pitTests')?.toString() ?: 'io.thymekit.*']
     outputFormats = ['HTML', 'XML']
     timestampedReports = false
     threads = 2

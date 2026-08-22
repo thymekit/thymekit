@@ -88,7 +88,7 @@ public final class Heading {
          * for, {@code rel(UGC)} for one a visitor wrote. Repetitions collapse, order is kept.
          */
         public Builder rel(Rel... values) {
-            rel.addAll(Rel.required(values, "rel"));
+            rel.addAll(Rel.of(values));
             return this;
         }
 
@@ -128,10 +128,9 @@ public final class Heading {
                 throw new IllegalStateException("rel or newTab on a heading that is not a link: "
                     + "call href(...) as well, or drop them — an attribute with no <a> to sit on is printed nowhere");
             }
-            Set<Rel> values = new LinkedHashSet<>(rel);      // the builder is left as it was: build() is not a step
+            Set<Rel> values = newTab ? Rel.forNewTab(rel) : rel;   // a copy: the builder is left as it was
             if (newTab) {
                 b.with("target", "_blank");
-                values.add(Rel.NOOPENER);
             }
             if (!values.isEmpty()) {
                 b.with("rel", Rel.tokens(values));

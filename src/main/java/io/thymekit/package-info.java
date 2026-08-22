@@ -52,7 +52,9 @@
  *       description, canonical, image, {@link io.thymekit.PageModel.Robots}). Both go through the same
  *       dispatcher as everything else, so composition is closed at the top as well as at the bottom.
  *       {@code render()} uses the default document, {@code render(view)} one of your own.</li>
- *   <li>{@link io.thymekit.Rel} — what a link says about itself, shared by every element that links.</li>
+ *   <li>{@link io.thymekit.Rel} — what a link says about itself, and the policy that goes with it:
+ *       the guards and the order of the values, the {@code noopener} a new tab cannot lose, and the
+ *       attribute they are written as. Public, so an element of yours links exactly as the kit's do.</li>
  *   <li>{@link io.thymekit.ElementContract} — the walk over a triple: the kit checks its own elements
  *       with it, and hands the same walk to whoever writes one.</li>
  *   <li>{@link io.thymekit.Composable} — whatever becomes an element: every builder here, and
