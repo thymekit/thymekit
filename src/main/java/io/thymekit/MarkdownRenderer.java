@@ -13,6 +13,7 @@ import com.vladsch.flexmark.util.data.MutableDataSet;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -28,11 +29,16 @@ import org.springframework.cache.annotation.Cacheable;
  * independent layers, because one of them may be misconfigured some day.
  *
  * <p>Both {@code toHtmlSafe} overloads are annotated {@code @Cacheable} and share one key: the source
- * text, the link policy and the ceiling of this renderer — everything that decides what the text
- * becomes. The same text under two policies cannot come back with the wrong attributes, and two
- * renderers (a page written entirely in markdown, a section inside one) cannot hand each other their
- * headings. Both carry the annotation on purpose: a method calling its neighbour inside the
- * same object would go past the Spring proxy and lose the cache silently.
+ * text, the link policy and the ceiling of this renderer — everything a consumer is given to decide
+ * with. The same text under two policies cannot come back with the wrong attributes, and two renderers
+ * (a page written entirely in markdown, a section inside one) cannot hand each other their headings.
+ * Both carry the annotation on purpose: a method calling its neighbour inside the same object would go
+ * past the Spring proxy and lose the cache silently.
+ *
+ * <p>The ceiling stands for the renderer because it is the only thing that varies between two of them.
+ * A subclass that changed what rendering means would break that, which is one more reason the class
+ * says it is not meant to be overridden: two renderers that disagree about more than a ceiling need a
+ * cache of their own, not this one.
  *
  * <p>The key names its arguments by position ({@code #p0}, {@code #p1}) rather than by name. A library
  * jar carries parameter names only if it was compiled with {@code -parameters}; where it was not, a key
@@ -51,16 +57,11 @@ import org.springframework.cache.annotation.Cacheable;
  */
 public class MarkdownRenderer {
 
-    /**
-     * Lines that consist only of whitespace are normalised to truly empty ones.
-     *
-     * <p>WYSIWYG editors keep "empty" lines as a space or a non-breaking space. CommonMark requires a
-     * blank line to contain zero non-whitespace characters, and U+00A0 does not count as whitespace
-     * there — so without this, {@code ---} after such a line turns the previous paragraph into a setext
-     * heading instead of a rule, tables stay plain text, and separate paragraphs glue into one.
-     */
-    private static final Pattern WHITESPACE_ONLY_LINE =
-        Pattern.compile("(?m)^[\\s\\u00A0]+$");
+    /** A line with nothing on it but space, in the wide sense that includes the non-breaking kind. */
+    private static final Pattern WHITESPACE_ONLY_LINE = Pattern.compile("^[\\s\\u00A0]+$");
+
+    /** The opening or closing line of a fenced code block, indented by up to three spaces. */
+    private static final Pattern FENCE = Pattern.compile("^ {0,3}(`{3,}|~{3,})(.*)$");
 
     /** An address that names its own scheme — {@code https:}, {@code mailto:}, anything — leaves this site. */
     private static final Pattern SCHEME = Pattern.compile("^[A-Za-z][A-Za-z0-9+.-]*:");
@@ -142,7 +143,7 @@ public class MarkdownRenderer {
         if (source == null || source.isBlank()) {
             return "";
         }
-        String normalized = WHITESPACE_ONLY_LINE.matcher(source).replaceAll("");
+        String normalized = blankTheLinesAnEditorLeft(source);
         Node document = parser.parse(normalized);
         demoteHeadings(document);
         String safeHtml = Jsoup.clean(renderer.render(document), safelist);
@@ -158,17 +159,69 @@ public class MarkdownRenderer {
     }
 
     /**
+     * Lines that consist only of whitespace are made truly empty — outside a fenced code block, where
+     * the spaces are the author's text and not a trace of their editor.
+     *
+     * <p>WYSIWYG editors keep an "empty" line as a space or a non-breaking space. CommonMark requires a
+     * blank line to contain zero non-whitespace characters, and U+00A0 does not count as whitespace
+     * there — so without this, {@code ---} after such a line turns the paragraph above it into a setext
+     * heading instead of a rule, tables stay rows of pipes, and separate paragraphs glue into one.
+     *
+     * <p>Inside a fence nothing is touched: three spaces on a line of a code sample are three
+     * characters somebody wrote. The one place this pass still changes what was written is an indented
+     * code block — telling one from ordinary formatting needs the document parsed, and a correct parse
+     * is what this pass exists to make possible.
+     */
+    private static String blankTheLinesAnEditorLeft(String source) {
+        StringBuilder normalized = new StringBuilder(source.length());
+        char fenceChar = 0;
+        int fenceLength = 0;
+        int at = 0;
+        while (true) {
+            int newline = source.indexOf('\n', at);
+            int lineEnd = newline < 0 ? source.length() : newline;
+            String line = source.substring(at, lineEnd);
+            String bare = line.endsWith("\r") ? line.substring(0, line.length() - 1) : line;
+
+            Matcher fence = FENCE.matcher(bare);
+            if (fence.matches()) {
+                String marker = fence.group(1);
+                if (fenceChar == 0) {
+                    fenceChar = marker.charAt(0);
+                    fenceLength = marker.length();
+                } else if (marker.charAt(0) == fenceChar && marker.length() >= fenceLength
+                    && fence.group(2).isBlank()) {          // a closing fence carries no info string
+                    fenceChar = 0;
+                }
+            }
+            boolean theirs = fenceChar != 0 || !WHITESPACE_ONLY_LINE.matcher(bare).matches();
+            normalized.append(theirs ? line : "");
+
+            if (newline < 0) {
+                break;
+            }
+            normalized.append('\n');
+            at = newline + 1;
+        }
+        return normalized.toString();
+    }
+
+    /**
      * Puts the given rel on every link that leaves the site. Leaving means carrying a scheme
      * ({@code https://…}, and any other) or an authority ({@code //host/…}); a path of the site's own
      * ({@code /x}, {@code #x}, {@code ../x}) is left alone, because holding back the weight of your own
      * links is a wound self-inflicted. A protocol-relative address counts as outgoing: it is somebody
      * else's host written without a scheme, and in text a visitor wrote it is exactly the shape spam
      * takes to slip past a check for {@code http}.
+     *
+     * <p>The address is read as the parser left it. Flexmark hands over a link destination already
+     * trimmed, so there is nothing here to strip — and a trim that no text can reach is a line nobody
+     * has ever run.
      */
     private static void markOutgoing(Document doc, String linkRel) {
         // jsoup's Element, spelled in full: the kit has one of its own, and this file is not about it
         for (org.jsoup.nodes.Element a : doc.select("a[href]")) {
-            String href = a.attr("href").strip();
+            String href = a.attr("href");
             if (href.startsWith("//") || SCHEME.matcher(href).find()) {
                 a.attr("rel", linkRel);
             }
@@ -219,11 +272,17 @@ public class MarkdownRenderer {
     }
 
     /**
-     * Output-side safelist: {@code Safelist.relaxed()} plus what markdown produces and that list does
-     * not have. {@code rel}/{@code target} on links, loading hints on images, {@code class} on
-     * {@code <code>} — flexmark puts the fenced-block language there, and without it code blocks lose
-     * their highlighting — and the {@code <hr>} of a thematic break, which relaxed drops: the clean is
-     * here to keep out what a browser must not be shown, not to thin out what an author may write.
+     * Output-side safelist: {@code Safelist.relaxed()} plus the two things markdown produces that the
+     * list does not have — {@code class} on {@code <code>}, where flexmark puts the language of a fenced
+     * block, and the {@code <hr>} of a thematic break. The clean is here to keep out what a browser must
+     * not be shown, not to thin out what an author may write.
+     *
+     * <p>Nothing else is added, and two allowances that used to be here are gone: {@code rel} and
+     * {@code target} on links, and the loading hints on images. Neither can arrive — an author writes no
+     * markup, since it is escaped, and the {@code rel} this class puts on outgoing links is put on after
+     * the clean, not before it. A permission that cannot be reached is not caution, it is a wider
+     * surface for nothing; the day something here produces one of them, it comes back with the thing
+     * that produces it.
      */
     private static Safelist createSafelist() {
         return Safelist.relaxed()
@@ -232,8 +291,6 @@ public class MarkdownRenderer {
                                            // resolves relative addresses against a base document, and
                                            // here there is none. The protocol list still applies, so
                                            // javascript: and data: are dropped as before.
-            .addAttributes("a", "rel", "target")
-            .addAttributes("img", "loading", "decoding")
             .addAttributes("code", "class");
     }
 }

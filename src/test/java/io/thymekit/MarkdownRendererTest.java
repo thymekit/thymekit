@@ -6,7 +6,10 @@ package io.thymekit;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.Arrays;
 import org.junit.jupiter.api.Test;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -93,6 +96,63 @@ class MarkdownRendererTest {
     }
 
     /**
+     * And a line inside a code sample is not an editor's leftover but three characters somebody wrote.
+     * The pass that empties "blank" lines stops at a fence, whichever of the two markers opened it, and
+     * a fence nobody closed runs to the end of the text — which is what a parser makes of it too.
+     */
+    @Test
+    void insideAFenceTheSpacesBelongToTheAuthor() {
+        assertThat(md.toHtmlSafe("```\nline one\n   \nline three\n```"))
+            .contains("<code>line one\n   \nline three\n</code>");
+        assertThat(md.toHtmlSafe("~~~\nline one\n  \nline three\n~~~"))
+            .contains("<code>line one\n  \nline three\n</code>");
+        assertThat(md.toHtmlSafe("```\nopen and never closed\n   \nstill code"))
+            .contains("<code>open and never closed\n   \nstill code</code>");
+        // and a marker of the other kind does not close what it did not open
+        assertThat(md.toHtmlSafe("```\ncode\n~~~\n   \nmore code\n```"))
+            .contains("~~~\n   \nmore code");
+    }
+
+    /**
+     * A fence closes only on its own terms: the same marker, at least as long, and nothing written after
+     * it. Anything else is a line of the code sample, spaces and all.
+     */
+    @Test
+    void aFenceClosesOnlyOnItsOwnTerms() {
+        assertThat(md.toHtmlSafe("````\ncode\n```\n   \nstill code\n````"))
+            .as("three backticks do not close four").contains("```\n   \nstill code");
+        assertThat(md.toHtmlSafe("```\ncode\n``` java\n   \nstill code\n```"))
+            .as("a closing fence carries no info string").contains("``` java\n   \nstill code");
+        // once it has closed, the text after it is text again — shown with the line an editor really
+        // leaves, a non-breaking space, since a line of ordinary spaces is blank to a parser anyway
+        assertThat(md.toHtmlSafe("```\ncode\n```\nParagraph\n\u00a0\n---\nAfter"))
+            .contains("<code>code\n</code>").contains("<hr").doesNotContain("<h2");
+    }
+
+    /**
+     * Text arrives as it was stored, which is not always as it was typed: a line ending kept by a machine
+     * that ends lines with two characters, or a first line that is empty because a form put it there.
+     */
+    @Test
+    void textArrivesAsItWasStored() {
+        assertThat(md.toHtmlSafe("Paragraph\r\n \r\n---\r\nAfter"))
+            .as("carriage returns and all").doesNotContain("<h2").contains("<hr");
+        assertThat(md.toHtmlSafe("\nAlpha"))
+            .as("a text that begins with an empty line is that text, once").isEqualTo("<p>Alpha</p>");
+    }
+
+    /**
+     * The one place the pass still changes what was written: a code block made by indentation. Telling
+     * one from ordinary formatting needs the document parsed, and a correct parse is the thing the pass
+     * exists to make possible. Pinned rather than hidden — the day it matters, this is where it says so.
+     */
+    @Test
+    void insideAnIndentedCodeBlockTheSpacesAreStillLost() {
+        assertThat(md.toHtmlSafe("text\n\n    code one\n       \n    code three\n"))
+            .contains("<code>code one\n\ncode three\n</code>");
+    }
+
+    /**
      * A rule between two parts of a text is a thing markdown has, so it is a thing the page gets. The
      * clean is there to drop what a browser must not be shown, not to thin out what an author may write.
      */
@@ -172,42 +232,98 @@ class MarkdownRendererTest {
         assertThat(md.toHtmlSafe("[ours](/x)", "nofollow")).contains("href=\"/x\"");
     }
 
+    /**
+     * A policy changes attributes, not formatting. Text with a policy goes out through a second parse —
+     * the only way jsoup keeps a relative address alive — and the class claims both ways write the same
+     * page. Claimed, and now held: a text with nothing to mark comes out identical either way.
+     */
+    @Test
+    void bothWaysOutOfThePipelineWriteTheSamePage() {
+        String rich = """
+            | a | b |
+            |---|---|
+            | 1 | 2 |
+
+            > a quotation
+
+            ```java
+            class A {}
+            ```
+
+            - one
+            - two
+
+            ![picture](/i.png)
+            """;
+        assertThat(md.toHtmlSafe(rich, "ugc nofollow")).isEqualTo(md.toHtmlSafe(rich));
+    }
+
     // ——— the cache ———————————————————————————————————————————————————————————————————————
 
     /**
-     * The cache holds the text together with everything that decides what the text becomes. Asked with
-     * the same question it answers from memory; asked with a different one it does the work again.
-     * Written against a real cache manager, because an assertion about an annotation is an assertion
-     * about a spelling.
+     * The answer is filed under the whole question: the text, the policy, and the ceiling of the
+     * renderer that was asked. Written against a real cache manager and against the entry itself,
+     * because a test that only calls twice and compares proves that rendering is a function — which it
+     * would be with no cache at all. This project has already met the other kind of defect once, when a
+     * key written by parameter name evaluated to null and every page showed the text of the first.
      */
     @Test
-    void theCacheAnswersTheQuestionItWasAsked() {
+    void theAnswerIsFiledUnderTheWholeQuestion() {
         try (var context = new AnnotationConfigApplicationContext(Cached.class)) {
-            MarkdownRenderer cached = context.getBean("plain", MarkdownRenderer.class);
-            String text = "[out](https://example.com/x)";
+            MarkdownRenderer underAPage = context.getBean("plain", MarkdownRenderer.class);
+            Cache entries = context.getBean(CacheManager.class).getCache("markdown.htmlSafe");
 
-            assertThat(cached.toHtmlSafe(text)).isEqualTo(cached.toHtmlSafe(text));
-            assertThat(cached.toHtmlSafe(text, "ugc")).contains("rel=\"ugc\"");
-            assertThat(cached.toHtmlSafe(text)).doesNotContain("rel=");          // the policy is part of the question
-            assertThat(cached.toHtmlSafe(text, null)).doesNotContain("rel=");    // and null is the same question
+            String withoutAPolicy = underAPage.toHtmlSafe("[out](https://example.com/x)");
+            String withOne = underAPage.toHtmlSafe("[out](https://example.com/x)", "ugc");
 
-            assertThat(cached.toHtmlSafe("# Title")).contains("<h2>Title</h2>");
+            assertThat(entries.get(Arrays.asList("[out](https://example.com/x)", null, 2)))
+                .as("filed under the text, no policy, and a ceiling of two")
+                .isNotNull().extracting(Cache.ValueWrapper::get).isEqualTo(withoutAPolicy);
+            assertThat(entries.get(Arrays.asList("[out](https://example.com/x)", "ugc", 2)))
+                .as("and the same text under a policy is another question")
+                .isNotNull().extracting(Cache.ValueWrapper::get).isEqualTo(withOne);
+            assertThat(withoutAPolicy).doesNotContain("rel=");
+            assertThat(withOne).contains("rel=\"ugc\"");
         }
     }
 
     /**
-     * And so is the ceiling. Two renderers are two answers to the same text — a page written entirely in
-     * markdown and a section inside one — and a cache that cannot tell them apart hands the second the
-     * headings of the first.
+     * And a second ask is answered from memory rather than done again. Shown by answering it wrongly on
+     * purpose: an entry nobody could have rendered is put in the cache, and the renderer hands it back.
+     * Nothing else can produce that string, so nothing else can make this pass.
+     */
+    @Test
+    void aSecondAskIsAnsweredFromMemory() {
+        try (var context = new AnnotationConfigApplicationContext(Cached.class)) {
+            MarkdownRenderer underAPage = context.getBean("plain", MarkdownRenderer.class);
+            Cache entries = context.getBean(CacheManager.class).getCache("markdown.htmlSafe");
+
+            underAPage.toHtmlSafe("**bold**");
+            entries.put(Arrays.asList("**bold**", null, 2), "<p>remembered, not rendered</p>");
+
+            assertThat(underAPage.toHtmlSafe("**bold**")).isEqualTo("<p>remembered, not rendered</p>");
+        }
+    }
+
+    /**
+     * Two renderers are two answers to the same text — a page written entirely in markdown and a section
+     * inside one — and a cache that cannot tell them apart hands the second the headings of the first.
+     * Their questions differ in the ceiling, and so do their entries.
      */
     @Test
     void theCacheTellsOneRendererFromAnother() {
         try (var context = new AnnotationConfigApplicationContext(Cached.class)) {
             MarkdownRenderer underAPage = context.getBean("plain", MarkdownRenderer.class);
             MarkdownRenderer wholePage = context.getBean("asAuthored", MarkdownRenderer.class);
+            Cache entries = context.getBean(CacheManager.class).getCache("markdown.htmlSafe");
 
             assertThat(underAPage.toHtmlSafe("# Title")).contains("<h2>Title</h2>");
             assertThat(wholePage.toHtmlSafe("# Title")).contains("<h1>Title</h1>");
+
+            assertThat(entries.get(Arrays.asList("# Title", null, 2))).isNotNull()
+                .extracting(Cache.ValueWrapper::get).asString().contains("<h2>");
+            assertThat(entries.get(Arrays.asList("# Title", null, 1))).isNotNull()
+                .extracting(Cache.ValueWrapper::get).asString().contains("<h1>");
         }
     }
 

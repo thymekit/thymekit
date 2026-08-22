@@ -17,7 +17,9 @@ import org.junit.jupiter.api.Test;
  * <p>It is a bridge, and a bridge is judged by what crosses it and what does not. Two methods cross —
  * the text, and the text with a link policy. The renderer does not: a template that could reach the
  * renderer itself could reach everything it will ever grow, and the surface a page is written against
- * would then be whatever the internals happen to be.
+ * would then be whatever the internals happen to be. (What every object carries — {@code getClass} and
+ * the rest — a template reaches on anything, and this class neither adds to that nor could take from
+ * it.)
  */
 class MarkdownExpressionObjectTest {
 
@@ -90,12 +92,13 @@ class MarkdownExpressionObjectTest {
     }
 
     /**
-     * And the surface stays two methods wide. What a template can call is what this class declares, so
-     * anything the renderer grows later — a ceiling to read, a cache to inspect — stays out of reach of
-     * a page unless somebody decides otherwise here, in writing.
+     * And what this class adds to the surface stays two methods. A template can also reach what every
+     * object has — {@code getClass}, {@code toString} — and no arrangement here changes that; what it
+     * cannot reach is the renderer and whatever the renderer grows later, a ceiling to read today and
+     * something else tomorrow. Widening this is a decision somebody writes down, here.
      */
     @Test
-    void theTemplateSeesTwoMethodsAndNoMore() {
+    void whatThisClassAddsIsTwoMethods() {
         assertThat(Arrays.stream(MarkdownExpressionObject.class.getDeclaredMethods())
                 .filter(m -> Modifier.isPublic(m.getModifiers()))
                 .map(Method::getName).distinct())

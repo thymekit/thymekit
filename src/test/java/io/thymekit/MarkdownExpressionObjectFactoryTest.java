@@ -77,12 +77,14 @@ class MarkdownExpressionObjectFactoryTest {
     }
 
     /**
-     * And there is nothing here for an engine to cache. Thymeleaf's flag is about keeping the object in
-     * a context, not about the html: the same instance is handed out on every ask, so remembering it
-     * would cost a context more than asking again.
+     * It asks an engine not to keep the object. Thymeleaf's flag is about holding the expression object
+     * in a context for the rest of a render, not about the html — and since the same instance is handed
+     * out on every ask, holding it would cost a context more than asking again. The answer is a
+     * decision, so it is written down here; what the flag means is above, since the name alone has
+     * misled this project once already.
      */
     @Test
-    void thereIsNothingHereWorthCaching() {
+    void itAsksAnEngineNotToKeepTheObject() {
         assertThat(factory.isCacheable("md")).isFalse();
         assertThat(factory.isCacheable("anything else")).isFalse();
     }
