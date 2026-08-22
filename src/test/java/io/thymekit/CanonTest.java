@@ -478,10 +478,10 @@ class CanonTest {
     }
 
     /**
-     * What is not meant to be extended says so. A class left open is an invitation, and the only
-     * invitations this kit means are the two it has to make: a bean Spring proxies for its cache, and a
-     * configuration a container subclasses. Everything else is final, and a reader can stop wondering
-     * which of the two it is looking at.
+     * What is not meant to be extended says so. A class left open is an invitation, and this kit means
+     * exactly one: the bean Spring proxies for its cache. Even the auto-configuration is final —
+     * {@code @AutoConfiguration} carries {@code proxyBeanMethods = false}, so nothing subclasses it, and
+     * the exemption it once had here was a guess that turned out to be wrong.
      */
     @Test
     void whatIsNotMeantToBeExtendedSaysSo() {
@@ -497,9 +497,7 @@ class CanonTest {
             }
             boolean proxiedForItsCache = java.util.Arrays.stream(reflected.getDeclaredMethods())
                 .anyMatch(m -> m.isAnnotationPresent(org.springframework.cache.annotation.Cacheable.class));
-            boolean heldByAContainer = reflected.isAnnotationPresent(
-                org.springframework.boot.autoconfigure.AutoConfiguration.class);
-            if (!proxiedForItsCache && !heldByAContainer) {
+            if (!proxiedForItsCache) {
                 open.add(reflected.getSimpleName());
             }
         }

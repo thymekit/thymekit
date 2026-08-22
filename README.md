@@ -78,7 +78,9 @@ of the sort is needed, follows once the `io.thymekit` namespace is verified. Unt
 also attached to every [release](https://github.com/thymekit/thymekit/releases).
 
 **1. Nothing to configure.** Auto-configuration registers three beans: the markdown renderer, the
-markdown dialect that puts `#md` into your templates, and the tidy-render dialect. Each bean is `@ConditionalOnMissingBean` — declare your own and
+markdown dialect that puts `#md` into your templates, and the tidy-render dialect. Nothing at all is
+registered where there is no template engine to register it for, so a project that took the kit for its
+java and renders no pages carries no Thymeleaf. Each bean is `@ConditionalOnMissingBean` — declare your own and
 yours wins; tidy rendering switches off with `thymekit.tidy.enabled=false`.
 
 Tidy rendering is worth a sentence of its own, since it changes what your pages look like on the wire.

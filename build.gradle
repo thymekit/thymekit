@@ -51,6 +51,11 @@ dependencies {
     // auto-configuration, so the kit works right after the dependency is added; compileOnly keeps
     // Boot off the classpath of those who do not use it
     compileOnly 'org.springframework.boot:spring-boot-autoconfigure'
+    // turns META-INF/additional-spring-configuration-metadata.json into the metadata an ide reads, so
+    // the one switch this kit has is described where a consumer types it. The platform is repeated
+    // here because a bom does not reach the annotation processor path by itself
+    annotationProcessor platform('org.springframework.boot:spring-boot-dependencies:4.1.0')
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 
     testImplementation platform('org.junit:junit-bom:6.1.3')
     testImplementation 'org.junit.jupiter:junit-jupiter'
