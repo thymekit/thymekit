@@ -431,7 +431,9 @@ Headings an author wrote inside markdown are placed under the page rather than b
 level found in the text is lowered to a ceiling — h2 by default — and the rest move by the same amount,
 never past h6. A `#` in the description of an ingredient is therefore an h2 in the page, not a second
 H1. The relative shape of the text is what survives; that is what a level means in markdown, where the
-same document may be shown inside a page, inside a card or inside a letter. The ceiling belongs to the
+same document may be shown inside a page, inside a card or inside a letter — so the move is whatever
+fits under the deepest heading the author wrote, and a text already using all six levels stays as it
+is rather than losing a depth. The ceiling belongs to the
 renderer (`new MarkdownRenderer(3)`, and `1` renders the text exactly as authored, for pages written
 entirely in markdown); replace the bean and the whole site follows.
 

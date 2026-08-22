@@ -3,15 +3,19 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 package io.thymekit;
 
+import com.vladsch.flexmark.ast.Heading;
 import com.vladsch.flexmark.ext.autolink.AutolinkExtension;
 import com.vladsch.flexmark.ext.tables.TablesExtension;
 import com.vladsch.flexmark.html.HtmlRenderer;
 import com.vladsch.flexmark.parser.Parser;
 import com.vladsch.flexmark.util.ast.Node;
 import com.vladsch.flexmark.util.data.MutableDataSet;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 import org.jsoup.safety.Safelist;
 import org.jspecify.annotations.Nullable;
 import org.springframework.cache.annotation.Cacheable;
@@ -23,9 +27,11 @@ import org.springframework.cache.annotation.Cacheable;
  * authored as markup survives the parser; jsoup then cleans the output against a relaxed safelist. Two
  * independent layers, because one of them may be misconfigured some day.
  *
- * <p>Both {@code toHtmlSafe} overloads are annotated {@code @Cacheable} and share one key — the source
- * text together with the link policy, so the same text under two policies cannot come back with the
- * wrong attributes. Both carry the annotation on purpose: a method calling its neighbour inside the
+ * <p>Both {@code toHtmlSafe} overloads are annotated {@code @Cacheable} and share one key: the source
+ * text, the link policy and the ceiling of this renderer — everything that decides what the text
+ * becomes. The same text under two policies cannot come back with the wrong attributes, and two
+ * renderers (a page written entirely in markdown, a section inside one) cannot hand each other their
+ * headings. Both carry the annotation on purpose: a method calling its neighbour inside the
  * same object would go past the Spring proxy and lose the cache silently.
  *
  * <p>The key names its arguments by position ({@code #p0}, {@code #p1}) rather than by name. A library
@@ -36,6 +42,10 @@ import org.springframework.cache.annotation.Cacheable;
  * editing the text is a natural miss; without a cache manager the annotation is a no-op. If a consumer
  * post-processes the HTML with data outside the text (say, resolving image ids), invalidating that
  * cache is the consumer's business.
+ *
+ * <p>Open rather than final, and for one reason: Spring proxies it to cache, and a proxy needs
+ * something to extend. Nothing here is meant to be overridden — the one thing a consumer changes is the
+ * ceiling, and that is an argument to the constructor.
  *
  * @see MarkdownDialect for the {@code #md} template integration
  */
@@ -90,6 +100,11 @@ public class MarkdownRenderer {
         this.safelist = createSafelist();
     }
 
+    /** The ceiling this renderer places authored headings under; part of what its cache is keyed by. */
+    public int maxHeadingLevel() {
+        return maxHeadingLevel;
+    }
+
     /**
      * Converts markdown source into safe HTML.
      *
@@ -99,7 +114,7 @@ public class MarkdownRenderer {
      * @param source markdown text; {@code null} or blank yields an empty string
      * @return sanitised HTML ready for {@code th:utext}
      */
-    @Cacheable(value = "markdown.htmlSafe", key = "{#p0, null}")
+    @Cacheable(value = "markdown.htmlSafe", key = "{#p0, null, #root.target.maxHeadingLevel()}")
     public String toHtmlSafe(@Nullable String source) {
         return render(source, null);
     }
@@ -117,7 +132,7 @@ public class MarkdownRenderer {
      * @param source markdown text; {@code null} or blank yields an empty string
      * @param linkRel value for the {@code rel} attribute of outgoing links; {@code null} marks nothing
      */
-    @Cacheable(value = "markdown.htmlSafe", key = "{#p0, #p1}")
+    @Cacheable(value = "markdown.htmlSafe", key = "{#p0, #p1, #root.target.maxHeadingLevel()}")
     public String toHtmlSafe(@Nullable String source, @Nullable String linkRel) {
         return render(source, linkRel);
     }
@@ -137,7 +152,7 @@ public class MarkdownRenderer {
         // A second parse, and deliberately so: Jsoup.clean keeps a relative href alive, while a Cleaner
         // driven by hand over a parsed document drops it. The cost is paid only by text that carries a
         // link policy, and jsoup's own output settings are left alone so both paths serialise alike.
-        org.jsoup.nodes.Document marked = Jsoup.parseBodyFragment(safeHtml);
+        Document marked = Jsoup.parseBodyFragment(safeHtml);
         markOutgoing(marked, linkRel);
         return marked.body().html();
     }
@@ -150,7 +165,8 @@ public class MarkdownRenderer {
      * else's host written without a scheme, and in text a visitor wrote it is exactly the shape spam
      * takes to slip past a check for {@code http}.
      */
-    private static void markOutgoing(org.jsoup.nodes.Document doc, String linkRel) {
+    private static void markOutgoing(Document doc, String linkRel) {
+        // jsoup's Element, spelled in full: the kit has one of its own, and this file is not about it
         for (org.jsoup.nodes.Element a : doc.select("a[href]")) {
             String href = a.attr("href").strip();
             if (href.startsWith("//") || SCHEME.matcher(href).find()) {
@@ -161,18 +177,24 @@ public class MarkdownRenderer {
 
     /**
      * Demotes content headings: the topmost authored level becomes {@code maxHeadingLevel} and the rest
-     * shift by the same amount, never past h6. Content does not declare the page H1 — the hero does.
+     * shift by the same amount. Content does not declare the page H1 — the hero does.
+     *
+     * <p>What the shift may not do is flatten the text. Two levels an author kept apart mean two depths,
+     * and html stops at six — so the move is whatever fits under the deepest heading in the document, and
+     * a text already using all six levels stays where it was written. The relative shape of the text is
+     * what a level means in markdown, and it is what survives here; the ceiling is reached when there is
+     * room for it.
      */
     private void demoteHeadings(Node document) {
-        List<com.vladsch.flexmark.ast.Heading> headings = new java.util.ArrayList<>();
+        List<Heading> headings = new ArrayList<>();
         Node n = document.getFirstChild();
-        java.util.ArrayDeque<Node> stack = new java.util.ArrayDeque<>();
+        ArrayDeque<Node> stack = new ArrayDeque<>();
         if (n != null) {
             stack.push(n);
         }
         while (!stack.isEmpty()) {
             Node cur = stack.pop();
-            if (cur instanceof com.vladsch.flexmark.ast.Heading h) {
+            if (cur instanceof Heading h) {
                 headings.add(h);
             }
             if (cur.getNext() != null) {
@@ -185,23 +207,27 @@ public class MarkdownRenderer {
         if (headings.isEmpty()) {
             return;
         }
-        int min = headings.stream().mapToInt(com.vladsch.flexmark.ast.Heading::getLevel).min().orElse(6);
-        int shift = Math.max(0, maxHeadingLevel - min);
+        int topmost = headings.stream().mapToInt(Heading::getLevel).min().orElseThrow();
+        int deepest = headings.stream().mapToInt(Heading::getLevel).max().orElseThrow();
+        int shift = Math.max(0, Math.min(maxHeadingLevel - topmost, 6 - deepest));
         if (shift == 0) {
             return;
         }
-        for (com.vladsch.flexmark.ast.Heading h : headings) {
-            h.setLevel(Math.min(6, h.getLevel() + shift));
+        for (Heading h : headings) {
+            h.setLevel(h.getLevel() + shift);
         }
     }
 
     /**
-     * Output-side safelist: {@code Safelist.relaxed()} plus {@code rel}/{@code target} on links,
-     * loading hints on images, and {@code class} on {@code <code>} — flexmark puts the fenced-block
-     * language there, and without it code blocks lose their highlighting.
+     * Output-side safelist: {@code Safelist.relaxed()} plus what markdown produces and that list does
+     * not have. {@code rel}/{@code target} on links, loading hints on images, {@code class} on
+     * {@code <code>} — flexmark puts the fenced-block language there, and without it code blocks lose
+     * their highlighting — and the {@code <hr>} of a thematic break, which relaxed drops: the clean is
+     * here to keep out what a browser must not be shown, not to thin out what an author may write.
      */
     private static Safelist createSafelist() {
         return Safelist.relaxed()
+            .addTags("hr")                 // a rule between two parts of a text; relaxed has no such tag
             .preserveRelativeLinks(true)   // without it a link to your own site loses its href: jsoup
                                            // resolves relative addresses against a base document, and
                                            // here there is none. The protocol list still applies, so

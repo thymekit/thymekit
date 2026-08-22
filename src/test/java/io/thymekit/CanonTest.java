@@ -37,8 +37,8 @@ class CanonTest {
      * method handing out an element or a builder.
      *
      * <p>The classes Spring touches are deliberately not among them: the renderer is proxied for its
-     * cache and subclassed for its heading ceiling, the dialect and the auto-configuration are held by
-     * a container. They hand out no elements, so this rule never looks at them.
+     * cache, the dialect and the auto-configuration are held by a container. They hand out no elements,
+     * so this rule never looks at them.
      */
     @Test
     void aFactoryIsANamespace_finalAndUninstantiable() {
@@ -335,6 +335,46 @@ class CanonTest {
         }
         assertThat(rows).as("the readme's table of elements, found by its header row").isNotEmpty();
         return String.join("\n", rows);
+    }
+
+    /**
+     * A cached answer is only as good as the question it was filed under, and the question is everything
+     * that decides the answer: the arguments, and the object that was asked. Two rules, both learned the
+     * hard way.
+     *
+     * <p>Arguments by position ({@code #p0}), never by name. A library jar carries parameter names only
+     * if it was compiled with {@code -parameters}; where it was not, {@code #source} evaluates to null
+     * for every call, every text lands on one entry, and the second page shows the text of the first.
+     *
+     * <p>And {@code #root.target} wherever the object has state of its own. Two instances configured
+     * differently are two answers to the same arguments, and a key that cannot tell them apart hands one
+     * of them the other's work.
+     */
+    @Test
+    void aCachedAnswerIsFiledUnderTheWholeQuestion() {
+        var byName = java.util.regex.Pattern.compile("#(?!p\\d|root\\b)[a-zA-Z]");
+        java.util.List<String> wrong = new java.util.ArrayList<>();
+        for (var type : KIT) {
+            for (var method : type.getMethods()) {
+                var cacheable = method.tryGetAnnotationOfType(
+                    org.springframework.cache.annotation.Cacheable.class);
+                if (cacheable.isEmpty()) {
+                    continue;
+                }
+                String key = cacheable.get().key();
+                if (key.isBlank()) {
+                    wrong.add(method.getFullName() + " — cached under a key nobody wrote");
+                } else if (byName.matcher(key).find()) {
+                    wrong.add(method.getFullName() + " — names an argument instead of its position: " + key);
+                }
+                boolean hasState = type.getFields().stream().anyMatch(
+                    f -> !f.getModifiers().contains(com.tngtech.archunit.core.domain.JavaModifier.STATIC));
+                if (hasState && !key.contains("#root.target")) {
+                    wrong.add(method.getFullName() + " — the object it was asked is not in the key: " + key);
+                }
+            }
+        }
+        assertThat(wrong).as("cached methods filed under an incomplete question").isEmpty();
     }
 
     /** The model belongs to the canvas: one place writes it, so a document knows what to expect. */
