@@ -77,8 +77,8 @@ with `read:packages` — that is their rule for public packages, not ours. Maven
 of the sort is needed, follows once the `io.thymekit` namespace is verified. Until then the jars are
 also attached to every [release](https://github.com/thymekit/thymekit/releases).
 
-**1. Nothing to configure.** Auto-configuration registers the markdown renderer, its `#md` expression
-object and the tidy-render dialect. Each bean is `@ConditionalOnMissingBean` — declare your own and
+**1. Nothing to configure.** Auto-configuration registers three beans: the markdown renderer, the
+markdown dialect that puts `#md` into your templates, and the tidy-render dialect. Each bean is `@ConditionalOnMissingBean` — declare your own and
 yours wins; tidy rendering switches off with `thymekit.tidy.enabled=false`.
 
 Tidy rendering is worth a sentence of its own, since it changes what your pages look like on the wire.
@@ -226,7 +226,7 @@ flowchart LR
     K --> R
 ```
 
-The last one is worth naming, because it is the part a reader cannot see in the code. Nineteen rules
+The last one is worth naming, because it is the part a reader cannot see in the code. Twenty rules
 state what this package is:
 
 - a class that hands out elements is final and cannot be instantiated;
@@ -247,6 +247,7 @@ state what this package is:
 - every public class of the kit has a spec of its own;
 - what is not meant to be extended is final and says so;
 - one call spelled twice says the same thing about what may be absent;
+- a name the kit puts in somebody else's registry carries the kit's own;
 - and no line of the sources ends in a space.
 
 None of them names a class: a rule that lists what it applies to is a list to forget, which is the

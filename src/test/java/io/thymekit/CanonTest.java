@@ -506,6 +506,30 @@ class CanonTest {
         assertThat(open).as("public classes left open with nothing to extend them").isEmpty();
     }
 
+    /**
+     * A name the kit puts into somebody else's registry carries the kit's own. A dialect's name is what
+     * an engine's configuration and its error messages call it, and it sits in a namespace shared with
+     * every other library a consumer has added — "markdown" alone is a claim on a word that belongs to
+     * nobody. Read from the sources, because the name is an argument to a constructor and no rule about
+     * types can see it.
+     */
+    @Test
+    void aNameTheKitPutsInSomebodyElsesRegistryCarriesItsOwn() throws java.io.IOException {
+        var declaration = java.util.regex.Pattern.compile("(?s)extends AbstractDialect.*?super\\(\"([^\"]+)\"\\)");
+        java.util.List<String> foreign = new java.util.ArrayList<>();
+        try (var files = java.nio.file.Files.walk(java.nio.file.Path.of("src/main/java/io/thymekit"))) {
+            for (var file : files.filter(f -> f.toString().endsWith(".java")).toList()) {
+                var named = declaration.matcher(java.nio.file.Files.readString(file));
+                while (named.find()) {
+                    if (!named.group(1).startsWith("thymekit-")) {
+                        foreign.add(file.getFileName() + " calls itself \"" + named.group(1) + "\"");
+                    }
+                }
+            }
+        }
+        assertThat(foreign).as("dialects named without saying whose they are").isEmpty();
+    }
+
     /** The model belongs to the canvas: one place writes it, so a document knows what to expect. */
     @Test
     void onlyTheCanvasWritesTheModel() {
