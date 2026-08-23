@@ -213,7 +213,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'io.thymekit:thymekit:0.1.0'
+    implementation 'io.thymekit:thymekit:0.2.0'
 }
 ```
 
@@ -397,10 +397,20 @@ to you for yours.
 Those five forks are answers to a situation, and outside it the other road is the better one. Three
 cases where it plainly is.
 
-**When rendering throughput is the bottleneck.** There is an approach that resolves the static part of a
-view once and replays only the dynamic pieces, and it is faster than a template engine parsing and
-assembling on every request. If a profile says the renderer is what costs you, that is the honest
-answer, and this is not a race the kit is running.
+**When rendering throughput is the bottleneck.** There is an approach that resolves the static part of
+a view once and replays only the dynamic pieces, and in a rendering benchmark it is faster than a
+template engine parsing and assembling every time — on some shapes of page by more than an order of
+magnitude. Two things are worth knowing before that number decides anything.
+
+The first is what it measures. A rendering benchmark renders in a loop; a request routes, authorises,
+queries a database, and serialises. Rendering is a small term in that sum, and the same pair of engines
+that stood an order of magnitude apart in the loop comes out close together over a whole request. The
+second is that the winner is not one engine. Published suites run more than one shape of page, and the
+engine that leads on a page of many small pieces is not the one that leads on a page of one long table.
+
+So if throughput is the reason, measure a request of your own from end to end, not a template in a
+loop. If that measurement still names the renderer, that is the honest answer — and this is not a race
+the kit is running.
 
 **When the tree itself must be checked by the compiler.** Here the joint between composition and markup
 is held by a test — the walk. A test has to be run, and it covers what was exercised. Nesting checked by
