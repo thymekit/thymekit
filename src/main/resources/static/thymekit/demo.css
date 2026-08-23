@@ -86,6 +86,11 @@
 
     --tk-caption-meta-size:  13px;
     --tk-caption-meta-color: var(--demo-light);
+    /* A heading that is a link keeps the browser's underline; only its colour is the theme's */
+    --tk-heading-link-color: var(--demo-gold);
+    /* The empty state: quiet text, and a link in the site's accent */
+    --tk-md-empty-fg:  var(--demo-light);
+    --tk-md-link-fg:   var(--demo-gold);
     /* Markdown output, so the prose under the hero belongs to the same page */
     --tk-md-fg:        var(--demo-mid);
     --tk-md-strong-fg: var(--demo-dark);
@@ -102,8 +107,27 @@ body {
     -webkit-font-smoothing: antialiased;
 }
 
-/* Furniture of the showcase: the frame around the stock sample. Its contents are deliberately
-   untouched — that is the whole point of the frame. */
+/* Furniture of the showcase: frames to stand elements in, and the two stand-ins the hero asks for by
+   adapter name. None of this is the kit — it is what a consumer would write. */
+.tk-demo-sample {
+    border: 1px solid var(--demo-border);
+    border-radius: 4px;
+    padding: 20px 24px;
+    display: grid;
+    gap: 10px;
+}
+.tk-demo-badge {
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--demo-gold);
+    border: 1px solid var(--demo-border);
+    border-radius: 999px;
+    padding: 3px 10px;
+}
+.tk-demo-actions { margin: 0; font-size: 13px; }
+.tk-demo-actions a { color: var(--demo-gold); }
+
 .tk-demo-stock {
     border: 1px dashed var(--demo-border);
     border-radius: 4px;

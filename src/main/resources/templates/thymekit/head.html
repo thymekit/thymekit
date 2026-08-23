@@ -12,13 +12,14 @@
 
     A document renders it through the dispatcher, inside its own <head> — and carries no <title> of
     its own, since this fragment prints one:
-        <th:block th:replace="~{fragments/thymekit/element :: render(${head})}"/>
+        <th:block th:replace="~{thymekit/element :: render(${head})}"/>
 
     What was not said is not printed: a page without a description is honest, a page with an empty
     description tag is not. One line is unconditional — og:type, which says what this is rather than
     repeating anything; twitter:card appears when there is something to preview and says how to shape
     it.
 */-->
+<!--/* keys: title, description, canonical, image, robots */-->
 <th:block th:fragment="headEl(e)">
     <title th:text="${e['title']}">Page</title>
     <meta th:if="${e['description'] != null}" name="description" th:content="${e['description']}">

@@ -16,6 +16,9 @@ import java.util.Objects;
  *
  * <p>Beside the text a caption may carry what machines read: {@link Builder#time} for a date and
  * {@link Builder#lang} for a phrase in another language.
+ *
+ * <p>The text is required and may not be blank. A caption with nothing in it is a paragraph a reader
+ * meets and gets nothing from — and one more thing for a screen reader to announce as silence.
  */
 public final class Caption {
 
@@ -35,13 +38,16 @@ public final class Caption {
     /** Secondary line: a counter, a slug, card meta. */
     public static Builder meta(String text) { return new Builder(META, text); }
 
-    /** Role of the caption, for host guards. */
-    public static String roleOf(Element<Caption> caption) {
-        return String.valueOf(Objects.requireNonNull(caption, "caption").asMap().get("role"));
-    }
-
-    /** Narrow-point guard: a caption in the required role, settled and handed back. */
-    static Element<Caption> inRole(Composable<Caption> caption, String role, String what) {
+    /**
+     * The guard a host uses: a caption in the role it asked for, settled and handed back. A hero wants
+     * an eyebrow above its title and a subtitle below it, and java says {@code Element<?>} at both
+     * points because the marker is erased there — so the role is checked here, and the message says what
+     * was wanted and what came.
+     *
+     * <p>Public, because a host of yours has the same problem the kit's hero has. Handing out the role
+     * as a string to compare by hand would be handing out the weaker half of the instrument.
+     */
+    public static Element<Caption> inRole(Composable<Caption> caption, String role, String what) {
         Element<Caption> settled = Element.settle(caption, "caption");
         Element.requireAdapter(settled, "captionEl", what);
         if (!role.equals(settled.asMap().get("role"))) {
@@ -55,9 +61,9 @@ public final class Caption {
         private final Element.Descriptor<Caption> b;
 
         private Builder(String role, String text) {
-            this.b = Element.Descriptor.<Caption>of("fragments/thymekit/caption", "captionEl")
+            this.b = Element.Descriptor.<Caption>of("thymekit/caption", "captionEl")
                 .with("role", role)
-                .with("text", Objects.requireNonNull(text, "text"));
+                .with("text", Element.requireText(text, "text"));
         }
 
         /**

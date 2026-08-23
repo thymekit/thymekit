@@ -25,6 +25,19 @@ tree.mkdir(parents=True, exist_ok=True)
 shutil.rmtree(tree / slot, ignore_errors=True)
 shutil.copytree(site, tree / slot)
 
+# The same showcase is published under every slot, so a search engine meets it at as many addresses as
+# there are snapshots. The page cannot know its own address — the kit renders it long before this — but
+# this script hands out the addresses, so this is where it is said: the copy under main is the one that
+# counts, and a snapshot by sha says so and stays out of the index besides.
+CANONICAL = "https://thymekit.github.io/thymekit/main/showcase/"
+showcase = tree / slot / "showcase" / "index.html"
+if showcase.exists():
+    head = f'    <link rel="canonical" href="{CANONICAL}">\n'
+    if slot != "main":
+        head += '    <meta name="robots" content="noindex, follow">\n'
+    page = showcase.read_text(encoding="utf-8")
+    showcase.write_text(page.replace("  </head>", head + "  </head>", 1), encoding="utf-8")
+
 manifest_file = tree / "snapshots.json"
 manifest = json.loads(manifest_file.read_text(encoding="utf-8")) if manifest_file.exists() else []
 entry = {"slot": slot, "sha": sha, "branch": branch, "subject": subject,

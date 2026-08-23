@@ -18,12 +18,17 @@ public final class Hero {
 
     private Hero() {}
 
-    /** The hero of a page; the heading must be level 1. */
+    /**
+     * The hero of a page; the heading must be the H1. The level is read by the element that owns
+     * headings rather than off the descriptor here — a heading minted by hand may write its level as
+     * text, and a guard that understood only a number would let a second title onto the page.
+     */
     public static Builder of(Composable<Heading> h1) {
         Element<Heading> heading = Element.settle(h1, "heading");
         Element.requireAdapter(heading, "headingEl", "Hero.of accepts a heading only");
-        if (!Integer.valueOf(1).equals(heading.asMap().get("level"))) {
-            throw new IllegalArgumentException("Hero.of accepts an H1 only (got level " + heading.asMap().get("level") + ")");
+        Integer level = Heading.levelIn(heading.asMap());
+        if (level == null || level != 1) {
+            throw new IllegalArgumentException("Hero.of accepts an H1 only (got level " + level + ")");
         }
         return new Builder(heading);
     }
@@ -34,7 +39,7 @@ public final class Hero {
         private final List<Map<String, Object>> metas = new ArrayList<>();
 
         private Builder(Element<Heading> h1) {
-            this.b = Element.Descriptor.<Hero>of("fragments/thymekit/hero", "heroEl")
+            this.b = Element.Descriptor.<Hero>of("thymekit/hero", "heroEl")
                 .with("heading", h1.asMap());
         }
 
@@ -50,10 +55,19 @@ public final class Hero {
             return this;
         }
 
-        /** Meta lines of the heading group, in call order. */
+        /**
+         * Meta lines of the heading group, in call order — a slug, a counter, a date. Called with
+         * nothing to say it is refused: a line that meant something and lost it is worth an exception
+         * rather than a page quietly missing it.
+         */
         @SafeVarargs
         public final Builder meta(Composable<Caption>... metaLines) {
-            for (Composable<Caption> line : Objects.requireNonNull(metaLines, "meta")) {
+            Objects.requireNonNull(metaLines, "meta");
+            if (metaLines.length == 0) {
+                throw new IllegalArgumentException("meta without a value: name at least one caption, "
+                    + "or do not call meta(...) at all");
+            }
+            for (Composable<Caption> line : metaLines) {
                 metas.add(Caption.inRole(line, Caption.META, "Hero.meta accepts a caption").asMap());
             }
             return this;

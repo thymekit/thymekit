@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+
+<!--/* nesting, so the indent has something to follow */-->
+<div th:fragment="nested" class="a">
+    <div class="b">
+        <span>deep</span>
+    </div>
+</div>
+
+<!--/* every zone whose whitespace is content and not formatting */-->
+<div th:fragment="preserved">
+    <pre>  two  spaces
+    and an indented line</pre>
+    <textarea>  raw
+  text</textarea>
+    <script>var a = 1;
+var b = 2;</script>
+    <style>.x { color: red;
+}</style>
+</div>
+
+<!--/* a space between two inline elements is not formatting */-->
+<div th:fragment="inline"><span>a</span> <span>b</span></div>
+
+<!--/* attributes across lines: rebuilt when every value is in double quotes */-->
+<div th:fragment="acrossLines"><a class="multi"
+       href="/x"
+       title="on three lines">link</a></div>
+
+<!--/* and left alone when rebuilding could change meaning */-->
+<div th:fragment="notRebuildable"><span class='single'
+      data-x='quotes'>single</span><input type="checkbox"
+       checked></div>
+
+<!--/* tidying resumes the moment the preserved zone closes */-->
+<div th:fragment="afterPre">
+    <pre>raw  text</pre>
+    <span>tidied</span>
+</div>
+
+<!--/* prose: a text node that follows an indent, rather than another tag */-->
+<div th:fragment="prose">
+    Words an author wrote.
+    <span>and a tag after them</span>
+</div>
+
+<!--/* a standalone tag can span lines too */-->
+<div th:fragment="standaloneAcrossLines"><img src="/x.png"
+         alt="on two lines"></div>
+
+<!--/* one line, sloppily spaced: it does not span lines, so it is not rebuilt */-->
+<div th:fragment="messyOneLine"><i  class="messy"   data-z="1" >as written</i></div>
+
+<!--/* an indent, and then words that an expression produced: two text nodes in a row */-->
+<div th:fragment="indentThenWords">
+    <th:block th:text="'words from an expression'"/>
+</div>
+
+<!--/* attributes a processor made, which carry no place in any file */-->
+<div th:fragment="attributesFromAProcessor"><a th:attr="href='/x',title='made'"
+       >link</a></div>
+
+<!--/* a comment and a standalone tag both take their place in the flow */-->
+<div th:fragment="commentAndStandalone">
+    <!-- a comment of the page -->
+    <br>
+    <img src="/x.png" alt="x">
+</div>
+
+<!--/* a preserved zone in this file whose content arrives from another: the whitespace that decides
+       the question is whitespace-only and carries a newline, so a handler that stopped counting at the
+       file boundary would re-indent it */-->
+<div th:fragment="preservedFromElsewhere">
+    <pre><span th:replace="~{tidy/inner :: spaced}"></span></pre>
+</div>
+
+<!--/* an expression that dies, and it dies after the preserved zone has been entered: the open tag
+       has already passed the post-processor, the child is what blows up */-->
+<div th:fragment="diesInsidePre">
+    <pre><span th:text="${text.noSuchMethod()}">x</span></pre>
+</div>
+
+</body>
+</html>

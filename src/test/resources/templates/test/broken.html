@@ -1,11 +1,20 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="ru">
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
 <body>
-<!--/* fails in the MIDDLE, after tags are open: pins that an interrupted render leaves no depth behind */-->
-<div class="outer">
-    <div class="inner">
-        <span th:text="${missing.boom()}">fails here</span>
-    </div>
-</div>
+<!--/* Adapters that fail the walk, kept apart from the sound ones: whoever renders a whole document
+       of fixtures should not have to step over these. One renders nothing a browser would show, the
+       other does not render at all. */-->
+<th:block th:fragment="emptyEl(e)"></th:block>
+
+<!--/* it explodes because of the key it was given, so taking the key away renders an empty page:
+       that is what tells a page never rendered apart from a page rendered empty */-->
+<th:block th:fragment="explodingEl(e)"><i th:if="${e['text'] != null}"
+          th:text="${e['text'].noSuchMethod()}"></i></th:block>
+
+<!--/* a comment that names a fragment before the real one, to see whose declaration is read */-->
+<!--/* keys: nothing */-->
+<!--/* here is how one writes th:fragment="maskedEl(e)" in prose */-->
+<!--/* keys: text */-->
+<th:block th:fragment="maskedEl(e)"><i class="echo" th:text="${e['text']}"></i></th:block>
 </body>
 </html>

@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -27,6 +28,25 @@ import org.jspecify.annotations.Nullable;
  * <p>Inside is a descriptor: the address of the element's adapter fragment ({@code template ::
  * fragment(e)}) plus data. Templates read {@link #asMap()}, so the adapter contract does not depend on
  * typing: the data is untyped, the marker is typed.
+ *
+ * <p>Five things live in this file, and a reader arriving at it should know which one they are in:
+ *
+ * <ul>
+ *   <li><b>the value</b> — {@link #asMap()}, {@link #build()}, {@link #template()}, {@link #fragment()},
+ *       {@link #bare()}, {@link #slot(String)}, {@link #slotNames()}, and equality, which is the
+ *       descriptor's;</li>
+ *   <li><b>the maker</b> — {@link Descriptor}, the one way an element is made, here and in consumer
+ *       code, with {@link #raw} and {@link #script} as its two shortcuts;</li>
+ *   <li><b>the guards a host uses</b> — {@link #settle}, {@link #requireRenderable},
+ *       {@link #requireRenderableElement}, {@link #requireAdapter}, {@link #requireTag}, all public,
+ *       because an element of yours hosts other elements the same way the kit's own do;</li>
+ *   <li><b>the scripts of a tree</b> — {@link #assets()} and {@link #assetsOf}, so that nobody wires a
+ *       behaviour script by hand.</li>
+ * </ul>
+ *
+ * <p>Each is specified by a file of its own next to {@code ElementTest}. What used to be a fifth thing
+ * here — the outline of a page — lives in {@link Outline} now: it is a property of a page rather than
+ * of an element, and holding it here had taught the currency the name of one element's adapter.
  */
 public final class Element<K> implements Composable<K> {
 
@@ -69,6 +89,13 @@ public final class Element<K> implements Composable<K> {
         return items == null ? List.of() : items;
     }
 
+    /** Names of the slots this element fills, in the order they were filled; empty when it fills none. */
+    @SuppressWarnings("unchecked")
+    public Set<String> slotNames() {
+        Map<String, List<Map<String, Object>>> slots = (Map<String, List<Map<String, Object>>>) m.get("slots");
+        return slots == null ? Set.of() : new LinkedHashSet<>(slots.keySet());
+    }
+
     /**
      * Script dependencies of the whole element tree — its own {@code requires} plus every nested one,
      * deduplicated by address in traversal order. The canvas collects them and renders each once, so a
@@ -87,10 +114,8 @@ public final class Element<K> implements Composable<K> {
 
     @SuppressWarnings("unchecked")
     private static void collectAssets(@Nullable Object node, Map<String, Element<Script>> acc) {
-        if (node instanceof Element<?> e) {
-            collectAssets(e.m, acc);
-        } else if (node instanceof Map<?, ?> map) {
-            if (map.get("assets") instanceof List<?> declared) {
+        walk(node, descriptor -> {
+            if (descriptor.get("assets") instanceof List<?> declared) {
                 for (Object a : declared) {
                     Map<String, Object> d = (Map<String, Object>) a;
                     String t = (String) d.get("template");
@@ -98,14 +123,45 @@ public final class Element<K> implements Composable<K> {
                     acc.putIfAbsent(t + " :: " + f, script(t, f));
                 }
             }
-            for (Map.Entry<?, ?> en : map.entrySet()) {
-                if (!"assets".equals(en.getKey())) {
-                    collectAssets(en.getValue(), acc);
+            return true;
+        });
+    }
+
+    /**
+     * Every descriptor of a tree, whatever the tree is made of: elements, the maps they are, and
+     * collections of either, at any depth. The visitor is handed each descriptor and answers whether to
+     * go deeper into it — an illustration is a place one walker stops and another does not.
+     *
+     * <pre>{@code
+     * Element.walk(page, descriptor -> {
+     *     if (myKit.isPicture(descriptor) && descriptor.get("alt") == null) {
+     *         throw new IllegalStateException("a picture with nothing said about it");
+     *     }
+     *     return true;
+     * });
+     * }</pre>
+     *
+     * <p>Here because the shape of the tree is what a descriptor is, and this class is the descriptor.
+     * Written once because it is the kind of code that goes subtly wrong in a copy: a walk that misses a
+     * branch finds nothing there and says nothing about it, which is the quietest way for a check to
+     * stop checking. Public for the same reason the guards are — a check of your own over a page of
+     * yours is written the way the kit writes its own, and {@link Outline} and {@link Anchors} are the
+     * two examples.
+     */
+    public static void walk(@Nullable Object node, java.util.function.Predicate<Map<?, ?>> visit) {
+        if (node instanceof Element<?> element) {
+            walk(element.m, visit);
+        } else if (node instanceof Map<?, ?> map) {
+            // a descriptor is a map that names an adapter; the others a tree holds — the slots of an
+            // element, data of your own — are passed through rather than offered to the visitor
+            if (!map.containsKey("fragment") || visit.test(map)) {
+                for (Object value : map.values()) {
+                    walk(value, visit);
                 }
             }
-        } else if (node instanceof Collection<?> c) {
-            for (Object o : c) {
-                collectAssets(o, acc);
+        } else if (node instanceof Collection<?> items) {
+            for (Object item : items) {
+                walk(item, visit);
             }
         }
     }
@@ -117,11 +173,33 @@ public final class Element<K> implements Composable<K> {
     private static final Pattern FRAGMENT = Pattern.compile("[A-Za-z0-9_][A-Za-z0-9_]*");
 
     /**
+     * Text a page will show: given, and not empty. Two elements refuse the same thing for the same
+     * reason — a caption with nothing in it is an empty box, a heading with nothing in it is a place in
+     * the outline a screen reader stops at and finds nothing — so the refusal is one rule in one place
+     * rather than two spellings of it.
+     *
+     * <p>What is given is kept exactly: a space inside a line belongs to whoever wrote the line. Only
+     * a text that is nothing at all is refused.
+     */
+    public static String requireText(String text, String name) {
+        Objects.requireNonNull(text, name);
+        if (text.isBlank()) {
+            throw new IllegalArgumentException(name + " is blank: a page shows what it was given, "
+                + "and this is nothing");
+        }
+        return text;
+    }
+
+    /**
      * A language tag, the way {@code lang} wants it: letters, digits and hyphens, nothing else. Not the
      * full BCP-47 grammar — just enough that a sentence, a translation or an empty string never ends up
      * in the attribute, where it would silently make the page claim a language it does not speak.
+     *
+     * <p>Public with the other guards: two elements of the kit already use it, which makes it the policy
+     * of a concept rather than a detail of either, and an element of yours that offers {@code lang}
+     * needs the same check the kit's own make.
      */
-    static String requireTag(String tag, String name) {
+    public static String requireTag(String tag, String name) {
         Objects.requireNonNull(tag, name);
         if (!LANGUAGE_TAG.matcher(tag).matches()) {
             throw new IllegalArgumentException(name + " is not a language tag: \"" + tag + "\"");
@@ -130,95 +208,11 @@ public final class Element<K> implements Composable<K> {
     }
 
     /**
-     * Outline guard, run by the canvas before a page is rendered. Two things are checked, and both are
-     * defects a reader or a crawler would meet on the finished page rather than opinions about style:
-     *
-     * <ul>
-     *   <li>at most one first-level heading — the title of a page is one thing, not several;</li>
-     *   <li>no level skipped — a page that uses h4 while nothing on it is an h3 has a hole in its
-     *       outline, and a screen reader walking headings falls straight through it;</li>
-     *   <li>no level outside h1..h6 — html has six, and the adapter renders nothing at all for a
-     *       seventh, which is the kind of silence a page should never ship with.</li>
-     * </ul>
-     *
-     * <p>A level is read however it was written into the descriptor — as a number or as text. The
-     * factories always write a number, but an element minted by hand may not, and a guard that only
-     * understood one of the two would have let a second H1 through while the adapter happily rendered
-     * it.
-     *
-     * <p>The levels a page uses have to be contiguous; where in the flow they stand is not the guard's
-     * business, so nesting an element deeper never trips it. Illustration subtrees are skipped — a
-     * sample framed for display is not page structure — and a page with no headings at all is legal.
-     *
-     * <p>The guarantee stops where the kit stops. A heading an author wrote inside markdown is not seen
-     * here — that text is data and arrives as HTML long after this runs. Such headings are lowered under
-     * the page by {@link MarkdownRenderer} instead, so content does not declare a second H1; a gap the
-     * author left inside the text travels with it, and neither this guard nor the renderer closes it.
+     * Whether a descriptor is an illustration: a sample framed for display rather than part of what the
+     * page is. Reserved keys are this class's to know, so whoever walks a tree asks instead of reading.
      */
-    public static void assertOutline(Collection<?> roots) {
-        List<String> h1 = new ArrayList<>();
-        TreeSet<Integer> levels = new TreeSet<>();
-        collectHeadings(roots, h1, levels);
-        if (h1.size() > 1) {
-            throw new IllegalStateException("more than one H1 on the page: " + h1
-                + " — the title of a page is one thing; sections start at h2");
-        }
-        if (levels.isEmpty()) {
-            return;
-        }
-        if (levels.first() < 1 || levels.last() > 6) {
-            throw new IllegalStateException("heading level outside h1..h6 on the page: " + levels
-                + " — html has six, and the adapter renders nothing at all for anything else");
-        }
-        for (int level = levels.first(); level < levels.last(); level++) {
-            if (!levels.contains(level + 1)) {
-                throw new IllegalStateException("heading level h" + (level + 1) + " is missing on a page that uses "
-                    + levels + " — an outline with a hole in it is a page a screen reader falls through");
-            }
-        }
-    }
-
-    /** A level as the descriptor happens to carry it: a number, or text that reads as one. */
-    private static @Nullable Integer levelOf(@Nullable Object raw) {
-        if (raw instanceof Number number) {
-            return number.intValue();
-        }
-        if (raw instanceof String text) {
-            try {
-                return Integer.valueOf(text.strip());
-            } catch (NumberFormatException notALevel) {
-                return null;
-            }
-        }
-        return null;
-    }
-
-    private static void collectHeadings(@Nullable Object node, List<String> h1, Set<Integer> levels) {
-        if (node instanceof Element<?> e) {
-            collectHeadings(e.m, h1, levels);
-        } else if (node instanceof Map<?, ?> map) {
-            if (Boolean.TRUE.equals(map.get("illustration"))) {
-                return;
-            }
-            if ("headingEl".equals(map.get("fragment"))) {
-                Integer level = levelOf(map.get("level"));
-                if (level != null) {
-                    levels.add(level);
-                    if (level == 1) {
-                        h1.add(String.valueOf(map.get("text")));
-                    }
-                }
-            }
-            for (Map.Entry<?, ?> en : map.entrySet()) {
-                if (!"assets".equals(en.getKey())) {
-                    collectHeadings(en.getValue(), h1, levels);
-                }
-            }
-        } else if (node instanceof Collection<?> c) {
-            for (Object o : c) {
-                collectHeadings(o, h1, levels);
-            }
-        }
+    static boolean isIllustration(Map<?, ?> descriptor) {
+        return Boolean.TRUE.equals(descriptor.get("illustration"));
     }
 
     /** A script element is rendered as {@code template :: fragment}, everything else as {@code fragment(e)}. */
@@ -273,6 +267,8 @@ public final class Element<K> implements Composable<K> {
      * given element. Public on purpose — consumer elements guard their own narrow points the same way.
      */
     public static void requireAdapter(Element<?> e, String fragment, String what) {
+        Objects.requireNonNull(e, "element");
+        Objects.requireNonNull(fragment, "fragment");
         if (!fragment.equals(e.fragment())) {
             throw new IllegalArgumentException(what + " (got " + e.fragment() + ")");
         }
@@ -403,7 +399,7 @@ public final class Element<K> implements Composable<K> {
             return this;
         }
 
-        /** Marks the element as an illustration: its contents are not page structure (see {@link #assertOutline}). */
+        /** Marks the element as an illustration: its contents are not page structure (see {@link Outline}). */
         public Descriptor<K> illustration() {
             d.put("illustration", true);
             return this;

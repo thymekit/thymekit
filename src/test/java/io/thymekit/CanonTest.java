@@ -37,11 +37,11 @@ class CanonTest {
      * method handing out an element or a builder.
      *
      * <p>The classes Spring touches are deliberately not among them: the renderer is proxied for its
-     * cache and subclassed for its heading ceiling, the dialect and the auto-configuration are held by
-     * a container. They hand out no elements, so this rule never looks at them.
+     * cache, the dialect and the auto-configuration are held by a container. They hand out no elements,
+     * so this rule never looks at them.
      */
     @Test
-    void aFactoryIsAnamespace_finalAndUninstantiable() {
+    void aFactoryIsANamespace_finalAndUninstantiable() {
         classes().should(new com.tngtech.archunit.lang.ArchCondition<com.tngtech.archunit.core.domain.JavaClass>(
             "be final with a private constructor, if they hand out elements") {
             @Override
@@ -161,7 +161,7 @@ class CanonTest {
     @Test
     void noElementNamesAnotherElementsTemplate() throws java.io.IOException {
         var main = java.nio.file.Path.of("src/main/java/io/thymekit");
-        var address = java.util.regex.Pattern.compile("\"(fragments/thymekit/[a-z-]+)\"");
+        var address = java.util.regex.Pattern.compile("\"(thymekit/[a-z-]+)\"");
         java.util.Map<String, java.util.Set<String>> namedBy = new java.util.TreeMap<>();
         try (var files = java.nio.file.Files.walk(main)) {
             for (java.nio.file.Path file : files.filter(f -> f.toString().endsWith(".java")).toList()) {
@@ -174,10 +174,470 @@ class CanonTest {
         }
         assertThat(namedBy).as("the java of the kit names some adapter addresses").isNotEmpty();
         namedBy.forEach((template, files) -> {
-            if (!template.equals("fragments/thymekit/element")) {          // the dispatcher belongs to everyone
+            if (!template.equals("thymekit/element")) {          // the dispatcher belongs to everyone
                 assertThat(files).as("%s is named by more than one element: %s", template, files).hasSize(1);
             }
         });
+    }
+
+    /**
+     * Nothing in the kit is written for a caller that does not exist. Asked of package-private methods
+     * only: what is public may be there for a consumer, and what is hidden has no audience but the kit
+     * itself — so a hidden method nobody calls is a plan, not a feature, and a plan belongs in a
+     * branch. The import leaves tests out on purpose: a method alive only in its own test is exactly
+     * the shape this looks for.
+     */
+    @Test
+    void nothingHiddenIsWrittenForNobody() {
+        methods().that().arePackagePrivate().and().areDeclaredInClassesThat().resideInAPackage("io.thymekit")
+            .should(new com.tngtech.archunit.lang.ArchCondition<com.tngtech.archunit.core.domain.JavaMethod>(
+                "be called by something in the kit") {
+                @Override
+                public void check(com.tngtech.archunit.core.domain.JavaMethod method,
+                                  com.tngtech.archunit.lang.ConditionEvents events) {
+                    if (method.getModifiers().contains(com.tngtech.archunit.core.domain.JavaModifier.SYNTHETIC)) {
+                        return;
+                    }
+                    if (method.getAccessesToSelf().isEmpty()) {
+                        events.add(com.tngtech.archunit.lang.SimpleConditionEvent.violated(method,
+                            method.getFullName() + " is hidden and called by nothing in the kit"));
+                    }
+                }
+            })
+            .because("a hidden method with no caller is a plan, and a plan is not shipped")
+            .check(KIT);
+    }
+
+    /**
+     * The rule above about holding a Composable, read once more: a collection of them is holding them
+     * too. Written by hand over the generic type, because the erased one says only List.
+     */
+    @Test
+    void noCollectionHoldsAComposableEither() {
+        fields().should(new com.tngtech.archunit.lang.ArchCondition<com.tngtech.archunit.core.domain.JavaField>(
+            "not hold a Composable, whatever it is wrapped in") {
+            @Override
+            public void check(com.tngtech.archunit.core.domain.JavaField field,
+                              com.tngtech.archunit.lang.ConditionEvents events) {
+                if (field.getType().toString().contains(Composable.class.getName())) {
+                    events.add(com.tngtech.archunit.lang.SimpleConditionEvent.violated(field,
+                        field.getFullName() + " holds a Composable: settle it where it is taken"));
+                }
+            }
+        }).check(KIT);
+    }
+
+    /**
+     * A space at the end of a line is a change nobody made, shown to whoever reads the next diff. The
+     * kit's own sources are held to it, tests included: they are read as often as the main code.
+     */
+    @Test
+    void sourcesCarryNoTrailingWhitespace() throws java.io.IOException {
+        java.util.List<String> found = new java.util.ArrayList<>();
+        for (String root : java.util.List.of("src/main/java", "src/test/java")) {
+            try (var files = java.nio.file.Files.walk(java.nio.file.Path.of(root))) {
+                for (java.nio.file.Path file : files.filter(f -> f.toString().endsWith(".java")).toList()) {
+                    java.util.List<String> lines = java.nio.file.Files.readAllLines(file);
+                    for (int i = 0; i < lines.size(); i++) {
+                        if (!lines.get(i).isEmpty() && lines.get(i).charAt(lines.get(i).length() - 1) == ' ') {
+                            found.add(file + ":" + (i + 1));
+                        }
+                    }
+                }
+            }
+        }
+        assertThat(found).as("lines ending in a space").isEmpty();
+    }
+
+    /**
+     * What the kit shares among its own elements, it shares with everyone. A hidden helper called from
+     * one place is that place's business; called from two, it has stopped being a detail and become the
+     * policy of a concept — and the kit tells whoever writes an element that their element is an element
+     * like its own. A policy reachable only from inside makes that a half-truth: they get the vocabulary
+     * and re-implement the behaviour, which is how two spellings of one rule begin.
+     */
+    @Test
+    void whatMoreThanOneElementUsesIsPublic() {
+        methods().that().arePackagePrivate().and().areDeclaredInClassesThat().resideInAPackage("io.thymekit")
+            .should(new com.tngtech.archunit.lang.ArchCondition<com.tngtech.archunit.core.domain.JavaMethod>(
+                "be public, being used by more than one element") {
+                @Override
+                public void check(com.tngtech.archunit.core.domain.JavaMethod method,
+                                  com.tngtech.archunit.lang.ConditionEvents events) {
+                    if (method.getModifiers().contains(com.tngtech.archunit.core.domain.JavaModifier.SYNTHETIC)) {
+                        return;
+                    }
+                    String home = outermost(method.getOwner()).getName();
+                    java.util.Set<String> callers = method.getAccessesToSelf().stream()
+                        .map(access -> outermost(access.getOriginOwner()).getName())
+                        .filter(name -> !name.equals(home))
+                        .collect(java.util.stream.Collectors.toCollection(java.util.TreeSet::new));
+                    if (callers.size() > 1) {
+                        events.add(com.tngtech.archunit.lang.SimpleConditionEvent.violated(method,
+                            method.getFullName() + " is shared by " + callers + " and hidden from everyone else"));
+                    }
+                }
+            })
+            .because("what two elements need is a policy, and a policy the kit publishes it uses")
+            .check(KIT);
+    }
+
+    /** A nested class is part of what encloses it: Heading and Heading.Builder are one place. */
+    private static com.tngtech.archunit.core.domain.JavaClass outermost(
+            com.tngtech.archunit.core.domain.JavaClass type) {
+        var enclosing = type.getEnclosingClass();
+        return enclosing.map(CanonTest::outermost).orElse(type);
+    }
+
+    /**
+     * The front door lists everything a page is built from, in one table. Named somewhere in the prose
+     * is not the same as listed: whoever arrives reads the table to learn what the kit has, and an
+     * element missing from it does not exist for them. Every one of these was found by a person
+     * reading, which is the arrangement this canon exists to end.
+     */
+    @Test
+    void everyElementAndEveryVocabularyIsListedInTheReadmeTable() throws java.io.IOException {
+        String readme = elementTableOf(java.nio.file.Files.readString(java.nio.file.Path.of("README.md")));
+        java.util.List<String> unmentioned = new java.util.ArrayList<>();
+        for (var type : KIT) {
+            if (!type.getModifiers().contains(com.tngtech.archunit.core.domain.JavaModifier.PUBLIC)
+                || type.getEnclosingClass().isPresent()
+                || type.getPackageName().startsWith("io.thymekit.demo")) {
+                continue;
+            }
+            boolean handsOutElements = type.getMethods().stream()
+                .filter(m -> m.getModifiers().contains(com.tngtech.archunit.core.domain.JavaModifier.PUBLIC))
+                .filter(m -> m.getModifiers().contains(com.tngtech.archunit.core.domain.JavaModifier.STATIC))
+                .anyMatch(m -> m.getRawReturnType().getName().equals(Element.class.getName())
+                    || m.getRawReturnType().getSimpleName().equals("Builder"));
+            // the whole name, not a prefix of a longer one: `ElementContract` does not list Element
+            var listed = java.util.regex.Pattern.compile("`" + type.getSimpleName() + "(?![A-Za-z0-9_])");
+            if ((handsOutElements || type.isEnum()) && !listed.matcher(readme).find()) {
+                unmentioned.add(type.getSimpleName());
+            }
+        }
+        assertThat(unmentioned).as("elements and vocabularies missing from the readme's table").isEmpty();
+    }
+
+    /** The table of elements, and nothing else of the readme: its header row down to the first line that is not one. */
+    private static String elementTableOf(String readme) {
+        java.util.List<String> rows = new java.util.ArrayList<>();
+        boolean inside = false;
+        for (String line : readme.lines().toList()) {
+            if (line.startsWith("| Element ")) {
+                inside = true;
+            } else if (inside && !line.startsWith("|")) {
+                break;
+            }
+            if (inside) {
+                rows.add(line);
+            }
+        }
+        assertThat(rows).as("the readme's table of elements, found by its header row").isNotEmpty();
+        return String.join("\n", rows);
+    }
+
+    /**
+     * A cached answer is only as good as the question it was filed under, and the question is everything
+     * that decides the answer: the arguments, and the object that was asked. Two rules, both learned the
+     * hard way.
+     *
+     * <p>Arguments by position ({@code #p0}), never by name. A library jar carries parameter names only
+     * if it was compiled with {@code -parameters}; where it was not, {@code #source} evaluates to null
+     * for every call, every text lands on one entry, and the second page shows the text of the first.
+     *
+     * <p>And {@code #root.target} wherever the object has state of its own. Two instances configured
+     * differently are two answers to the same arguments, and a key that cannot tell them apart hands one
+     * of them the other's work.
+     */
+    @Test
+    void aCachedAnswerIsFiledUnderTheWholeQuestion() {
+        var byName = java.util.regex.Pattern.compile("#(?!p\\d|root\\b)[a-zA-Z]");
+        java.util.List<String> wrong = new java.util.ArrayList<>();
+        for (var type : KIT) {
+            for (var method : type.getMethods()) {
+                var cacheable = method.tryGetAnnotationOfType(
+                    org.springframework.cache.annotation.Cacheable.class);
+                if (cacheable.isEmpty()) {
+                    continue;
+                }
+                String key = cacheable.get().key();
+                if (key.isBlank()) {
+                    wrong.add(method.getFullName() + " — cached under a key nobody wrote");
+                } else if (byName.matcher(key).find()) {
+                    wrong.add(method.getFullName() + " — names an argument instead of its position: " + key);
+                }
+                boolean hasState = type.getFields().stream().anyMatch(
+                    f -> !f.getModifiers().contains(com.tngtech.archunit.core.domain.JavaModifier.STATIC));
+                if (hasState && !key.contains("#root.target")) {
+                    wrong.add(method.getFullName() + " — the object it was asked is not in the key: " + key);
+                }
+            }
+        }
+        assertThat(wrong).as("cached methods filed under an incomplete question").isEmpty();
+    }
+
+    /**
+     * Nothing here outlives the call that made it. A page is rendered by objects a framework builds for
+     * one render and drops; state kept beside them, in a thread, belongs to whatever runs on that thread
+     * next — a pooled thread, a second render, an exception that never sent its closing events. Where a
+     * counter is needed, it is a field of the short-lived object doing the counting, and the counting
+     * ends when the object does.
+     *
+     * <p>Written after a handler carried a thread local, a weak reference and a class to hold them, all
+     * to survive being reused — which the engine that builds it never does.
+     */
+    @Test
+    void nothingKeepsStateBesideTheCallThatMadeIt() {
+        noFields().should().haveRawType(ThreadLocal.class)
+            .because("state that outlives a call belongs to whoever runs next, not to us")
+            .check(KIT);
+    }
+
+    /**
+     * Every class of the kit is described by a spec of its own. A class nobody wrote one for is a class
+     * whose behaviour is whatever it happens to do — the last one found that way had none, and only a
+     * person reading it noticed. What is red here is not a defect but a queue: it is the list of classes
+     * this project has yet to take through, and it shortens by one each time one is taken.
+     */
+    @Test
+    void everyClassOfTheKitHasASpec() throws java.io.IOException {
+        java.util.List<String> unspecified = new java.util.ArrayList<>();
+        for (var type : KIT) {
+            if (!type.getModifiers().contains(com.tngtech.archunit.core.domain.JavaModifier.PUBLIC)
+                || type.getEnclosingClass().isPresent()) {
+                continue;
+            }
+            var spec = java.nio.file.Path.of("src/test/java",
+                type.getPackageName().replace('.', '/'), type.getSimpleName() + "Test.java");
+            if (!java.nio.file.Files.exists(spec)) {
+                unspecified.add(type.getSimpleName());
+            }
+        }
+        assertThat(unspecified).as("classes still waiting for a spec of their own").isEmpty();
+    }
+
+    /**
+     * And the readme counts them right. The canon is the part of this project a reader is asked to take
+     * on trust, so the sentence that introduces it is checked like anything else — a list that grew by
+     * five while its own first word stayed at eight is how a document stops being read.
+     */
+    @Test
+    void theReadmeCountsTheRulesCorrectly() throws java.io.IOException {
+        var units = java.util.List.of("zero", "one", "two", "three", "four", "five", "six", "seven",
+            "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen",
+            "seventeen", "eighteen", "nineteen");
+        var tens = java.util.Map.of("twenty", 20, "thirty", 30, "forty", 40, "fifty", 50);
+        String readme = java.nio.file.Files.readString(java.nio.file.Path.of("README.md"));
+        var said = java.util.regex.Pattern.compile("([A-Za-z-]+) rules\\s+state what this package is").matcher(readme);
+        assertThat(said.find()).as("the readme says how many rules the canon keeps").isTrue();
+
+        String source = java.nio.file.Files.readString(
+            java.nio.file.Path.of("src/test/java/io/thymekit/CanonTest.java"));
+        // the annotation where it stands, at the head of a method — the word elsewhere in this file is
+        // this very line, and a rule that counted itself would be off by one
+        int rules = (int) java.util.regex.Pattern.compile("(?m)^\\s+@Test$").matcher(source).results().count();
+        String[] spelled = said.group(1).toLowerCase(java.util.Locale.ROOT).split("-");
+        int counted = units.contains(spelled[0])
+            ? units.indexOf(spelled[0])
+            : tens.getOrDefault(spelled[0], -1) + (spelled.length > 1 ? units.indexOf(spelled[1]) : 0);
+        assertThat(counted).as("the readme says \"%s rules\" and the canon keeps %d", said.group(1), rules)
+            .isEqualTo(rules);
+    }
+
+    /**
+     * And the verification this project asks for begins from nothing. The configuration processor reads
+     * the metadata the kit writes off the compile classpath, and on a clean checkout it compiled before
+     * that file had been copied there — so the jar shipped without the one thing an ide reads, and every
+     * run here stayed green over the file an earlier build had left behind. A build that is only ever
+     * incremental cannot say what it produces from an empty directory. So the gate this project names
+     * for itself deletes first, and this rule keeps the deleting in it.
+     */
+    @Test
+    void theVerificationThisProjectAsksForStartsFromNothing() throws java.io.IOException {
+        String build = java.nio.file.Files.readString(java.nio.file.Path.of("build.gradle"));
+        var gate = java.util.regex.Pattern
+            .compile("tasks\\.register\\('verify'\\)\\s*\\{(.*?)\\n\\}", java.util.regex.Pattern.DOTALL)
+            .matcher(build);
+        assertThat(gate.find()).as("build.gradle names the run that judges a commit").isTrue();
+        assertThat(gate.group(1)).as("the run that judges a commit deletes what the last one left")
+            .contains("clean");
+    }
+
+    /**
+     * One call spelled twice says the same thing about absence. A bridge that forwards to a renderer, a
+     * builder that forwards to a guard: where the same name takes the same arguments in two places, both
+     * places agree on which of them may be missing. Otherwise the package is {@code @NullMarked} and one
+     * of the two is lying — the one that documents an absence it does not declare.
+     */
+    @Test
+    void oneCallSpelledTwiceSaysTheSameAboutAbsence() {
+        record Signature(String name, java.util.List<Class<?>> parameters) {}
+        var nullableAt = new java.util.LinkedHashMap<Signature, java.util.Map<String, java.util.Set<Integer>>>();
+        for (var type : KIT) {
+            for (var method : type.reflect().getDeclaredMethods()) {
+                if (!java.lang.reflect.Modifier.isPublic(method.getModifiers()) || method.isSynthetic()) {
+                    continue;
+                }
+                var absent = new java.util.LinkedHashSet<Integer>();
+                var parameters = method.getAnnotatedParameterTypes();
+                for (int i = 0; i < parameters.length; i++) {
+                    if (parameters[i].isAnnotationPresent(org.jspecify.annotations.Nullable.class)) {
+                        absent.add(i);
+                    }
+                }
+                nullableAt.computeIfAbsent(
+                        new Signature(method.getName(), java.util.List.of(method.getParameterTypes())),
+                        signature -> new java.util.LinkedHashMap<>())
+                    .put(type.getSimpleName(), absent);
+            }
+        }
+        var disagreeing = nullableAt.entrySet().stream()
+            .filter(e -> e.getValue().size() > 1)
+            .filter(e -> new java.util.HashSet<>(e.getValue().values()).size() > 1)
+            .map(e -> e.getKey().name() + e.getKey().parameters() + " " + e.getValue())
+            .toList();
+        assertThat(disagreeing).as("the same call, spelled twice, disagreeing about what may be absent").isEmpty();
+    }
+
+    /**
+     * What is not meant to be extended says so. A class left open is an invitation, and this kit means
+     * exactly one: the bean Spring proxies for its cache. Even the auto-configuration is final —
+     * {@code @AutoConfiguration} carries {@code proxyBeanMethods = false}, so nothing subclasses it, and
+     * the exemption it once had here was a guess that turned out to be wrong.
+     */
+    @Test
+    void whatIsNotMeantToBeExtendedSaysSo() {
+        java.util.List<String> open = new java.util.ArrayList<>();
+        for (var type : KIT) {
+            var reflected = type.reflect();
+            if (!java.lang.reflect.Modifier.isPublic(reflected.getModifiers())
+                || reflected.isInterface() || reflected.isEnum() || reflected.isAnnotation()
+                || reflected.getEnclosingClass() != null
+                || java.lang.reflect.Modifier.isFinal(reflected.getModifiers())
+                || java.lang.reflect.Modifier.isAbstract(reflected.getModifiers())) {
+                continue;
+            }
+            boolean proxiedForItsCache = java.util.Arrays.stream(reflected.getDeclaredMethods())
+                .anyMatch(m -> m.isAnnotationPresent(org.springframework.cache.annotation.Cacheable.class));
+            if (!proxiedForItsCache) {
+                open.add(reflected.getSimpleName());
+            }
+        }
+        assertThat(open).as("public classes left open with nothing to extend them").isEmpty();
+    }
+
+    /**
+     * A name the kit puts into somebody else's registry carries the kit's own. A dialect's name is what
+     * an engine's configuration and its error messages call it, and it sits in a namespace shared with
+     * every other library a consumer has added — "markdown" alone is a claim on a word that belongs to
+     * nobody. Read from the sources, because the name is an argument to a constructor and no rule about
+     * types can see it.
+     */
+    @Test
+    void aNameTheKitPutsInSomebodyElsesRegistryCarriesItsOwn() throws java.io.IOException {
+        var declaration = java.util.regex.Pattern.compile("(?s)extends AbstractDialect.*?super\\(\"([^\"]+)\"\\)");
+        java.util.List<String> foreign = new java.util.ArrayList<>();
+        try (var files = java.nio.file.Files.walk(java.nio.file.Path.of("src/main/java/io/thymekit"))) {
+            for (var file : files.filter(f -> f.toString().endsWith(".java")).toList()) {
+                var named = declaration.matcher(java.nio.file.Files.readString(file));
+                while (named.find()) {
+                    if (!named.group(1).startsWith("thymekit-")) {
+                        foreign.add(file.getFileName() + " calls itself \"" + named.group(1) + "\"");
+                    }
+                }
+            }
+        }
+        assertThat(foreign).as("dialects named without saying whose they are").isEmpty();
+    }
+
+    /**
+     * And no class names another element's adapter, either. The rule above watches template addresses;
+     * a fragment name slipped past it for months — the currency of composition carried the string
+     * {@code "headingEl"}, so the most general type in the kit knew one particular element by name, and
+     * the outline check that needed it was living in the wrong house.
+     *
+     * <p>Two places may say the name: the element that owns the adapter, and a host asking for one
+     * through {@code requireAdapter} — that is a guard saying what it will accept, which is the opposite
+     * of knowing somebody's internals.
+     */
+    @Test
+    void noClassNamesAnotherElementsAdapter() throws java.io.IOException {
+        var templates = java.nio.file.Path.of("src/main/resources/templates/thymekit");
+        var adapters = new java.util.TreeMap<String, String>();            // fragment -> its template address
+        try (var files = java.nio.file.Files.list(templates)) {
+            for (var file : files.filter(java.nio.file.Files::isRegularFile).toList()) {
+                var declared = java.util.regex.Pattern.compile("th:fragment=\"([a-zA-Z0-9]+El)\\(")
+                    .matcher(java.nio.file.Files.readString(file));
+                while (declared.find()) {
+                    adapters.put(declared.group(1), "thymekit/" + file.getFileName().toString().replace(".html", ""));
+                }
+            }
+        }
+        assertThat(adapters).as("the adapters the kit ships").isNotEmpty();
+
+        java.util.List<String> knowing = new java.util.ArrayList<>();
+        try (var files = java.nio.file.Files.walk(java.nio.file.Path.of("src/main/java/io/thymekit"))) {
+            for (var file : files.filter(f -> f.toString().endsWith(".java")).toList()) {
+                // comments say things about adapters and define nothing, javadoc examples above all
+                String source = java.nio.file.Files.readString(file)
+                    .replaceAll("(?s)/\\*.*?\\*/", " ").replaceAll("//.*", " ");
+                for (var adapter : adapters.entrySet()) {
+                    if (!source.contains("\"" + adapter.getKey() + "\"")
+                        || source.contains("\"" + adapter.getValue() + "\"")) {
+                        continue;                                          // not named, or named by its owner
+                    }
+                    boolean asAGuard = source.lines()
+                        .filter(line -> line.contains("\"" + adapter.getKey() + "\""))
+                        .allMatch(line -> line.contains("requireAdapter"));
+                    if (!asAGuard) {
+                        knowing.add(file.getFileName() + " names " + adapter.getKey());
+                    }
+                }
+            }
+        }
+        assertThat(knowing).as("classes knowing an adapter that is not theirs").isEmpty();
+    }
+
+    /**
+     * And an address the readme prints is an address that exists. The table names the adapter of every
+     * element, and one of those names outlived its template by a week: the row still said
+     * {@code md-section :: mdEl} after the markdown block had been split in two and the file renamed.
+     * A reader would have looked for a fragment that was not there, and nothing said a word — the rule
+     * above only asks whether a name appears, not whether it means anything.
+     *
+     * <p>It went wrong a second time in a way this rule did not see: an address written inside a code
+     * fence, {@code thymekit/elements/heading :: headingEl}, naming a directory the project has never
+     * had. The pattern looked only between backticks, so a prose reader was protected and a reader of
+     * the examples was not. An address is an address wherever it is printed, and it is printed in two
+     * spellings: joined by {@code ::} as a template says it, and split across the two keys of a
+     * descriptor as the readme shows a stored page.
+     */
+    @Test
+    void everyAddressTheReadmePrintsExists() throws java.io.IOException {
+        var readme = java.nio.file.Files.readString(java.nio.file.Path.of("README.md"));
+        var spellings = java.util.List.of(
+            "([a-z][a-z0-9/-]*) :: ([a-zA-Z0-9]+)",
+            "\"template\"\\s*:\\s*\"([a-z][a-z0-9/-]*)\",\\s*\"fragment\"\\s*:\\s*\"([a-zA-Z0-9]+)\"");
+        java.util.List<String> absent = new java.util.ArrayList<>();
+        int found = 0;
+        for (var spelling : spellings) {
+            var printed = java.util.regex.Pattern.compile(spelling).matcher(readme);
+            while (printed.find()) {
+                found++;
+                var named = printed.group(1);
+                var template = java.nio.file.Path.of("src/main/resources/templates",
+                    named.startsWith("thymekit/") ? named + ".html" : "thymekit/" + named + ".html");
+                if (!java.nio.file.Files.exists(template)) {
+                    absent.add(named + ".html — no such template");
+                } else if (!java.nio.file.Files.readString(template).contains(
+                        "th:fragment=\"" + printed.group(2) + "(")) {
+                    absent.add(named + ".html declares no " + printed.group(2));
+                }
+            }
+        }
+        assertThat(found).as("the readme prints the addresses of the kit's adapters").isNotZero();
+        assertThat(absent).as("addresses the readme prints that lead nowhere").isEmpty();
     }
 
     /** The model belongs to the canvas: one place writes it, so a document knows what to expect. */

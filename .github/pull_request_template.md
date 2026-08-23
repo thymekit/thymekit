@@ -4,7 +4,9 @@
 
 ## Checks
 
-- [ ] `./gradlew build` passes
-- [ ] `./gradlew pitest` stays at 100% — a surviving mutant is a missing test or unjustified code
+- [ ] `./gradlew verify` passes — it deletes what the last run left before it builds, and an
+      incremental green has been wrong about exactly that before
+- [ ] The mutation gate inside it stays at 100% — a surviving mutant is a missing test or
+      unjustified code
 - [ ] A new element comes as a triple (Java factory, fragment, CSS) and is added to the contract test
 - [ ] Commits are signed off (`git commit -s`)

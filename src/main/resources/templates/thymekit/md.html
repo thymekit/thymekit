@@ -1,0 +1,31 @@
+<!--/* This Source Code Form is subject to the terms of the Mozilla Public
+       License, v. 2.0. If a copy of the MPL was not distributed with this
+       file, You can obtain one at https://mozilla.org/MPL/2.0/. */-->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+
+<!--/*
+    md: the text of a page — sanitised markdown, or the empty state when there is nothing written yet.
+    It is content, not structure: a heading and a <section> around it belong to the section element,
+    which this goes inside.
+
+    Keys of the descriptor it reads:
+      markdown  source text; absent switches the block to its empty state
+      emptyHint empty-state text; absent together with absent markdown renders nothing at all
+      addAction any element shown next to the empty state; absent renders none
+      linkRel   what the links of the text say about themselves; absent marks nothing
+
+    The #md expression object comes from the kit's auto-configuration.
+*/-->
+<!--/* keys: markdown, emptyHint, addAction, linkRel */-->
+<th:block th:fragment="mdEl(e)"><div class="rich-content" th:if="${e['markdown'] != null}"
+     th:utext="${#md.toHtmlSafe(e['markdown'], e['linkRel'])}"></div><!--/*
+    a div, not a p: the affordance is whatever element the consumer passed, block or inline
+*/--><div class="tk-md-empty" th:if="${e['markdown'] == null and e['emptyHint'] != null}">
+    <span th:text="${e['emptyHint']}"></span>
+    <th:block th:replace="~{thymekit/element :: render(${e['addAction']})}"/>
+</div></th:block>
+
+</body>
+</html>

@@ -1,58 +1,52 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="ru">
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
 <body>
-<!--/* pieces for the dispatcher: a bare script fragment and an adapter taking a descriptor */-->
-<th:block th:fragment="hello"><b class="hello">HELLO</b></th:block>
-<!--/* adapter with slots: the consumer fills them, the dispatcher renders them */-->
-<th:block th:fragment="slotted(e)"><div class="slotted" th:text="${e['title']}"></div>
-<div class="body"><th:block th:replace="~{fragments/thymekit/element :: slot(${e}, 'body')}"/></div>
-<div class="tail"><th:block th:replace="~{fragments/thymekit/element :: slot(${e}, 'tail')}"/></div></th:block>
-<th:block th:fragment="echo(e)"><i class="echo" th:text="${e['text']}"></i></th:block>
-<!--/* the names the hero's guards ask for: the elements themselves live in consumer code */-->
-<th:block th:fragment="statusBadgeEl(e)"><span class="badge" th:text="${e['text']}"></span></th:block>
-<th:block th:fragment="actionsEl(e)"><div class="actions" th:text="${e['text']}"></div></th:block>
-<th:block th:fragment="inline(e)"><span>a</span>
-<span>b</span></th:block>
+<!--/* Adapters the walk is tried on. Each is written to be wrong in exactly one way, so that what the
+       walk says can be read off the fixture rather than guessed. */-->
 
-<!--/* samples for TidyDialect: preserved zones, standalone tag, comment, inline space */-->
-<th:block th:fragment="tidy(e)">
-    <div class="a">
-        <pre>  two  spaces
-    and indent</pre>
-        <textarea>  raw
-  text</textarea>
-        <script>var a = 1;
-var b = 2;</script>
-        <style>.x { color: red;
-}</style>
-    </div>
-    <div class="c">
-        <pre><code>x</code>
-   
-</pre>
-        <div><span>nested</span></div>
-        <th:block th:text="'text node'"/>
-    </div>
-    <div class="d">
-        <a class="multi"
-           href="/x"
-           title="multiline tag">link</a>
-        <input type="checkbox"
-               checked>
-        <span class='single'
-              data-x='single'>quotes</span>
-        <b class='one-line' data-y='intact'>one-line</b>
-        <i  class="messy"   data-z="1" >messy one-line</i>
-        <img src="/x.png"
-             alt="image"
-             width="10"/>
-    </div>
-    <div class="b">
-        <br/>
-        <!-- plain comment -->
-        <span>a</span> <span>b</span>
-    </div>
-</th:block>
+<!--/* keys: text */-->
+<th:block th:fragment="echoEl(e)"><i class="echo" th:text="${e['text']}"></i></th:block>
 
+<!--/* a declaration speaks for the fragment under it: this one declares nothing and inherits nothing */-->
+<th:block th:fragment="undeclaredEl(e)"><i class="echo" th:text="${e['text']}"></i></th:block>
+
+<!--/* keys: title */-->
+<!--/* slots: items */-->
+<th:block th:fragment="slottedEl(e)"><div class="echo" th:text="${e['title']}"></div>
+<th:block th:replace="~{thymekit/element :: slot(${e}, 'items')}"/></th:block>
+
+<!--/* keys: title */-->
+<!--/* slots: items */-->
+<th:block th:fragment="slotIgnoredEl(e)"><div class="echo" th:text="${e['title']}"></div></th:block>
+
+<!--/* keys: text, colour */-->
+<th:block th:fragment="deadKeyEl(e)"><i class="echo" th:text="${e['text']}"></i></th:block>
+
+<!--/* a fragment named in a comment defines nothing: th:fragment="ghostEl(e)" is prose, not markup */-->
+
+<!--/* and a name that is not shaped like an adapter at all */-->
+<th:block th:fragment="notAnAdapter(e)"><i class="echo">plain</i></th:block>
+
+<!--/* the names the hero's guards ask for: these elements live in consumer code */-->
+<!--/* keys: text */-->
+<span th:fragment="statusBadgeEl(e)" th:text="${e['text']}"></span>
+<!--/* keys: text */-->
+<div th:fragment="actionsEl(e)" th:text="${e['text']}"></div>
+
+<!--/* declares a slot and no keys at all */-->
+<!--/* slots: items */-->
+<th:block th:fragment="slotsOnlyEl(e)"><th:block th:replace="~{thymekit/element :: slot(${e}, 'items')}"/></th:block>
+
+<!--/* prints words and no tag of its own */-->
+<!--/* keys: text */-->
+<th:block th:fragment="wordsOnlyEl(e)" th:text="${e['text']}"></th:block>
+
+<!--/* falls over without the key it reads: taking it away is not a quiet difference but a loud one */-->
+<!--/* keys: text */-->
+<th:block th:fragment="needsItEl(e)"><i class="echo" th:text="${e['text'].length()}"></i></th:block>
+
+<!--/* prints a class the kit's stylesheets know nothing about */-->
+<!--/* keys: text */-->
+<th:block th:fragment="strangerEl(e)"><i class="not-a-kit-class" th:text="${e['text']}"></i></th:block>
 </body>
 </html>
