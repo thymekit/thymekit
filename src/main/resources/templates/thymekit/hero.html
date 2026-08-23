@@ -16,16 +16,17 @@
     The classes of the hero all begin with page-hero: it is page structure rather than an element with
     a look of its own, which is why they are not tk-* like a heading or a caption.
 */-->
+<!--/* keys: heading, eyebrow, subtitle, metas, badge, actions */-->
 <header th:fragment="heroEl(e)" class="page-hero">
     <hgroup class="page-hero-group">
-        <th:block th:replace="~{fragments/thymekit/element :: render(${e['eyebrow']})}"/>
-        <th:block th:replace="~{fragments/thymekit/element :: render(${e['heading']})}"/>
-        <th:block th:replace="~{fragments/thymekit/element :: render(${e['subtitle']})}"/>
-        <th:block th:replace="~{fragments/thymekit/element :: renderAll(${e['metas']})}"/>
+        <th:block th:replace="~{thymekit/element :: render(${e['eyebrow']})}"/>
+        <th:block th:replace="~{thymekit/element :: render(${e['heading']})}"/>
+        <th:block th:replace="~{thymekit/element :: render(${e['subtitle']})}"/>
+        <th:block th:replace="~{thymekit/element :: renderAll(${e['metas']})}"/>
     </hgroup>
     <!--/* a div, not a p: the badge is whatever element the consumer passed, block or inline */-->
-    <div class="page-hero-status" th:if="${e['badge'] != null}"><th:block th:replace="~{fragments/thymekit/element :: render(${e['badge']})}"/></div>
-    <div class="page-hero-actions" th:if="${e['actions'] != null}"><th:block th:replace="~{fragments/thymekit/element :: render(${e['actions']})}"/></div>
+    <div class="page-hero-status" th:if="${e['badge'] != null}"><th:block th:replace="~{thymekit/element :: render(${e['badge']})}"/></div>
+    <div class="page-hero-actions" th:if="${e['actions'] != null}"><th:block th:replace="~{thymekit/element :: render(${e['actions']})}"/></div>
 </header>
 
 </body>

@@ -158,8 +158,8 @@ public final class PageModel {
     }
 
     /** Addresses of the two elements a page is made of; the canvas builds them, the document renders them. */
-    private static final String HEAD = "fragments/thymekit/head";
-    private static final String CANVAS_TEMPLATE = "fragments/thymekit/canvas";
+    private static final String HEAD = "thymekit/head";
+    private static final String CANVAS_TEMPLATE = "thymekit/canvas";
 
     private static final class Builder implements Canvas {
 
@@ -218,16 +218,14 @@ public final class PageModel {
         }
 
         /**
-         * A blank value is a mistake that shows up as an empty tag, so it is refused here; what is kept
-         * is trimmed, because a space at the end of a title is never meant and travels into the tab, the
-         * search result and the link preview alike.
+         * A blank value is a mistake that shows up as an empty tag, and it is refused by the same rule
+         * every written text in the kit is refused by. What is kept is trimmed, and that is this class
+         * alone: a space at the end of a title is never meant and travels into the tab, the search
+         * result and the link preview alike — while a space inside a caption or a heading is content,
+         * and content is nobody's to tidy.
          */
         private static String require(String value, String name) {
-            Objects.requireNonNull(value, name);
-            if (value.isBlank()) {
-                throw new IllegalArgumentException(name + " is blank");
-            }
-            return value.strip();
+            return Element.requireText(value, name).strip();
         }
 
         /**
@@ -303,7 +301,8 @@ public final class PageModel {
             if (title == null) {
                 throw new IllegalStateException("page without a title: call title(...) before render()");
             }
-            Element.assertOutline(elements);
+            Outline.requireSound(elements);
+            Anchors.requireDistinct(elements);
             model.addAttribute("pageTitle", title);
             model.addAttribute("head", head());
             model.addAttribute("page", page());

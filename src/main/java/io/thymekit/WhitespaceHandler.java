@@ -3,7 +3,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 package io.thymekit;
 
-import java.lang.ref.WeakReference;
 import java.util.Locale;
 import java.util.Set;
 import org.thymeleaf.engine.AbstractTemplateHandler;
@@ -23,20 +22,17 @@ import org.thymeleaf.model.IText;
  *
  * <p>Newlines inside a tag — attributes written across several lines in a template — are removed by
  * rebuilding the tag, since whitespace between attributes is insignificant. The rebuild only happens
- * when it is provably safe: every attribute value in double quotes, no minimised attributes.
+ * when it is provably safe: every attribute value in double quotes, no minimised attributes. And only
+ * when the spanning can be seen at all — an attribute a processor made carries no place in any file, so
+ * a tag built entirely of those is left as it stands rather than rebuilt on a guess.
  *
- * <p>What the handler sees, checked by rendering rather than assumed: one instance is given the whole
- * render, nested templates included — a {@code <pre>} in one file whose content comes from another
- * keeps that content untouched, which only happens if the same handler is still counting. And a render
- * that fails part-way leaves nothing behind for the next one. Both are pinned in
- * {@code TidyDialectTest}, because both are promises this class makes to a page.
- *
- * <p>Depth is kept in a thread local keyed by the render's context, and not in a field, so that the
- * promise holds even where the first sentence does not: an instance handed a second render, or reused
- * by a pool, starts from zero because the context it sees is a different object. Counting closes
- * instead would not do — a render that dies on an expression error never sends its end events, and its
- * depth would travel into whatever renders next on that thread. The reference is weak, so a finished
- * render is not kept alive by a thread that has moved on.
+ * <p>What the handler sees, checked by rendering rather than assumed: Thymeleaf builds one of these for
+ * one render and gives it the whole of it, nested templates included — a {@code <pre>} in one file whose
+ * content comes from another keeps that content untouched, which only happens if the same handler is
+ * still counting. Nothing is carried between renders because there is nothing to carry it in: the
+ * counters are ordinary fields of an object that is used once and dropped, so a render that dies on an
+ * expression error leaves nothing behind by construction rather than by cleanup. Both facts are pinned
+ * in {@code WhitespaceHandlerTest}, being promises this class makes to a page.
  *
  * <p>The class is public because Thymeleaf builds the post-processor by class name, not because a
  * consumer has any use for it.
@@ -44,26 +40,29 @@ import org.thymeleaf.model.IText;
 public final class WhitespaceHandler extends AbstractTemplateHandler {
 
     private static final Set<String> PRESERVE = Set.of("pre", "textarea", "script", "style");
-    private static final ThreadLocal<State> STATE = ThreadLocal.withInitial(State::new);
 
+    /** Deeper than this the indent stops growing: a page nested that far needs no wider margin. */
+    private static final int MAX_INDENT_DEPTH = 24;
+
+    /** How many preserved zones are open, how deep the nesting is, and whether a newline is held. */
     private int preserveDepth;
+    private int depth;
+    private boolean pending;
 
     @Override
     public void handleOpenElement(IOpenElementTag tag) {
-        State s = state();
-        flush(s, s.depth);
+        flush(depth);
         if (isPreserved(tag.getElementCompleteName())) {
             preserveDepth++;
         }
-        s.depth++;
+        depth++;
         super.handleOpenElement(normalize(tag));
     }
 
     @Override
     public void handleCloseElement(ICloseElementTag tag) {
-        State s = state();
-        s.depth--;
-        flush(s, s.depth);
+        depth--;
+        flush(depth);
         if (isPreserved(tag.getElementCompleteName())) {
             preserveDepth--;
         }
@@ -72,26 +71,23 @@ public final class WhitespaceHandler extends AbstractTemplateHandler {
 
     @Override
     public void handleStandaloneElement(IStandaloneElementTag tag) {
-        State s = state();
-        flush(s, s.depth);
+        flush(depth);
         super.handleStandaloneElement(normalize(tag));
     }
 
     @Override
     public void handleComment(IComment comment) {
-        State s = state();
-        flush(s, s.depth);
+        flush(depth);
         super.handleComment(comment);
     }
 
     @Override
     public void handleText(IText text) {
-        State s = state();
         if (preserveDepth == 0 && isFormattingWhitespace(text)) {
-            s.pending = true;      // held: the indent depends on what comes next, an open or a close
+            pending = true;        // held: the indent depends on what comes next, an open or a close
             return;
         }
-        flush(s, s.depth);
+        flush(depth);
         super.handleText(text);
     }
 
@@ -114,7 +110,7 @@ public final class WhitespaceHandler extends AbstractTemplateHandler {
     /** An attribute placed on another line than the tag means the tag spans lines in the template. */
     private static boolean spansLines(IProcessableElementTag tag) {
         for (IAttribute a : tag.getAllAttributes()) {
-            if (a.hasLocation() && tag.hasLocation() && a.getLine() != tag.getLine()) {
+            if (a.hasLocation() && a.getLine() != tag.getLine()) {
                 return true;
             }
         }
@@ -131,28 +127,17 @@ public final class WhitespaceHandler extends AbstractTemplateHandler {
         return true;
     }
 
-    /** State of the current render; a different context means a new render. */
-    private State state() {
-        State s = STATE.get();
-        if (s.render.get() != getContext()) {
-            s.render = new WeakReference<>(getContext());
-            s.depth = 0;
-            s.pending = false;
-        }
-        return s;
-    }
-
     /** Emits the held newline, indented to {@code depth}. */
-    private void flush(State s, int depth) {
-        if (!s.pending) {
+    private void flush(int depth) {
+        if (!pending) {
             return;
         }
-        s.pending = false;
+        pending = false;
         super.handleText(getContext().getModelFactory().createText(indent(depth)));
     }
 
     private static String indent(int depth) {
-        return "\n" + " ".repeat(Math.clamp(depth, 0, State.MAX_INDENT_DEPTH) * TidyDialect.INDENT);
+        return "\n" + " ".repeat(Math.min(depth, MAX_INDENT_DEPTH) * TidyDialect.INDENT);
     }
 
     private static boolean isPreserved(String name) {
@@ -164,21 +149,12 @@ public final class WhitespaceHandler extends AbstractTemplateHandler {
         boolean newline = false;
         for (int i = 0; i < text.length(); i++) {
             char c = text.charAt(i);
-            if (c == '\n' || c == '\r') {
+            if (c == '\n') {
                 newline = true;
             } else if (!Character.isWhitespace(c)) {
                 return false;
             }
         }
         return newline;
-    }
-
-    /** Depth and held newline, shared by every template of one render. */
-    private static final class State {
-        private static final int MAX_INDENT_DEPTH = 24;   // deeper than this the indent stops growing
-        private int depth;
-        private boolean pending;
-        /** Context of the current render; weak so a pooled thread does not keep it alive. */
-        private WeakReference<Object> render = new WeakReference<>(null);
     }
 }

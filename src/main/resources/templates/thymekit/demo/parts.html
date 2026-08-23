@@ -1,0 +1,49 @@
+<!--/* This Source Code Form is subject to the terms of the Mozilla Public
+       License, v. 2.0. If a copy of the MPL was not distributed with this
+       file, You can obtain one at https://mozilla.org/MPL/2.0/. */-->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+
+<!--/*
+    Furniture of the showcase, not an element of the kit: a frame that carries .tk-defaults, the stock
+    scope every element file resets its handles in. Inside it the theme reaches nothing, so the same
+    elements render as the browser would draw them — which is what the page claims two paragraphs
+    above, and now shows.
+
+    The frame is built as an illustration, so the H1 inside it is a sample rather than the title of the
+    page and the outline guard steps over it.
+*/-->
+<div th:fragment="stockFrame(e)" class="tk-demo-stock tk-defaults">
+    <th:block th:replace="~{thymekit/element :: slot(${e}, 'items')}"/>
+</div>
+
+<!--/*
+    The same frame without the stock scope: a place to stand elements next to each other and look at
+    them. Also an illustration, so headings inside are samples rather than page structure.
+*/-->
+<div th:fragment="sampleFrame(e)" class="tk-demo-sample">
+    <th:block th:replace="~{thymekit/element :: slot(${e}, 'items')}"/>
+</div>
+
+<!--/*
+    Two elements the kit does not define, standing in for the consumer's: the hero guards its status
+    line by the adapter name statusBadgeEl and its action row by actionsEl, and here are stand-ins
+    under exactly those names.
+*/-->
+<!--/* keys: text */-->
+<span th:fragment="statusBadgeEl(e)" class="tk-demo-badge" th:text="${e['text']}"></span>
+
+<!--/* keys: text, href */-->
+<p th:fragment="actionsEl(e)" class="tk-demo-actions"><a th:href="@{${e['href']}}" th:text="${e['text']}"></a></p>
+
+<!--/*
+    A behaviour script, declared by an element through requires(...) and printed once at the end of the
+    body however many elements asked for it.
+*/-->
+<script th:fragment="demoJs">
+  document.documentElement.dataset.thymekitDemo = 'the scripts of the element tree are collected once';
+</script>
+
+</body>
+</html>

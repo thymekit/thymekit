@@ -1,7 +1,11 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="en">
 <body>
-<!--/* an element of a consumer whose templates do not live under templates/ */-->
+<!--/* a consumer's own element, under a template root of their own */-->
+<!--/* keys: amount */-->
 <span th:fragment="priceEl(e)" class="my-price" th:text="${e['amount']}"></span>
+
+<!--/* and a script of theirs */-->
+<script th:fragment="priceJs">console.log("price");</script>
 </body>
 </html>

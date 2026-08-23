@@ -4,260 +4,368 @@
 package io.thymekit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
-import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 
 /**
- * The element author's contract, checked on one live sample per factory:
- * <ol>
- *   <li>the adapter name is versionable ({@code <name>El} or {@code <name>ElV<n>});</li>
- *   <li>its address resolves and renders under the consumer's expression engine;</li>
- *   <li>the element has a CSS file, listed in the manifest and carrying the {@code .tk-defaults} scope;</li>
- *   <li>interactive elements carry an accessible name;</li>
- *   <li>declared scripts resolve and render;</li>
- *   <li>an element is a value: building the same sample twice yields equal elements.</li>
- * </ol>
- * A new element is added to {@link #samples()} and is checked from then on.
+ * The walk over a triple, and the promise that whoever writes an element gets the same one the kit
+ * takes over its own.
+ *
+ * <p>A triple is held together by nothing a compiler can see: a java factory names an address, a
+ * template declares a fragment at that address, a stylesheet has rules for the classes it prints. Every
+ * one of those joints is a string, and every one of them can be renamed on one side alone. This is the
+ * walk that refuses to let that pass — and each statement below is written against a fixture that is
+ * wrong in exactly one way, so what the walk says can be read off the fixture rather than guessed.
  */
 class ElementContractTest {
 
-    private static final Pattern ADAPTER_NAME = Pattern.compile("^[a-z][A-Za-z0-9]*El(V\\d+)?$");
+    private static final SpringTemplateEngine ENGINE = engine();
 
-    /**
-     * Where an element's CSS lives, by template name. The page parts are not in {@code elements/}: the
-     * canvas describes the column a page is drawn in, and the head has no look at all — it prints tags
-     * a browser never shows.
-     */
-    private static final Map<String, String> CSS_BY_TEMPLATE = Map.of(
-        "heading", "elements/heading.css", "caption", "elements/caption.css",
-        "hero", "elements/hero.css", "md-section", "elements/md-section.css",
-        "canvas", "base/canvas.css");
+    private static SpringTemplateEngine engine() {
+        var resolver = new ClassLoaderTemplateResolver();
+        resolver.setPrefix("templates/");
+        resolver.setSuffix(".html");
+        resolver.setTemplateMode("HTML");
+        resolver.setCharacterEncoding("UTF-8");
+        var engine = new SpringTemplateEngine();
+        engine.setTemplateResolver(resolver);
+        engine.addDialect(new TidyDialect());
+        engine.addDialect(new MarkdownDialect(new MarkdownRenderer()));
+        return engine;
+    }
 
-    /**
-     * One live element per adapter — including the two a page is made of, since the page is an element
-     * too. {@link #everyAdapterHasASample()} checks that this list left nothing out.
-     */
-    static List<Element<?>> samples() {
-        var model = new org.springframework.ui.ConcurrentModel();
-        PageModel.of(model).title("Page").add(Heading.h1("Title").build()).render();
-        return List.of(
-            Heading.h3("Section").build(),
-            Caption.eyebrow("Product").build(), Caption.subtitle("RA-101").build(),
-            Caption.label("label").build(), Caption.meta("meta").build(),
-            Md.of("**text**").title(Heading.h2("Description").build()).build(),
-            Hero.of(Heading.h1("Title").build()).eyebrow(Caption.eyebrow("Label").build())
-                .subtitle(Caption.subtitle("RA-101").build()).meta(Caption.meta("/slug").build()).build(),
-            fromModel(model, "head"), fromModel(model, "page"));
+    // ——— the joints of a triple ——————————————————————————————————————————————————————————
+
+    /** An address that points at no template is named, and the walk says where it looked. */
+    @Test
+    void anAddressThatPointsNowhereIsNamed() {
+        assertThatThrownBy(() -> ElementContract.of(Element.raw("fragments/my/absent", "priceEl")).check())
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("no template on the classpath")
+            .hasMessageContaining("looked under templates/, the address itself");
+    }
+
+    /** A template that declares no such fragment is named, and told what the dispatcher will call. */
+    @Test
+    void aTemplateThatDeclaresNoSuchFragmentIsNamed() {
+        assertThatThrownBy(() -> ElementContract.of(Element.raw("test/pieces", "absentEl")).check())
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("declares no fragment absentEl").hasMessageContaining("one argument");
+    }
+
+    /** A fragment named in a comment is prose: the walk reads a template without its comments. */
+    @Test
+    void aFragmentNamedOnlyInACommentIsNotAFragment() {
+        assertThatThrownBy(() -> ElementContract.of(Element.raw("test/pieces", "ghostEl")).check())
+            .isInstanceOf(IllegalStateException.class).hasMessageContaining("declares no fragment ghostEl");
+    }
+
+    /** An adapter is named for what it renders and ends in El; a second contract gets a version suffix. */
+    @Test
+    void anAdapterIsNamedLikeAnAdapter() {
+        assertThatThrownBy(() -> ElementContract.of(Element.raw("test/pieces", "notAnAdapter")).check())
+            .isInstanceOf(IllegalStateException.class).hasMessageContaining("named like myCardEl");
+        assertThatCode(() -> ElementContract.of(Element.raw("test/pieces", "echoEl").with("text", "x")).check())
+            .doesNotThrowAnyException();
+    }
+
+    /** A script element is not part of the flow, and a script an element depends on has to resolve too. */
+    @Test
+    void aScriptIsCheckedAsADependencyAndRefusedAsAnElement() {
+        assertThatThrownBy(() -> ElementContract.of(Element.script("test/pieces", "echoEl")).check())
+            .isInstanceOf(IllegalStateException.class).hasMessageContaining("does not belong among elements");
+
+        assertThatThrownBy(() -> ElementContract.of(Element.raw("test/pieces", "echoEl").with("text", "x")
+                .requires(Element.script("fragments/my/absent", "priceJs"))).check())
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("its script fragments/my/absent :: priceJs")
+            .hasMessageContaining("no template on the classpath");
+    }
+
+    // ——— what an adapter says it reads ————————————————————————————————————————————————————
+
+    /** A key an element carries that its adapter never reads is data travelling for nothing. */
+    @Test
+    void aKeyTheAdapterDoesNotReadIsNamed() {
+        assertThatThrownBy(() -> ElementContract.of(
+                Element.raw("test/pieces", "echoEl").with("text", "x").with("colour", "gold")).check())
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("carries the key \"colour\" that its adapter does not read");
+    }
+
+    /** And a slot it fills that its adapter never renders is the same mistake, one level up. */
+    @Test
+    void aSlotTheAdapterDoesNotRenderIsNamed() {
+        assertThatThrownBy(() -> ElementContract.of(Element.raw("test/pieces", "echoEl").with("text", "x")
+                .slot("items", List.of(Caption.label("inside")))).check())
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("fills the slot \"items\" that its adapter does not render");
+    }
+
+    /** Declare nothing and nothing is checked: the walk says so once rather than inventing a rule. */
+    @Test
+    void anAdapterThatDeclaresNothingIsNotAskedAboutKeys() {
+        assertThatCode(() -> ElementContract.of(Element.raw("test/pieces", "undeclaredEl")
+                .with("text", "x").with("anything", 1)
+                .slot("whatever", List.of(Caption.label("inside")))).check())
+            .doesNotThrowAnyException();
     }
 
     /**
-     * An element the canvas built, taken back out of the model it was written into. Data is copied key
-     * by key, so a page part that grew a slot or a script dependency would be rebuilt without it —
-     * which would make this sample quietly unlike the real thing, and is refused instead.
+     * A declaration speaks for the fragment beneath it and no other — and a fragment named in a comment
+     * inside that window does not move the boundary, since a comment declares nothing anywhere.
      */
+    @Test
+    void aDeclarationSpeaksForOneFragmentOnly() {
+        assertThatThrownBy(() -> ElementContract.of(
+                Element.raw("test/broken", "maskedEl").with("text", "x").with("colour", "gold")).check())
+            .as("the declaration read is the one nearest the fragment, and prose is not a fragment")
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("carries the key \"colour\"");
+        assertThatCode(() -> ElementContract.of(
+                Element.raw("test/broken", "maskedEl").with("text", "x")).check())
+            .doesNotThrowAnyException();
+    }
+
+    /**
+     * The other direction is a claim about the samples rather than about the element, so it is asked
+     * for: say {@link ElementContract#coveringEveryKey()} and a branch nothing reaches is named.
+     */
+    @Test
+    void whatNothingReachesIsNamedWhenTheSamplesClaimToCoverIt() {
+        assertThatThrownBy(() -> ElementContract.of(Element.raw("test/pieces", "deadKeyEl").with("text", "x"))
+                .coveringEveryKey().check())
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("reads \"colour\"").hasMessageContaining("nothing given here puts it in");
+
+        assertThatThrownBy(() -> ElementContract.of(Element.raw("test/pieces", "slottedEl").with("title", "x"))
+                .coveringEveryKey().check())
+            .as("a slot nothing fills is said as a slot, not as a key with a strange name")
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("renders the slot \"items\"").hasMessageContaining("nothing given here fills it");
+    }
+
+    // ——— what a page would see ————————————————————————————————————————————————————————————
+
+    /** Given an engine, every element has to render something a browser would show. */
+    @Test
+    void anAdapterThatShowsNothingIsNamedOnce() {
+        assertThatThrownBy(() -> ElementContract.of(Element.raw("test/broken", "emptyEl").with("text", "x"))
+                .renderedBy(ENGINE).check())
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("broken in 1 place(s)").hasMessageContaining("renders nothing");
+
+        assertThatThrownBy(() -> ElementContract.of(Element.raw("test/broken", "explodingEl").with("text", "x"))
+                .renderedBy(ENGINE).check())
+            .as("and one that never rendered is worth one line, not a list about its keys")
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("broken in 1 place(s)").hasMessageContaining("does not render");
+    }
+
+    /** Data that travels for nothing: a key the page comes out the same without. */
+    @Test
+    void aKeyThatChangesNothingIsNamed() {
+        Element<?> dead = Element.raw("thymekit/md", "mdEl")
+            .with("markdown", "text a visitor wrote")
+            .with("addAction", Caption.label("Add").build().asMap()).build();
+
+        assertThatThrownBy(() -> ElementContract.of(dead).renderedBy(ENGINE).check())
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("addAction").hasMessageContaining("renders exactly the same without it");
+    }
+
+    /**
+     * And a slot the page comes out the same without. A slot declared and never rendered is the quieter
+     * half of the same defect: the declaration says it is read, the page says otherwise, and what a
+     * consumer put in it is nowhere.
+     */
+    @Test
+    void aSlotThatChangesNothingIsNamed() {
+        assertThatThrownBy(() -> ElementContract.of(Element.raw("test/pieces", "slotIgnoredEl")
+                .with("title", "x").slot("items", List.of(Caption.label("inside"))))
+                .renderedBy(ENGINE).check())
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("fills the slot \"items\"").hasMessageContaining("renders exactly the same");
+    }
+
+    /**
+     * An empty slot is not a complaint. It renders nothing whether it is there or not, which says
+     * something about the sample and nothing about the adapter — and a section with a heading and no
+     * contents yet is a page a consumer legitimately builds.
+     */
+    @Test
+    void anEmptySlotIsNotAComplaint() {
+        assertThatCode(() -> ElementContract.of(Element.raw("test/pieces", "slottedEl")
+                .with("title", "x").slot("items", List.of()))
+                .renderedBy(ENGINE).check())
+            .doesNotThrowAnyException();
+    }
+
+    /**
+     * And where taking a key away breaks the adapter rather than changing the page, the key is read —
+     * loudly. The walk is looking for data that travels for nothing, not for an adapter that would
+     * rather fail than do without.
+     */
+    @Test
+    void aKeyWhoseAbsenceBreaksTheAdapterIsRead() {
+        assertThatCode(() -> ElementContract.of(Element.raw("test/pieces", "needsItEl").with("text", "words"))
+                .renderedBy(ENGINE).check())
+            .doesNotThrowAnyException();
+    }
+
+    /** An adapter may declare slots and no keys, or print words and no tag of its own. */
+    @Test
+    void anAdapterMayBeMadeOfSlotsAloneOrOfWordsAlone() {
+        assertThatCode(() -> ElementContract.of(Element.raw("test/pieces", "slotsOnlyEl")
+                .slot("items", List.of(Caption.label("inside")))).renderedBy(ENGINE).check())
+            .doesNotThrowAnyException();
+
+        assertThatThrownBy(() -> ElementContract.of(Element.raw("test/pieces", "wordsOnlyEl").with("text", "words"))
+                .renderedBy(ENGINE).check())
+            .as("words with no tag around them are not something a browser shows as an element")
+            .isInstanceOf(IllegalStateException.class).hasMessageContaining("renders nothing");
+    }
+
+    /** Every class an element prints has a rule in the stylesheets named, and a missing one is said so. */
+    @Test
+    void aClassWithNoRuleIsNamed() {
+        assertThatThrownBy(() -> ElementContract.of(Element.raw("test/pieces", "strangerEl").with("text", "x"))
+                .renderedBy(ENGINE).styledBy("static/thymekit/ui.css").check())
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("not-a-kit-class").hasMessageContaining("styled by none");
+
+        assertThatThrownBy(() -> ElementContract.of(Caption.label("x"))
+                .renderedBy(ENGINE).styledBy("static/nowhere.css").check())
+            .isInstanceOf(IllegalStateException.class).hasMessageContaining("no stylesheet on the classpath");
+    }
+
+    // ——— the walk itself ——————————————————————————————————————————————————————————————————
+
+    /** Templates elsewhere: a consumer says where they are, and their element walks like any other. */
+    @Test
+    void templatesUnderARootOfYourOwn() {
+        var price = Element.raw("fragments/my/price", "priceEl").with("amount", "12.00")
+            .requires(Element.script("fragments/my/price", "priceJs")).build();
+
+        assertThatCode(() -> ElementContract.of(price).templatesUnder("views/").check())
+            .doesNotThrowAnyException();
+        assertThatThrownBy(() -> ElementContract.of(price).check())
+            .isInstanceOf(IllegalStateException.class).hasMessageContaining("no template on the classpath");
+    }
+
+    /** Everything wrong at once, because a walk that stopped at the first would be walked many times. */
+    @Test
+    void everythingWrongIsSaidAtOnce() {
+        assertThatThrownBy(() -> ElementContract.of(Element.raw("fragments/my/absent", "price")).check())
+            .isInstanceOf(IllegalStateException.class).hasMessageContaining("broken in 2 place(s)");
+
+        assertThatThrownBy(ElementContract::of)
+            .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("at least one");
+        assertThatThrownBy(() -> ElementContract.of((Composable<?>[]) null))
+            .isInstanceOf(NullPointerException.class);
+        assertThat(ElementContract.of(Caption.label("x"))).as("structure alone is a legal walk").isNotNull();
+    }
+
+    // ——— and the kit takes it over its own ————————————————————————————————————————————————
+
+    /**
+     * One live sample of every element the kit ships, walked the way a consumer walks theirs. This is
+     * the only place in the project where an adapter is asked to render at all: every element's own
+     * spec describes the descriptor it builds, and this describes what a page does with it.
+     */
+    static List<Composable<?>> samples() {
+        var model = new org.springframework.ui.ConcurrentModel();
+        PageModel.of(model).title("Page").description("What this page is")
+            .canonical("https://shop/page").image("https://shop/page.jpg")
+            .robots(PageModel.Robots.NOARCHIVE)
+            .add(Heading.h1("Title")).render();
+
+        return List.of(
+            Heading.h3("Section"),
+            Heading.h2("Linked").id("linked").href("https://x/y").rel(Rel.NOFOLLOW).newTab().lang("en").srOnly(),
+            Caption.eyebrow("Product"), Caption.subtitle("RA-101"), Caption.label("label"),
+            Caption.meta("12 March 2026").time(java.time.LocalDate.of(2026, 3, 12)).lang("en-GB"),
+            Md.of("**text**"),
+            Md.of("[out](https://spam.example/x)").linkRel(Rel.UGC),
+            Md.of(null).emptyHint("No description yet").addAction(Caption.label("Add")),
+            Section.of(Heading.h2("Description")).add(Md.of("under a heading")),
+            Hero.of(Heading.h1("Title")).eyebrow(Caption.eyebrow("Label")).subtitle(Caption.subtitle("RA-101"))
+                .meta(Caption.meta("/slug"))
+                .badge(Element.raw("test/pieces", "statusBadgeEl").with("text", "in stock").build())
+                .actions(Element.raw("test/pieces", "actionsEl").with("text", "Buy").build()),
+            fromModel(model, "head"), fromModel(model, "page"));
+    }
+
+    /** A page part the canvas built, taken back out of the model it was written into. */
     @SuppressWarnings("unchecked")
-    private static Element<?> fromModel(org.springframework.ui.Model model, String key) {
-        Map<String, Object> descriptor = (Map<String, Object>) model.asMap().get(key);
-        assertThat(descriptor).as("a page part with slots or assets needs a sample of its own, not this rebuild")
+    private static Composable<?> fromModel(org.springframework.ui.Model model, String key) {
+        var descriptor = (java.util.Map<String, Object>) model.asMap().get(key);
+        assertThat(descriptor).as("a page part with slots or scripts needs a sample of its own, not this rebuild")
             .doesNotContainKeys("slots", "assets");
-        Element.Descriptor<Element.Raw> rebuilt =
-            Element.raw((String) descriptor.get("template"), (String) descriptor.get("fragment"));
+        var rebuilt = Element.raw((String) descriptor.get("template"), (String) descriptor.get("fragment"));
         descriptor.forEach((k, v) -> {
             if (!Element.RESERVED.contains(k)) {
                 rebuilt.with(k, v);
             }
         });
-        return rebuilt.build();
+        return rebuilt;
     }
 
-    /**
-     * The claim in the readme — that a contract test walks every element — held only as long as somebody
-     * remembered to add one to {@link #samples()}. Now the templates are asked instead: every adapter
-     * declared in the kit's fragments has a sample, or this fails with its name.
-     */
     @Test
-    void everyAdapterHasASample() throws Exception {
-        var dir = java.nio.file.Path.of(getClass().getResource("/templates/fragments/thymekit").toURI());
-        Set<String> declared = new java.util.TreeSet<>();
-        try (var files = java.nio.file.Files.list(dir)) {
-            for (java.nio.file.Path file : files.toList()) {
-                java.util.regex.Matcher m = java.util.regex.Pattern.compile("th:fragment=\"([a-zA-Z0-9]+El)\\(")
-                    .matcher(java.nio.file.Files.readString(file));
-                while (m.find()) {
-                    declared.add(m.group(1));
-                }
-            }
-        }
-        assertThat(declared).contains("headingEl", "captionEl", "heroEl", "mdSectionEl", "headEl", "canvasEl");
-        assertThat(samples()).extracting(Element::fragment).containsAll(declared);
-    }
-
-    private static final SpringTemplateEngine ENGINE = engine();
-
-    private static SpringTemplateEngine engine() {
-        var r = new ClassLoaderTemplateResolver();
-        r.setPrefix("templates/");
-        r.setSuffix(".html");
-        r.setTemplateMode("HTML");
-        r.setCharacterEncoding("UTF-8");
-        var e = new SpringTemplateEngine();
-        e.setTemplateResolver(r);
-        e.addDialect(new TidyDialect());       // tidy rendering is part of the contract
-        e.addDialect(new MarkdownDialect(new MarkdownRenderer()));   // #md, as configured for a consumer
-        return e;
-    }
-
-    /** Script elements render through their own fragment, without arguments. */
-    private static String scripts(Element<Element.Script> js) {
-        var ctx = new Context();
-        ctx.setVariable("items", java.util.List.of(js.asMap()));
-        return ENGINE.process("test/harness", Set.of("scripts"), ctx);
-    }
-
-    private static String render(Element<?> e) {
-        var ctx = new Context();
-        ctx.setVariable("businessZone", java.time.ZoneId.of("UTC"));
-        ctx.setVariable("e", e.asMap());
-        return ENGINE.process("test/harness", Set.of("one"), ctx).replaceAll("\\s+", " ").strip();
-    }
-
-    private static String resource(String path) throws IOException {
-        try (InputStream in = ElementContractTest.class.getClassLoader().getResourceAsStream(path)) {
-            assertThat(in).as("resource %s", path).isNotNull();
-            return new String(in.readAllBytes(), StandardCharsets.UTF_8);
-        }
-    }
-
-    /** Outside preserved zones: their contents and comments are content, not formatting. */
-    private static String outsidePreserved(String html) {
-        return html.replaceAll("(?s)<(pre|textarea|script|style)\\b.*?</\\1>", "[preserved zone]")
-            .replaceAll("(?s)<!--.*?-->", "[comment]");
-    }
-
-    /**
-     * The kit takes the walk it hands to a consumer, over its own elements: the address points at a
-     * fragment that declares itself, the adapter is named like an adapter, nothing renders empty, and
-     * every class printed has a rule. What stays below is what only the kit can check about itself.
-     */
-    @Test
-    void theKitKeepsTheContractItPublishes() {
+    void theKitKeepsTheWalkItHandsOut() {
         ElementContract.of(samples().toArray(Composable<?>[]::new))
+            .coveringEveryKey()
             .renderedBy(ENGINE)
-            .styledBy("static/thymekit/ui.css", "static/thymekit/base/canvas.css",
-                "static/thymekit/base/section.css", "static/thymekit/elements/hero.css",
-                "static/thymekit/elements/heading.css", "static/thymekit/elements/caption.css",
-                "static/thymekit/elements/md-section.css")
+            .styledBy(kitStylesheets())
             .check();
     }
 
-    @Test
-    void adapterNames_versionable() {
-        for (Element<?> e : samples()) {
-            assertThat(e.fragment()).as("adapter %s :: %s", e.template(), e.fragment()).matches(ADAPTER_NAME);
-            assertThat(e.template()).startsWith("fragments/thymekit/");
-        }
-    }
-
-    /** An adapter renders without a single blank line of template formatting. */
-    @Test
-    void adapters_renderTidy_noBlankLines() {
-        for (Element<?> e : samples()) {
-            var ctx = new Context();
-            ctx.setVariable("businessZone", java.time.ZoneId.of("UTC"));
-            ctx.setVariable("e", e.asMap());
-            String html = ENGINE.process("test/harness", Set.of("one"), ctx).strip();
-            assertThat(outsidePreserved(html).lines().filter(String::isBlank).count())
-                .as("blank lines rendering %s :: %s%n%s", e.template(), e.fragment(), html).isZero();
-        }
-    }
-
-    @Test
-    void adapters_resolveAndRender_notBlank() {
-        for (Element<?> e : samples()) {
-            String html = render(e);
-            assertThat(html).as("render %s :: %s", e.template(), e.fragment()).isNotBlank().contains("<");
-            assertThat(e).isEqualTo(rebuild(e));   // an element is a value: rebuilding the sample yields an equal one
-        }
-    }
-
-    /** Rebuilds the same sample by its adapter address; the registry is deterministic. */
-    private static Element<?> rebuild(Element<?> e) {
-        return samples().stream().filter(s -> s.template().equals(e.template()) && s.fragment().equals(e.fragment())
-            && s.asMap().equals(e.asMap())).findFirst().orElseThrow();
-    }
-
-    @Test
-    void css_perElement_inManifest_withStockScope() throws IOException {
-        String manifest = resource("static/thymekit/ui.css");
-        Set<String> seen = new java.util.HashSet<>();
-        for (Element<?> e : samples()) {
-            String name = e.template().substring("fragments/thymekit/".length());
-            String css = CSS_BY_TEMPLATE.get(name);
-            if (css == null || !seen.add(css)) {
-                continue;                                  // the head prints tags, not looks: no stylesheet of its own
-            }
-            assertThat(manifest).as("manifest ui.css imports %s", css).contains("@import url(\"" + css + "\")");
-            assertThat(resource("static/thymekit/" + css)).as("stock scope .tk-defaults in %s", css).contains(".tk-defaults");
-        }
-        assertThat(CSS_BY_TEMPLATE.keySet()).as("a template with a stylesheet is listed here")
-            .containsExactlyInAnyOrder("heading", "caption", "hero", "md-section", "canvas");
-    }
-
     /**
-     * The narrowest joint of the triple: a class an element prints has a rule in the kit's CSS. The
-     * names are assembled at render time — {@code 'tk-caption tk-caption--' + role} — so nothing else
-     * ties the stylesheet to the code that can produce it, and a class renamed in one of the two would
-     * otherwise travel unnoticed.
+     * And no adapter of the kit is left out of that. The claim above is only as good as the list it
+     * walks, so the templates are asked instead of a person remembering: every adapter the kit declares
+     * has a sample, or this says which one does not.
      */
     @Test
-    void css_everyClassAnElementPrints_hasARule() throws IOException {
-        StringBuilder kitCss = new StringBuilder();
-        for (String file : List.of("ui.css", "base/canvas.css", "base/section.css", "elements/hero.css",
-                "elements/heading.css", "elements/caption.css", "elements/md-section.css")) {
-            // comments name classes too, and a class documented but not styled is exactly what this looks for
-            kitCss.append(resource("static/thymekit/" + file).replaceAll("(?s)/\\*.*?\\*/", " "));
-        }
-        Set<String> printed = new java.util.LinkedHashSet<>();
-        for (Element<?> e : samples()) {
-            java.util.regex.Matcher m = java.util.regex.Pattern.compile("class=\"([^\"]+)\"").matcher(render(e));
-            while (m.find()) {
-                printed.addAll(List.of(m.group(1).trim().split("\\s+")));
+    void everyAdapterOfTheKitHasASample() throws Exception {
+        var templates = java.nio.file.Path.of(getClass().getResource("/templates/thymekit").toURI());
+        var declared = new java.util.TreeSet<String>();
+        try (var files = java.nio.file.Files.list(templates)) {
+            // what is one level down (thymekit/demo/) is showcase furniture standing in for a
+            // consumer's elements, and owes this nothing
+            for (var file : files.filter(java.nio.file.Files::isRegularFile).toList()) {
+                var found = java.util.regex.Pattern.compile("th:fragment=\"([a-zA-Z0-9]+El)\\(")
+                    .matcher(java.nio.file.Files.readString(file));
+                while (found.find()) {
+                    declared.add(found.group(1));
+                }
             }
         }
-        assertThat(printed).isNotEmpty();
-        for (String className : printed) {
-            assertThat(kitCss.toString()).as("class %s printed by an element has no rule in the kit's css", className)
-                .containsPattern("\\." + java.util.regex.Pattern.quote(className) + "(?![\\w-])");
-        }
+        assertThat(declared).contains("headingEl", "captionEl", "heroEl", "mdEl", "sectionEl", "headEl", "canvasEl");
+        assertThat(samples()).extracting(sample -> sample.build().fragment()).containsAll(declared);
     }
 
-    /** A heading may be a link, and a screen-reader-only heading stays in the outline. */
-    @Test
-    void heading_linkAndScreenReaderOnly() {
-        assertThat(render(Heading.h3("Section").href("https://x/s").build())).contains("<a href=\"https://x/s\"");
-        assertThat(render(Heading.h2("Hidden").srOnly().build())).contains("tk-sr-only");
+    /** The kit's own stylesheets, from the manifest rather than from a list somebody keeps. */
+    private static String[] kitStylesheets() {
+        var manifest = new java.util.ArrayList<>(List.of("static/thymekit/ui.css"));
+        var imported = java.util.regex.Pattern.compile("@import url\\(\"([a-z0-9-]+\\.css)\"\\)")
+            .matcher(resource("static/thymekit/ui.css"));
+        while (imported.find()) {
+            manifest.add("static/thymekit/" + imported.group(1));
+        }
+        return manifest.stream().distinct().toArray(String[]::new);
     }
 
-    @Test
-    void assets_resolveAndRender() {
-        for (Element<?> e : samples()) {
-            for (Element<Element.Script> js : e.assets()) {
-                assertThat(js.bare()).isTrue();
-                assertThat(scripts(js)).as("script %s :: %s", js.template(), js.fragment()).contains("<script");
-            }
+    private static String resource(String path) {
+        try (var in = ElementContractTest.class.getClassLoader().getResourceAsStream(path)) {
+            assertThat(in).as("resource %s", path).isNotNull();
+            return new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+        } catch (java.io.IOException unreadable) {
+            throw new java.io.UncheckedIOException(unreadable);
         }
-        // no behavioural elements in the core right now: their scripts left with them, and the first
-        // one to come back brings a sample with a dependency here
-        assertThat(Element.assetsOf(samples())).isEmpty();
     }
 }

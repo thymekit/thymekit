@@ -1,0 +1,10 @@
+{
+  "properties": [
+    {
+      "name": "thymekit.tidy.enabled",
+      "type": "java.lang.Boolean",
+      "defaultValue": true,
+      "description": "Whether rendered HTML is cleared of the formatting whitespace of the templates it came from. Set to false and pages carry the indentation of every adapter that made them, as plain Thymeleaf does."
+    }
+  ]
+}

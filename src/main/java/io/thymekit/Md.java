@@ -8,13 +8,20 @@ import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
 /**
- * A markdown block as a page element: optional section heading plus text rendered by the {@code #md}
- * dialect, sanitised on the way out.
+ * The text of a page: markdown rendered by the {@code #md} dialect and sanitised on the way out, or an
+ * empty state when nothing has been written yet. It is content — a heading and a section around it
+ * belong to {@link Section}, which this goes inside.
+ *
+ * <p>Its content is data, and that decides the shape of everything here. A caption refuses a blank
+ * text, because a blank caption is a programmer writing nothing on purpose; this element treats blank
+ * as an absence, because an empty column is not a mistake anybody made and a page falling over for it
+ * would be the kit punishing a consumer for their data. What the consumer writes — the hint, the
+ * affordance, the link policy — is code again, and held to the stricter rule.
  *
  * <p>The text belongs to whoever wrote it, and its headings keep their shape: {@link MarkdownRenderer}
  * lowers the topmost authored level to a ceiling (h2 by default) and moves the rest by the same amount,
  * so a {@code #} in the source becomes an h2 under the page rather than a second H1. What the author
- * nested stays nested; what the author skipped stays skipped, and {@link Element#assertOutline} never
+ * nested stays nested; what the author skipped stays skipped, and {@link Outline} never
  * sees any of it.
  */
 public final class Md {
@@ -22,8 +29,10 @@ public final class Md {
     private Md() {}
 
     /**
-     * The text may be absent ({@code null} — nothing written yet): then the section shows its
-     * {@link Builder#emptyHint}, and without a hint it is not rendered at all.
+     * The text may be absent — nothing written yet — and blank counts as absent for the same reason.
+     * A column in a database is empty because of something nobody chose, and a page has no way to tell
+     * "never filled" from "filled with nothing". Then the block shows its {@link Builder#emptyHint},
+     * and without a hint it is not rendered at all.
      */
     public static Builder of(@Nullable String markdown) {
         return new Builder(markdown);
@@ -34,35 +43,35 @@ public final class Md {
         private final Element.Descriptor<Md> b;
         private final LinkedHashSet<Rel> linkRel = new LinkedHashSet<>();
         private final boolean hasText;
+        private boolean hasHint;
+        private boolean hasAction;
 
         private Builder(@Nullable String markdown) {
-            this.b = Element.Descriptor.<Md>of("fragments/thymekit/md-section", "mdSectionEl");
-            this.hasText = markdown != null;
+            this.b = Element.Descriptor.<Md>of("thymekit/md", "mdEl");
+            this.hasText = markdown != null && !markdown.isBlank();
             if (hasText) {
                 b.with("markdown", markdown);
             }
         }
 
-        /** Section heading; the author names the level according to the outline. */
-        public Builder title(Composable<Heading> heading) {
-            Element<Heading> settled = Element.settle(heading, "heading");
-            Element.requireAdapter(settled, "headingEl", "Md.title accepts a heading only");
-            b.with("heading", settled.asMap());
-            return this;
-        }
-
-        /** Empty-state text, shown instead of the block when there is no markdown. */
+        /**
+         * Empty-state text, shown instead of the block when there is no markdown. Written by whoever
+         * composes the page rather than taken from data, so it is held to the rule every written text
+         * is: a hint with nothing in it is an empty box where an explanation was meant to be.
+         */
         public Builder emptyHint(String hint) {
-            b.with("emptyHint", Objects.requireNonNull(hint, "emptyHint"));
+            b.with("emptyHint", Element.requireText(hint, "emptyHint"));
+            hasHint = true;
             return this;
         }
 
         /**
          * An affordance shown next to the empty state — any element, rendered through the dispatcher.
-         * The section does not know what it is, so the wording and the shape stay with the consumer.
+         * The block does not know what it is, so the wording and the shape stay with the consumer.
          */
         public Builder addAction(Composable<?> action) {
             b.with("addAction", Element.requireRenderableElement(Element.settle(action, "action"), "Md.addAction").asMap());
+            hasAction = true;
             return this;
         }
 
@@ -77,16 +86,20 @@ public final class Md {
          * a wound self-inflicted.
          */
         public Builder linkRel(Rel... values) {
-            linkRel.addAll(Rel.required(values, "linkRel"));
+            linkRel.addAll(Rel.of(values));
             return this;
         }
 
         @Override
         public Element<Md> build() {
+            if (hasAction && (hasText || !hasHint)) {
+                throw new IllegalStateException("an affordance with nowhere to show it: it stands beside the "
+                    + "empty state, which needs text that is absent and a hint that is not");
+            }
             if (!linkRel.isEmpty()) {
                 if (!hasText) {
-                    throw new IllegalStateException("linkRel on a section with no text: the policy would apply to "
-                        + "nothing — give the section its markdown, or drop the policy");
+                    throw new IllegalStateException("linkRel on a block with no text: the policy would apply to "
+                        + "nothing — give the block its markdown, or drop the policy");
                 }
                 b.with("linkRel", Rel.tokens(linkRel));
             }

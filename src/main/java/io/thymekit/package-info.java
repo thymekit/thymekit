@@ -9,14 +9,14 @@
  *
  * <h2>The canon</h2>
  * <ul>
- *   <li><b>A element owns its concept.</b> If a concept has an element — heading, caption, button —
+ *   <li><b>An element owns its concept.</b> If a concept has an element — heading, caption, section —
  *       everything that needs it composes that element instead of writing its own markup. A new
  *       element is therefore always followed by a pass over the existing ones.</li>
  *   <li><b>Shape:</b> {@code factory(core) → options → build()} yields {@link io.thymekit.Element}, the
  *       single currency of composition. Wide points accept {@code Element<?>}, narrow points name the
  *       marker; where the marker is erased, {@link io.thymekit.Element#requireAdapter} guards at
  *       runtime.</li>
- *   <li><b>One dispatcher.</b> Everything renders through {@code fragments/thymekit/element}:
+ *   <li><b>One dispatcher.</b> Everything renders through {@code thymekit/element}:
  *       {@code render(e)} for one element, {@code renderAll(items)} for a flow, {@code slot(e, name)}
  *       for a slot, {@code scripts(items)} for behaviour scripts. Containers know no list of bricks.</li>
  *   <li><b>The adapter name is the contract version.</b> Changing the meaning of a descriptor key means
@@ -34,21 +34,34 @@
  *   <li>{@link io.thymekit.Heading} — owner of headings: {@code h1(text)…h6(text)} with an anchor id, a
  *       link ({@code href} plus {@link io.thymekit.Rel} values and {@code newTab}), the language of the
  *       text and screen-reader-only. No default level: it decides the outline, so the author states it.
- *       Outline guard — {@link io.thymekit.Element#assertOutline}.</li>
+ *       The outline of a page they make is checked by {@link io.thymekit.Outline}.</li>
  *   <li>{@link io.thymekit.Caption} — owner of captions in four roles (eyebrow, subtitle, label, meta):
  *       short text attached to something, never a heading and never a form label. A caption may carry a
  *       machine-readable {@code time} and a {@code lang} of its own.</li>
  *   <li>{@link io.thymekit.Hero} — the header of the page: a heading group, an optional badge and an
  *       optional action row; its core is the H1 alone, and the rule under the group is drawn by CSS.</li>
- *   <li>{@link io.thymekit.Md} — a markdown block with an optional heading, empty state and add
- *       affordance; rendered by the {@code #md} dialect and sanitised. {@code linkRel} says what the
- *       links of somebody else's text are.</li>
+ *   <li>{@link io.thymekit.Md} — the text of a page: markdown rendered by the {@code #md} dialect and
+ *       sanitised, or an empty state with an affordance beside it. {@code linkRel} says what the links
+ *       of somebody else's text are. Content, not structure — a heading around it belongs to
+ *       {@link io.thymekit.Section}.</li>
+ *   <li>{@link io.thymekit.Section} — a titled part of a page: a heading and a slot for whatever goes
+ *       under it. Anything needing a titled area composes this instead of writing its own
+ *       {@code <section>}.</li>
  *   <li>{@link io.thymekit.PageModel} — the page canvas. It builds two elements: the page itself, which
  *       draws the {@code <main>} landmark with the flow inside it, and the head of the document (title,
  *       description, canonical, image, {@link io.thymekit.PageModel.Robots}). Both go through the same
  *       dispatcher as everything else, so composition is closed at the top as well as at the bottom.
  *       {@code render()} uses the default document, {@code render(view)} one of your own.</li>
- *   <li>{@link io.thymekit.Rel} — what a link says about itself, shared by every element that links.</li>
+ *   <li>{@link io.thymekit.Outline} — the headings of a page, and whether they add up to something a
+ *       reader can walk. Checked by the canvas before rendering; it lives apart from the currency
+ *       because an outline is a property of a page, and because knowing what a heading is belongs to
+ *       the element that owns headings.</li>
+ *   <li>{@link io.thymekit.Anchors} — the addresses inside a page, and whether two things answer to
+ *       one of them. Counts the anchors the kit puts down, not every key called {@code id}: what that
+ *       word means in an element of yours is yours to say.</li>
+ *   <li>{@link io.thymekit.Rel} — what a link says about itself, and the policy that goes with it:
+ *       the guards and the order of the values, the {@code noopener} a new tab cannot lose, and the
+ *       attribute they are written as. Public, so an element of yours links exactly as the kit's do.</li>
  *   <li>{@link io.thymekit.ElementContract} — the walk over a triple: the kit checks its own elements
  *       with it, and hands the same walk to whoever writes one.</li>
  *   <li>{@link io.thymekit.Composable} — whatever becomes an element: every builder here, and
