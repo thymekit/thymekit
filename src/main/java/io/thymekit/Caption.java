@@ -6,7 +6,6 @@ package io.thymekit;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Objects;
 
 /**
  * Owner of the caption concept: short text attached to something. Not a heading (it stays out of the
@@ -47,11 +46,12 @@ public final class Caption {
      * <p>Public, because a host of yours has the same problem the kit's hero has. Handing out the role
      * as a string to compare by hand would be handing out the weaker half of the instrument.
      */
-    public static Element<Caption> inRole(Composable<Caption> caption, String role, String what) {
-        Element<Caption> settled = Element.settle(caption, "caption");
-        Element.requireAdapter(settled, "captionEl", what);
+    public static Element<Caption> inRole(Composable<Caption> caption, String role, String where) {
+        Element<Caption> settled = Element.settle(caption, where);
+        Element.requireAdapter(settled, "captionEl", where);
         if (!role.equals(settled.asMap().get("role"))) {
-            throw new IllegalArgumentException(what + " in role \"" + role + "\" (got \"" + settled.asMap().get("role") + "\")");
+            throw new MisuseException(where, "wanted a caption in role \"" + role + "\", and got \""
+                + settled.asMap().get("role") + "\"");
         }
         return settled;
     }
@@ -63,7 +63,7 @@ public final class Caption {
         private Builder(String role, String text) {
             this.b = Element.Descriptor.<Caption>of("thymekit/caption", "captionEl")
                 .with("role", role)
-                .with("text", Element.requireText(text, "text"));
+                .with("text", Element.requireText(text, "Caption(text)"));
         }
 
         /**
@@ -74,7 +74,7 @@ public final class Caption {
          * the blind understand.
          */
         public Builder time(LocalDate day) {
-            b.with("datetime", Objects.requireNonNull(day, "day").toString());
+            b.with("datetime", Element.required(day, "Caption.time(day)").toString());
             return this;
         }
 
@@ -83,7 +83,7 @@ public final class Caption {
          * publication, an edit, an event. Calling either {@code time} after the other keeps the last.
          */
         public Builder time(Instant moment) {
-            b.with("datetime", DateTimeFormatter.ISO_INSTANT.format(Objects.requireNonNull(moment, "moment")));
+            b.with("datetime", DateTimeFormatter.ISO_INSTANT.format(Element.required(moment, "Caption.time(moment)")));
             return this;
         }
 
@@ -93,7 +93,7 @@ public final class Caption {
          * accordingly instead of reading it as broken page language.
          */
         public Builder lang(String languageTag) {
-            b.with("lang", Element.requireTag(languageTag, "languageTag"));
+            b.with("lang", Element.requireTag(languageTag, "Caption.lang(languageTag)"));
             return this;
         }
 

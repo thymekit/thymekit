@@ -83,7 +83,8 @@ public class MarkdownRenderer {
      */
     public MarkdownRenderer(int maxHeadingLevel) {
         if (maxHeadingLevel < 1 || maxHeadingLevel > 6) {
-            throw new IllegalArgumentException("maxHeadingLevel " + maxHeadingLevel + ": allowed range is 1..6");
+            throw new MisuseException("MarkdownRenderer(maxHeadingLevel)",
+                "is " + maxHeadingLevel + " — the allowed range is 1..6");
         }
         this.maxHeadingLevel = maxHeadingLevel;
         // Parser and HtmlRenderer are immutable and thread-safe, so they are built once.
@@ -131,6 +132,11 @@ public class MarkdownRenderer {
      * rest.
      *
      * @param source markdown text; {@code null} or blank yields an empty string
+     * <p>The value is written as it is given: this is the layer that writes the attribute, and it is
+     * usable on its own, without an element of the kit anywhere near it. The vocabulary and its policy
+     * live in {@link Rel}, one call away — {@code Rel.tokens(Rel.forNewTab(Rel.of(Rel.UGC)))} is the
+     * same string with a misspelling made impossible, and it is what {@link Md} hands over.
+     *
      * @param linkRel value for the {@code rel} attribute of outgoing links; {@code null} marks nothing
      */
     @Cacheable(value = "markdown.htmlSafe", key = "{#p0, #p1, #root.target.maxHeadingLevel()}")
@@ -260,8 +266,14 @@ public class MarkdownRenderer {
         if (headings.isEmpty()) {
             return;
         }
-        int topmost = headings.stream().mapToInt(Heading::getLevel).min().orElseThrow();
-        int deepest = headings.stream().mapToInt(Heading::getLevel).max().orElseThrow();
+        // one pass, and no Optional to unwrap: the list is known to have something in it three lines
+        // above, so asking an Optional to prove it again only invents a failure nobody can reach
+        int topmost = headings.get(0).getLevel();
+        int deepest = topmost;
+        for (Heading heading : headings) {
+            topmost = Math.min(topmost, heading.getLevel());
+            deepest = Math.max(deepest, heading.getLevel());
+        }
         int shift = Math.max(0, Math.min(maxHeadingLevel - topmost, 6 - deepest));
         if (shift == 0) {
             return;

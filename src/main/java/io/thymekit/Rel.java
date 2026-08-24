@@ -3,10 +3,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 package io.thymekit;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -73,15 +73,12 @@ public enum Rel {
      * refused — an option called with nothing to say is a line that meant something and lost it.
      */
     public static Set<Rel> of(Rel... values) {
-        Objects.requireNonNull(values, "values");
+        Element.required(values, "Rel.of(values)");
         if (values.length == 0) {
-            throw new IllegalArgumentException("rel without a value: name at least one, or do not ask for one at all");
+            throw new MisuseException("Rel.of(values)",
+                "no value was named — name at least one, or do not ask for one at all");
         }
-        Set<Rel> unique = new LinkedHashSet<>();
-        for (Rel value : values) {
-            unique.add(Objects.requireNonNull(value, "a null among the rel values"));
-        }
-        return Collections.unmodifiableSet(unique);
+        return Collections.unmodifiableSet(guarded(Arrays.asList(values), "Rel.of(values) — one of them"));
     }
 
     /**
@@ -94,11 +91,8 @@ public enum Rel {
      * change the result, and asking twice says the same thing as asking once.
      */
     public static Set<Rel> forNewTab(Collection<Rel> values) {
-        Objects.requireNonNull(values, "values");
-        Set<Rel> withSafety = new LinkedHashSet<>();
-        for (Rel value : values) {
-            withSafety.add(Objects.requireNonNull(value, "a null among the rel values"));
-        }
+        Element.required(values, "Rel.forNewTab(values)");
+        Set<Rel> withSafety = guarded(values, "Rel.forNewTab(values) — one of them");
         withSafety.add(NOOPENER);
         return Collections.unmodifiableSet(withSafety);
     }
@@ -109,7 +103,23 @@ public enum Rel {
      * when what comes back is not empty.
      */
     public static String tokens(Collection<Rel> values) {
-        Objects.requireNonNull(values, "values");
-        return values.stream().map(Rel::token).collect(Collectors.joining(" "));
+        Element.required(values, "Rel.tokens(values)");
+        return values.stream()
+            .map(value -> Element.required(value, "Rel.tokens(values) — one of them").token())
+            .collect(Collectors.joining(" "));
+    }
+
+    /**
+     * The values as a set, in the order given, each said once — and each of them refused if it is not
+     * there. Guarding the members and not only the collection is the point: a hole among them would be
+     * dereferenced later, and what reaches the caller then is the machine's failure rather than a
+     * refusal of ours. Both entrances need that, and one spelling of it is how the two stay agreed.
+     */
+    private static Set<Rel> guarded(Collection<Rel> values, String each) {
+        Set<Rel> unique = new LinkedHashSet<>();
+        for (Rel value : values) {
+            unique.add(Element.required(value, each));
+        }
+        return unique;
     }
 }

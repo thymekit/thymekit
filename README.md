@@ -76,8 +76,10 @@ escaping that keeps a label from ending the block it is printed inside happens i
 wherever somebody remembered it. And an element is in a position to build both halves from one set of
 values, which is what the rules a search engine publishes ask of you and the usual thing to get wrong
 when the two are assembled apart — the trail this kit ships is written that way, and an element of
-yours keeps the property by doing the same. Nothing checks it for you: a contribution is data, and data
-can say anything.
+yours keeps the property by doing the same. What the kit does check is that a contribution is something
+it can write, and it checks it where you write it, so a bad value is refused by the factory that wrote
+it rather than by a page months later. That the two halves agree it cannot check: a contribution is
+data, and data can say anything.
 
 **The output is plain, stateless HTML.** No UI state on the server, nothing to keep per visitor, nothing
 that cannot be cached — and no trace of how the templates were indented.
@@ -464,7 +466,7 @@ flowchart LR
     K --> R
 ```
 
-The last of the four needs naming, because it is the part a reader cannot see in the code. Twenty-five rules
+The last of the four needs naming, because it is the part a reader cannot see in the code. Thirty rules
 state what this package is:
 
 - a class that hands out elements is final and cannot be instantiated;
@@ -490,6 +492,8 @@ state what this package is:
 - no class names another element's adapter, unless it owns it or is asking for one;
 - every adapter address the readme prints leads to a fragment that exists;
 - structured data is printed by the head and by nothing else;
+- every refusal the kit makes names a type of its own, so what it does not name is a surprise;
+- and every one of those types is named where a consumer looks for it;
 - the run that judges a commit deletes what the last one left before it starts;
 - and no line of the sources ends in a space.
 
@@ -838,6 +842,43 @@ The cost is that nothing is decided for you. A page is a declaration you write, 
 One part of the kit does invert control, and it should be said out loud: the canvas. It decides that a page has
 a `<main>`, refuses an outline with a hole in it, and prints the head from what it was told once. That
 is the kit knowing about HTML, which the line allows — and it is exactly as far as it goes.
+
+## What it refuses, and what to do about it
+
+A consumer of this kit may hold that a five hundred is a programming error and something to be woken up
+for. That rule only works if everything refused **on purpose** can be told apart from their own code
+failing — otherwise the alert fires for a name missing from a row in a database. So the kit throws its
+own and never borrows: not `IllegalArgumentException`, not `NullPointerException`, not the one an
+`orElseThrow` hands out when it was given nothing to throw.
+
+Three kinds, and what separates them is not what went wrong but **what to do about it**.
+
+| what is thrown | when | what it means for you |
+|---|---|---|
+| `MisuseException` | a call written wrong: a value the kit will not take, an argument that was not there, a state it will not go into | it should never reach production. An alert is the right answer, and the fix is in your code |
+| `UnsoundPageException` | the page does not add up: more than one title, a gap in the heading levels, two things answering to one name | it can arrive from **data** — two children with the same slug is a state of a database, not a mistake in code — so what to do is yours to choose: fail, degrade, or send the visitor elsewhere |
+| `ContractBrokenException` | the walk over a triple did not agree: an address resolving to nothing, a key declared and never filled, a template that cannot be read | this happens where you run the walk, which is your tests |
+
+All three are `ThymekitException`, so one clause catches the lot; the family itself is abstract, because
+which of the three it is decides what you do, and refusing without saying which is refusing to answer
+the only question that matters.
+
+Every refusal names the place it was made at, and the place is a **call** — `Heading.href(href)`,
+`Breadcrumbs.site(origin)`, `Descriptor.describes.itemListElement[0].name`, with `— one of them` when
+the trouble was inside a collection that was handed over. A noun would not do: "origin" says what was
+wrong, which the message says anyway, while the call says which line to open. It is in `where()` for a
+handler that wants it structured, and in front of the message for the far more common handler that logs
+the message and nothing else. A rule of the canon holds every place in the kit to that shape.
+
+The value of all this is the sentence it makes true: **what the kit does not name, it did not foresee.**
+An uncaught failure out of this library is a defect of ours, and worth being woken up for. A rule of the
+canon holds the kit to it, so the sentence stays true as the kit grows rather than only on the day it
+was written.
+
+Writing an element of your own? The constructors are public, and so is `Element.required` and the rest
+of the guards the kit's own elements use. A guard of yours refusing a bad argument is the same kind of
+event as a guard of ours, and routes the same way for whoever handles it — name the place after your
+own call, and a handler cannot tell whose element it came from, which is the point.
 
 ## Where this is going
 

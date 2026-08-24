@@ -71,7 +71,8 @@ class HeroTest {
     @Test
     void theTitleOfAPageIsAnH1() {
         assertThatThrownBy(() -> Hero.of(Heading.h2("Baobab")))
-            .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("H1 only");
+            .isInstanceOf(MisuseException.class)
+            .hasMessage("Hero.of(h1): accepts an H1 only, and got level 2");
 
         @SuppressWarnings("unchecked")
         Composable<Heading> byHand = (Composable<Heading>) (Composable<?>) Element.raw("thymekit/heading", "headingEl")
@@ -84,29 +85,29 @@ class HeroTest {
             .with("text", "a heading of no level");
         assertThatThrownBy(() -> Hero.of(noLevelAtAll))
             .as("and one that reads as no level at all is not the title of anything")
-            .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("H1 only");
+            .isInstanceOf(MisuseException.class).hasMessageContaining("H1 only");
 
         @SuppressWarnings("unchecked")
         Composable<Heading> notAHeading = (Composable<Heading>) (Composable<?>) Caption.label("Baobab");
         assertThatThrownBy(() -> Hero.of(notAHeading))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("heading only").hasMessageContaining("captionEl");
+            .isInstanceOf(MisuseException.class).hasMessageStartingWith("Hero.of(h1):")
+            .hasMessageContaining("headingEl").hasMessageContaining("captionEl");
         assertThatThrownBy(() -> Hero.of(null))
-            .isInstanceOf(NullPointerException.class).hasMessageContaining("heading");
+            .isInstanceOf(MisuseException.class).hasMessage("Hero.of(h1): was not given");
     }
 
     /** Each place takes a caption in its own role, and says which role it wanted. */
     @Test
     void eachPlaceTakesACaptionInItsOwnRole() {
         assertThatThrownBy(() -> Hero.of(Heading.h1("x")).eyebrow(Caption.meta("wrong role")))
-            .isInstanceOf(IllegalArgumentException.class)
+            .isInstanceOf(MisuseException.class)
             .hasMessageContaining("Hero.eyebrow").hasMessageContaining("eyebrow").hasMessageContaining("meta");
         assertThatThrownBy(() -> Hero.of(Heading.h1("x")).subtitle(Caption.label("wrong role")))
-            .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("Hero.subtitle");
+            .isInstanceOf(MisuseException.class).hasMessageContaining("Hero.subtitle");
         assertThatThrownBy(() -> Hero.of(Heading.h1("x")).meta(Caption.eyebrow("wrong role")))
-            .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("Hero.meta");
+            .isInstanceOf(MisuseException.class).hasMessageContaining("Hero.meta");
         assertThatThrownBy(() -> Hero.of(Heading.h1("x")).eyebrow(null))
-            .isInstanceOf(NullPointerException.class).hasMessageContaining("caption");
+            .isInstanceOf(MisuseException.class).hasMessage("Hero.eyebrow(eyebrow): was not given");
     }
 
     /** Meta lines accumulate in call order, whether they come one at a time or several at once. */
@@ -126,11 +127,13 @@ class HeroTest {
     @Test
     void anOptionCalledWithNothingIsRefused() {
         assertThatThrownBy(() -> Hero.of(Heading.h1("x")).meta())
-            .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("without a value");
+            .isInstanceOf(MisuseException.class)
+            .hasMessage("Hero.meta(metaLines): no caption was named — name at least one, "
+                + "or do not call meta(...) at all");
         assertThatThrownBy(() -> Hero.of(Heading.h1("x")).meta((Composable<Caption>[]) null))
-            .isInstanceOf(NullPointerException.class).hasMessageContaining("meta");
+            .isInstanceOf(MisuseException.class).hasMessage("Hero.meta(metaLines): was not given");
         assertThatThrownBy(() -> Hero.of(Heading.h1("x")).meta(Caption.meta("first"), null))
-            .isInstanceOf(NullPointerException.class).hasMessageContaining("caption");
+            .isInstanceOf(MisuseException.class).hasMessage("Hero.meta(line): was not given");
     }
 
     /**
@@ -143,14 +146,15 @@ class HeroTest {
         assertThat(Hero.of(Heading.h1("x")).badge(BADGE).build().asMap()).containsEntry("badge", BADGE.asMap());
 
         assertThatThrownBy(() -> Hero.of(Heading.h1("x")).badge(Caption.label("not a badge")))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("status badge").hasMessageContaining("captionEl");
+            .isInstanceOf(MisuseException.class).hasMessageStartingWith("Hero.badge(badge):")
+            .hasMessageContaining("statusBadgeEl").hasMessageContaining("captionEl");
         assertThatThrownBy(() -> Hero.of(Heading.h1("x")).actions(Caption.label("not an action row")))
-            .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("action row");
+            .isInstanceOf(MisuseException.class).hasMessageStartingWith("Hero.actions(actions):")
+            .hasMessageContaining("actionsEl").hasMessageContaining("captionEl");
         assertThatThrownBy(() -> Hero.of(Heading.h1("x")).badge(null))
-            .isInstanceOf(NullPointerException.class).hasMessageContaining("badge");
+            .isInstanceOf(MisuseException.class).hasMessage("Hero.badge(badge): was not given");
         assertThatThrownBy(() -> Hero.of(Heading.h1("x")).actions(null))
-            .isInstanceOf(NullPointerException.class).hasMessageContaining("actions");
+            .isInstanceOf(MisuseException.class).hasMessage("Hero.actions(actions): was not given");
     }
 
     /** Said twice, the last one is what the page shows: a place holds one thing. */

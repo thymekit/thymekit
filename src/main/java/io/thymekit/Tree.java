@@ -34,29 +34,45 @@ public final class Tree {
      * collections of either, at any depth. The visitor is handed each descriptor and answers whether to
      * go deeper into it — an illustration is a place one walker stops and another does not.
      *
+     * <p>What is handed over is required, both of it: a walk over nothing finds nothing and says so to
+     * nobody, and a check written over that passes while checking nothing. A hole <b>inside</b> a tree
+     * is a different matter and is walked past — a page is entitled to carry a list with a gap in it,
+     * and refusing to walk one would be this class deciding what a page may be made of.
+     *
      * <pre>{@code
      * Tree.walk(page, descriptor -> {
      *     if (myKit.isPicture(descriptor) && descriptor.get("alt") == null) {
-     *         throw new IllegalStateException("a picture with nothing said about it");
+     *         throw new MisuseException("myKit.picture", "nothing said about it");
      *     }
      *     return true;
      * });
      * }</pre>
      */
-    public static void walk(@Nullable Object node, java.util.function.Predicate<Map<?, ?>> visit) {
+    public static void walk(Object node, java.util.function.Predicate<Map<?, ?>> visit) {
+        Element.required(node, "Tree.walk(node)");
+        Element.required(visit, "Tree.walk(visit)");
+        descend(node, visit);
+    }
+
+    /**
+     * The walk itself, guarded once at the door rather than at every node: what is asked here is asked
+     * of each map, each list and each element of a page, and a check that cannot fail after the first
+     * node is a check paid for at every one of them.
+     */
+    private static void descend(@Nullable Object node, java.util.function.Predicate<Map<?, ?>> visit) {
         if (node instanceof Element<?> element) {
-            walk(element.asMap(), visit);
+            descend(element.asMap(), visit);
         } else if (node instanceof Map<?, ?> map) {
             // a descriptor is a map that names an adapter; the others a tree holds — the slots of an
             // element, data of your own — are passed through rather than offered to the visitor
             if (!map.containsKey("fragment") || visit.test(map)) {
                 for (Object value : map.values()) {
-                    walk(value, visit);
+                    descend(value, visit);
                 }
             }
         } else if (node instanceof Collection<?> items) {
             for (Object item : items) {
-                walk(item, visit);
+                descend(item, visit);
             }
         }
     }
@@ -67,6 +83,7 @@ public final class Tree {
      * script by hand.
      */
     public static List<Element<Element.Script>> assetsOf(Collection<?> roots) {
+        Element.required(roots, "Tree.assetsOf(roots)");
         LinkedHashMap<String, Element<Element.Script>> found = new LinkedHashMap<>();
         collectAssets(roots, found);
         return List.copyOf(found.values());
@@ -79,6 +96,7 @@ public final class Tree {
      */
     @SuppressWarnings("unchecked")
     public static List<Map<String, Object>> describedBy(Collection<?> roots) {
+        Element.required(roots, "Tree.describedBy(roots)");
         List<Map<String, Object>> found = new ArrayList<>();
         walk(roots, descriptor -> {
             if (descriptor.get("describes") instanceof Map<?, ?> node && !found.contains(node)) {
@@ -90,7 +108,7 @@ public final class Tree {
     }
 
     @SuppressWarnings("unchecked")
-    private static void collectAssets(@Nullable Object node, Map<String, Element<Element.Script>> found) {
+    private static void collectAssets(Object node, Map<String, Element<Element.Script>> found) {
         walk(node, descriptor -> {
             if (descriptor.get("assets") instanceof List<?> declared) {
                 for (Object a : declared) {

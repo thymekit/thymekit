@@ -4,7 +4,6 @@
 package io.thymekit;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.ArrayList;
@@ -108,8 +107,8 @@ class ElementTest {
         assertThat(section.slotNames()).containsExactly("items", "footer");
         assertThat(section.slot("footer")).isEmpty();
         assertThat(section.slot("nowhere")).isEmpty();
-        assertThatThrownBy(() -> section.slot(null)).isInstanceOf(NullPointerException.class)
-            .hasMessageContaining("name");
+        assertThatThrownBy(() -> section.slot(null)).isInstanceOf(MisuseException.class)
+            .hasMessage("Element.slot(name): was not given");
     }
 
     /** An element that fills no slot says so, rather than making one up. */

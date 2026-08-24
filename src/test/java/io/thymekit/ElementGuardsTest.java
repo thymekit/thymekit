@@ -23,14 +23,14 @@ class ElementGuardsTest {
     /** Whatever becomes an element is settled here, and the argument is named when there is nothing. */
     @Test
     void whateverBecomesAnElementIsSettledHere() {
-        Element<Heading> settled = Element.settle(Heading.h2("Title"), "heading");
+        Element<Heading> settled = Element.settle(Heading.h2("Title"), "Frame.of(heading)");
         assertThat(settled.asMap()).containsEntry("text", "Title");
-        assertThat(Element.settle(settled, "heading")).isSameAs(settled);
+        assertThat(Element.settle(settled, "Frame.of(heading)")).isSameAs(settled);
 
-        assertThatThrownBy(() -> Element.settle(null, "heading"))
-            .isInstanceOf(NullPointerException.class).hasMessageContaining("heading");
-        assertThatThrownBy(() -> Element.settle(() -> null, "heading"))
-            .isInstanceOf(NullPointerException.class).hasMessageContaining("heading built nothing");
+        assertThatThrownBy(() -> Element.settle(null, "Frame.of(heading)"))
+            .isInstanceOf(MisuseException.class).hasMessage("Frame.of(heading): was not given");
+        assertThatThrownBy(() -> Element.settle(() -> null, "Frame.of(heading)"))
+            .isInstanceOf(MisuseException.class).hasMessage("Frame.of(heading): built nothing");
     }
 
     /**
@@ -43,16 +43,18 @@ class ElementGuardsTest {
         Element<Element.Script> script = Element.script("fragments/my/card", "myCardJs");
         Element<Element.Raw> card = Element.raw("t", "cardEl").build();
 
-        assertThat(Element.requireRenderableElement(card, "Row.add")).isSameAs(card);
-        Element.requireRenderable(card, "Row.add");
+        assertThat(Element.requireRenderableElement(card, "Row.add(item)")).isSameAs(card);
+        Element.requireRenderable(card, "Row.add(item)");
 
-        assertThatThrownBy(() -> Element.requireRenderable(script, "Row.add"))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Row.add").hasMessageContaining("requires()");
-        assertThatThrownBy(() -> Element.requireRenderableElement(script, "Row.add"))
-            .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("script element");
-        assertThatThrownBy(() -> Element.requireRenderable(null, "Row.add"))
-            .isInstanceOf(NullPointerException.class).hasMessageContaining("element");
+        assertThatThrownBy(() -> Element.requireRenderable(script, "Row.add(item)"))
+            .isInstanceOf(MisuseException.class)
+            .hasMessageStartingWith("Row.add(item):").hasMessageContaining("requires()");
+        assertThatThrownBy(() -> Element.requireRenderableElement(script, "Row.add(item)"))
+            .isInstanceOf(MisuseException.class).hasMessageContaining("script element");
+        assertThatThrownBy(() -> Element.requireRenderable(null, "Row.add(item)"))
+            .as("the place of a missing element is this guard, not the call that asked it to look")
+            .isInstanceOf(MisuseException.class)
+            .hasMessage("Element.requireRenderable(element): was not given");
     }
 
     /**
@@ -63,14 +65,15 @@ class ElementGuardsTest {
     void aHostChecksTheAddressWhenTheMarkerIsGone() {
         Element<Heading> heading = Heading.h2("Title").build();
 
-        Element.requireAdapter(heading, "headingEl", "Section.of accepts a heading only");
+        Element.requireAdapter(heading, "headingEl", "Section.of(heading)");
 
         assertThatThrownBy(() -> Element.requireAdapter(
-                Caption.label("x").build(), "headingEl", "Section.of accepts a heading only"))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Section.of accepts a heading only").hasMessageContaining("captionEl");
-        assertThatThrownBy(() -> Element.requireAdapter(null, "headingEl", "Section.of"))
-            .isInstanceOf(NullPointerException.class).hasMessageContaining("element");
+                Caption.label("x").build(), "headingEl", "Section.of(heading)"))
+            .isInstanceOf(MisuseException.class).hasMessageStartingWith("Section.of(heading):")
+            .hasMessageContaining("headingEl").hasMessageContaining("captionEl");
+        assertThatThrownBy(() -> Element.requireAdapter(null, "headingEl", "Section.of(heading)"))
+            .isInstanceOf(MisuseException.class)
+            .hasMessage("Element.requireAdapter(element): was not given");
     }
 
     /**
@@ -80,15 +83,16 @@ class ElementGuardsTest {
      */
     @Test
     void textAPageWillShowIsNotNothing() {
-        assertThat(Element.requireText("Baobab", "text")).isEqualTo("Baobab");
-        assertThat(Element.requireText("  kept  ", "text")).isEqualTo("  kept  ");
+        assertThat(Element.requireText("Baobab", "Card.title(text)")).isEqualTo("Baobab");
+        assertThat(Element.requireText("  kept  ", "Card.title(text)")).isEqualTo("  kept  ");
 
         for (String nothing : java.util.List.of("", " ", "\t\n ")) {
-            assertThatThrownBy(() -> Element.requireText(nothing, "text"))
-                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("text is blank");
+            assertThatThrownBy(() -> Element.requireText(nothing, "Card.title(text)"))
+                .isInstanceOf(MisuseException.class)
+                .hasMessage("Card.title(text): is blank — a page shows what it was given, and this is nothing");
         }
-        assertThatThrownBy(() -> Element.requireText(null, "text"))
-            .isInstanceOf(NullPointerException.class).hasMessageContaining("text");
+        assertThatThrownBy(() -> Element.requireText(null, "Card.title(text)"))
+            .isInstanceOf(MisuseException.class).hasMessage("Card.title(text): was not given");
     }
 
     /**
@@ -98,16 +102,17 @@ class ElementGuardsTest {
      */
     @Test
     void aLanguageTagIsATagAndNotASentence() {
-        assertThat(Element.requireTag("la", "languageTag")).isEqualTo("la");
-        assertThat(Element.requireTag("pt-BR", "languageTag")).isEqualTo("pt-BR");
-        assertThat(Element.requireTag("zh-Hant-HK", "languageTag")).isEqualTo("zh-Hant-HK");
+        assertThat(Element.requireTag("la", "Card.lang(languageTag)")).isEqualTo("la");
+        assertThat(Element.requireTag("pt-BR", "Card.lang(languageTag)")).isEqualTo("pt-BR");
+        assertThat(Element.requireTag("zh-Hant-HK", "Card.lang(languageTag)")).isEqualTo("zh-Hant-HK");
 
         for (String notATag : java.util.List.of("", " ", "по-русски", "la la", "la_LA", "-la", "la-")) {
-            assertThatThrownBy(() -> Element.requireTag(notATag, "languageTag"))
-                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("language tag");
+            assertThatThrownBy(() -> Element.requireTag(notATag, "Card.lang(languageTag)"))
+                .isInstanceOf(MisuseException.class).hasMessageStartingWith("Card.lang(languageTag):")
+                .hasMessageContaining("is not a language tag");
         }
-        assertThatThrownBy(() -> Element.requireTag(null, "languageTag"))
-            .isInstanceOf(NullPointerException.class).hasMessageContaining("languageTag");
+        assertThatThrownBy(() -> Element.requireTag(null, "Card.lang(languageTag)"))
+            .isInstanceOf(MisuseException.class).hasMessage("Card.lang(languageTag): was not given");
     }
 
     /**

@@ -63,9 +63,9 @@ class MdTest {
     @Test
     void theHintIsWrittenByAPersonAndIsHeldToIt() {
         assertThatThrownBy(() -> Md.of(null).emptyHint("  "))
-            .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("blank");
+            .isInstanceOf(MisuseException.class).hasMessageContaining("blank");
         assertThatThrownBy(() -> Md.of(null).emptyHint(null))
-            .isInstanceOf(NullPointerException.class).hasMessageContaining("emptyHint");
+            .isInstanceOf(MisuseException.class).hasMessage("Md.emptyHint(hint): was not given");
     }
 
     /**
@@ -80,16 +80,16 @@ class MdTest {
             .containsEntry("addAction", writeIt.asMap());
 
         assertThatThrownBy(() -> Md.of("text").addAction(writeIt).build())
-            .isInstanceOf(IllegalStateException.class).hasMessageContaining("nowhere to show it");
+            .isInstanceOf(MisuseException.class).hasMessageContaining("nowhere to show it");
         assertThatThrownBy(() -> Md.of("   ").addAction(writeIt).build())
             .as("blank text is an absence, but an affordance still needs a hint to stand beside")
-            .isInstanceOf(IllegalStateException.class).hasMessageContaining("nowhere to show it");
+            .isInstanceOf(MisuseException.class).hasMessageContaining("nowhere to show it");
         assertThatThrownBy(() -> Md.of(null).addAction(writeIt).build())
-            .isInstanceOf(IllegalStateException.class).hasMessageContaining("nowhere to show it");
+            .isInstanceOf(MisuseException.class).hasMessageContaining("nowhere to show it");
         assertThatThrownBy(() -> Md.of(null).emptyHint("x").addAction(Element.script("t", "myJs")))
-            .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("script element");
+            .isInstanceOf(MisuseException.class).hasMessageContaining("script element");
         assertThatThrownBy(() -> Md.of(null).emptyHint("x").addAction(null))
-            .isInstanceOf(NullPointerException.class).hasMessageContaining("action");
+            .isInstanceOf(MisuseException.class).hasMessage("Md.addAction(action): was not given");
     }
 
     /**
@@ -105,19 +105,19 @@ class MdTest {
         assertThat(Md.of("text").build().asMap()).doesNotContainKey("linkRel");
 
         assertThatThrownBy(() -> Md.of("text").linkRel())
-            .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("without a value");
+            .isInstanceOf(MisuseException.class).hasMessageContaining("name at least one");
         assertThatThrownBy(() -> Md.of("text").linkRel(Rel.UGC, null))
-            .isInstanceOf(NullPointerException.class).hasMessageContaining("rel values");
+            .isInstanceOf(MisuseException.class).hasMessageContaining("one of them");
     }
 
     /** A policy over a text that is not there applies to nothing, and is refused rather than carried. */
     @Test
     void aPolicyWithoutATextAppliesToNothing() {
         assertThatThrownBy(() -> Md.of(null).emptyHint("Nothing yet").linkRel(Rel.UGC).build())
-            .isInstanceOf(IllegalStateException.class).hasMessageContaining("no text");
+            .isInstanceOf(MisuseException.class).hasMessageContaining("no text");
         assertThatThrownBy(() -> Md.of("  ").linkRel(Rel.UGC).build())
             .as("blank is the same absence here as anywhere in this element")
-            .isInstanceOf(IllegalStateException.class).hasMessageContaining("no text");
+            .isInstanceOf(MisuseException.class).hasMessageContaining("no text");
     }
 
     /** A block of text is a value: two written the same way are the same block. */

@@ -6,7 +6,6 @@ package io.thymekit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 import java.util.TreeSet;
 
 /**
@@ -60,19 +59,20 @@ public final class Outline {
         });
 
         if (h1.size() > 1) {
-            throw new IllegalStateException("more than one H1 on the page: " + h1
+            throw new UnsoundPageException("Outline.requireSound", "more than one H1 on the page: " + h1
                 + " — the title of a page is one thing; sections start at h2");
         }
         if (levels.isEmpty()) {
             return;
         }
         if (levels.first() < 1 || levels.last() > 6) {
-            throw new IllegalStateException("heading level outside h1..h6 on the page: " + levels
+            throw new UnsoundPageException("Outline.requireSound", "heading level outside h1..h6 on the page: " + levels
                 + " — html has six, and the adapter renders nothing at all for anything else");
         }
         for (int level = levels.first(); level < levels.last(); level++) {
             if (!levels.contains(level + 1)) {
-                throw new IllegalStateException("heading level h" + (level + 1) + " is missing on a page that uses "
+                throw new UnsoundPageException("Outline.requireSound",
+                    "heading level h" + (level + 1) + " is missing on a page that uses "
                     + levels + " — an outline with a hole in it is a page a screen reader falls through");
             }
         }

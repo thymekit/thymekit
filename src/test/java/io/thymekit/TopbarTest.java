@@ -5,7 +5,6 @@ package io.thymekit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 import java.util.List;
 import java.util.Set;
@@ -148,26 +147,27 @@ class TopbarTest {
     /** A bar with no trail is a bar with nothing in it. */
     @Test
     void refusesABarWithNoTrail() {
-        assertThatNullPointerException().isThrownBy(() -> Topbar.of(null)).withMessageContaining("crumbs");
+        assertThatExceptionOfType(MisuseException.class).isThrownBy(() -> Topbar.of(null))
+            .withMessage("Topbar.of(crumbs): was not given");
     }
 
     /** A way back with nothing written on it is a link nobody can read. */
     @Test
     void refusesAWayBackWithNoWords() {
-        assertThatExceptionOfType(IllegalArgumentException.class)
+        assertThatExceptionOfType(MisuseException.class)
             .isThrownBy(() -> Topbar.of(trail().current("Aloe")).back("/x", " "))
-            .withMessageContaining("label");
-        assertThatNullPointerException()
+            .withMessage("Topbar.back(label): is blank — a page shows what it was given, and this is nothing");
+        assertThatExceptionOfType(MisuseException.class)
             .isThrownBy(() -> Topbar.of(trail().current("Aloe")).back("/x", null))
-            .withMessageContaining("label");
+            .withMessage("Topbar.back(label): was not given");
     }
 
     /** And one with nowhere to go is not a way back. */
     @Test
     void refusesAWayBackWithNoAddress() {
-        assertThatExceptionOfType(IllegalArgumentException.class)
+        assertThatExceptionOfType(MisuseException.class)
             .isThrownBy(() -> Topbar.of(trail().current("Aloe")).back(" ", "Back"))
-            .withMessageContaining("href");
+            .withMessage("Topbar.back(href): is blank — a page shows what it was given, and this is nothing");
     }
 
     /**
@@ -177,7 +177,7 @@ class TopbarTest {
      */
     @Test
     void refusesAWayBackThatExecutesInsteadOfNavigating() {
-        assertThatExceptionOfType(IllegalArgumentException.class)
+        assertThatExceptionOfType(MisuseException.class)
             .isThrownBy(() -> Topbar.of(trail().current("Aloe")).back("java\tscript:alert(1)", "Back"))
             .withMessageContaining("script");
     }

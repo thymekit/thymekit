@@ -32,8 +32,8 @@ public final class Section {
 
     /** A section under a heading of the level the outline calls for. */
     public static Builder of(Composable<Heading> heading) {
-        Element<Heading> settled = Element.settle(heading, "heading");
-        Element.requireAdapter(settled, "headingEl", "Section.of accepts a heading only");
+        Element<Heading> settled = Element.settle(heading, "Section.of(heading)");
+        Element.requireAdapter(settled, "headingEl", "Section.of(heading)");
         return new Builder(settled);
     }
 
@@ -49,7 +49,8 @@ public final class Section {
 
         /** Appends to the flow of the section, in call order. */
         public Builder add(Composable<?> element) {
-            items.add(Element.requireRenderableElement(Element.settle(element, "element"), "Section.add"));
+            items.add(Element.requireRenderableElement(
+                Element.settle(element, "Section.add(element)"), "Section.add(element)"));
             return this;
         }
 

@@ -67,20 +67,21 @@ class PageModelTest {
         assertThat(PageModel.of(model).title("T").render("ingredient-page")).isEqualTo("ingredient-page");
         assertThat(model.asMap()).containsKeys("pageTitle", "head", "page", "assets");
         assertThatThrownBy(() -> PageModel.of(new ConcurrentModel()).title("T").render(null))
-            .isInstanceOf(NullPointerException.class).hasMessageContaining("view");
+            .isInstanceOf(MisuseException.class).hasMessage("PageModel.render(view): was not given");
     }
 
     /** An unnamed browser tab is always a mistake, so a page without a title does not render. */
     @Test
     void aPageWithoutATitleDoesNotRender() {
         assertThatThrownBy(() -> PageModel.of(model).add(Heading.h1("Baobab")).render())
-            .isInstanceOf(IllegalStateException.class).hasMessageContaining("title");
+            .isInstanceOf(MisuseException.class).hasMessageContaining("title");
         assertThatThrownBy(() -> PageModel.of(model).title(null))
-            .isInstanceOf(NullPointerException.class).hasMessageContaining("title");
+            .isInstanceOf(MisuseException.class).hasMessage("Canvas.title(title): was not given");
         assertThatThrownBy(() -> PageModel.of(model).title("   "))
-            .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("title");
+            .isInstanceOf(MisuseException.class)
+                .hasMessage("Canvas.title(title): is blank — a page shows what it was given, and this is nothing");
         assertThatThrownBy(() -> PageModel.of(null))
-            .isInstanceOf(NullPointerException.class).hasMessageContaining("model");
+            .isInstanceOf(MisuseException.class).hasMessage("PageModel.of(model): was not given");
     }
 
     /**
@@ -98,9 +99,9 @@ class PageModelTest {
 
         PageModel.Canvas canvas = PageModel.of(new ConcurrentModel()).title("t");
         assertThatThrownBy(() -> canvas.description(" "))
-            .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("description");
+            .isInstanceOf(MisuseException.class).hasMessageContaining("description");
         assertThatThrownBy(() -> canvas.description(null))
-            .isInstanceOf(NullPointerException.class).hasMessageContaining("description");
+            .isInstanceOf(MisuseException.class).hasMessageContaining("description");
     }
 
     /** Said nothing, printed nothing: the head carries what it was told and no empty tags. */
@@ -130,13 +131,13 @@ class PageModelTest {
         for (String relative : List.of("/ingredients/baobab", "ingredients/baobab", "//shop/img.jpg",
                 "ftp://shop/img.jpg")) {
             assertThatThrownBy(() -> canvas.canonical(relative))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(MisuseException.class)
                 .hasMessageContaining("canonical").hasMessageContaining(relative);
-            assertThatThrownBy(() -> canvas.image(relative)).isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> canvas.image(relative)).isInstanceOf(MisuseException.class);
         }
         assertThatCode(() -> canvas.canonical("HTTP://shop/x").image("HTTPS://shop/i.jpg"))
             .as("the scheme is not case-sensitive").doesNotThrowAnyException();
-        assertThatThrownBy(() -> canvas.canonical(null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> canvas.canonical(null)).isInstanceOf(MisuseException.class);
     }
 
     /** What a crawler may do: said as it was said, in the order it was said, without repetitions. */
@@ -152,9 +153,9 @@ class PageModelTest {
 
         PageModel.Canvas canvas = PageModel.of(new ConcurrentModel()).title("t");
         assertThatThrownBy(canvas::robots)
-            .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("without a directive");
+            .isInstanceOf(MisuseException.class).hasMessageContaining("without a directive");
         assertThatThrownBy(() -> canvas.robots((PageModel.Robots[]) null))
-            .isInstanceOf(NullPointerException.class);
+            .isInstanceOf(MisuseException.class);
         assertThat(PageModel.Robots.MAX_IMAGE_PREVIEW_LARGE.directive()).isEqualTo("max-image-preview:large");
     }
 
@@ -193,9 +194,10 @@ class PageModelTest {
             .containsEntry("pageClass", "second page-canvas");
 
         PageModel.Canvas canvas = PageModel.of(new ConcurrentModel()).title("t");
-        assertThatThrownBy(() -> canvas.pageClass(" "))
-            .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("classes");
-        assertThatThrownBy(() -> canvas.pageClass(null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> canvas.pageClass(" ")).isInstanceOf(MisuseException.class)
+            .hasMessage("Canvas.pageClass(classes): is blank — a page shows what it was given, "
+                + "and this is nothing");
+        assertThatThrownBy(() -> canvas.pageClass(null)).isInstanceOf(MisuseException.class);
     }
 
     /** The canvas knows no list of bricks: whatever becomes an element goes on it, in the order added. */
@@ -227,9 +229,9 @@ class PageModelTest {
         assertThat(model.asMap().get("assets")).isEqualTo(List.of(script.asMap()));
 
         assertThatThrownBy(() -> PageModel.of(new ConcurrentModel()).title("t").add(Element.script("t", "js")))
-            .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("requires()");
+            .isInstanceOf(MisuseException.class).hasMessageContaining("requires()");
         assertThatThrownBy(() -> PageModel.of(new ConcurrentModel()).title("t").add(null))
-            .isInstanceOf(NullPointerException.class).hasMessageContaining("element");
+            .isInstanceOf(MisuseException.class).hasMessage("PageModel.add(element): was not given");
     }
 
     /**
@@ -240,11 +242,11 @@ class PageModelTest {
     void thePageIsAskedTheTwoQuestionsNoElementCanAnswer() {
         assertThatThrownBy(() -> PageModel.of(new ConcurrentModel()).title("t")
                 .add(Heading.h1("The page")).add(Heading.h1("And another")).render())
-            .isInstanceOf(IllegalStateException.class).hasMessageContaining("more than one H1");
+            .isInstanceOf(UnsoundPageException.class).hasMessageContaining("more than one H1");
 
         assertThatThrownBy(() -> PageModel.of(new ConcurrentModel()).title("t")
                 .add(Heading.h2("Composition").id("composition"))
                 .add(Heading.h3("Also composition").id("composition")).render())
-            .isInstanceOf(IllegalStateException.class).hasMessageContaining("answer to the anchor");
+            .isInstanceOf(UnsoundPageException.class).hasMessageContaining("answer to the anchor");
     }
 }

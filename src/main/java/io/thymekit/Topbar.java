@@ -29,7 +29,7 @@ public final class Topbar {
 
     /** The bar around a trail. The trail is what the bar is for, so there is no bar without one. */
     public static Builder of(Composable<Breadcrumbs> crumbs) {
-        return new Builder(Element.settle(crumbs, "crumbs"));
+        return new Builder(Element.settle(crumbs, "Topbar.of(crumbs)"));
     }
 
     /**
@@ -58,7 +58,8 @@ public final class Topbar {
          * "All ingredients" — is what somebody hears who cannot see the trail beside it.
          */
         public Builder back(String href, String label) {
-            this.back = new Back(Element.requireNavigable(href, "href"), Element.requireText(label, "label"));
+            this.back = new Back(Element.requireNavigable(href, "Topbar.back(href)"),
+                Element.requireText(label, "Topbar.back(label)"));
             return this;
         }
 

@@ -43,15 +43,15 @@ class ElementDescriptorTest {
 
         for (String notAnAddress : List.of("", " ", "t :: f", "t' + ${T(java.lang.Runtime)} + '", "-t", "t\n")) {
             assertThatThrownBy(() -> Element.raw(notAnAddress, "cardEl"))
-                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("adapter address");
+                .isInstanceOf(MisuseException.class).hasMessageContaining("adapter address");
             assertThatThrownBy(() -> Element.raw("t", notAnAddress))
-                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("adapter address");
+                .isInstanceOf(MisuseException.class).hasMessageContaining("adapter address");
         }
-        assertThatThrownBy(() -> Element.raw("t", "card-el")).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> Element.raw(null, "cardEl")).isInstanceOf(NullPointerException.class)
-            .hasMessageContaining("template");
-        assertThatThrownBy(() -> Element.script("t", null)).isInstanceOf(NullPointerException.class)
-            .hasMessageContaining("fragment");
+        assertThatThrownBy(() -> Element.raw("t", "card-el")).isInstanceOf(MisuseException.class);
+        assertThatThrownBy(() -> Element.raw(null, "cardEl")).isInstanceOf(MisuseException.class)
+            .hasMessage("Descriptor(template): was not given");
+        assertThatThrownBy(() -> Element.script("t", null)).isInstanceOf(MisuseException.class)
+            .hasMessage("Descriptor(fragment): was not given");
     }
 
     /** Data is whatever the adapter reads; the keys the engine uses for itself are not on offer. */
@@ -61,12 +61,13 @@ class ElementDescriptorTest {
 
         for (String reserved : List.of("template", "fragment", "bare", "slots", "assets", "illustration")) {
             assertThatThrownBy(() -> maker.with(reserved, "x"))
-                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining(reserved);
+                .isInstanceOf(MisuseException.class).hasMessageContaining(reserved);
         }
-        assertThatThrownBy(() -> maker.with(null, "x")).isInstanceOf(NullPointerException.class)
-            .hasMessageContaining("key");
-        assertThatThrownBy(() -> maker.with("title", null)).isInstanceOf(NullPointerException.class)
-            .hasMessageContaining("title");
+        assertThatThrownBy(() -> maker.with(null, "x")).isInstanceOf(MisuseException.class)
+            .hasMessage("Descriptor.with(key): was not given");
+        assertThatThrownBy(() -> maker.with("title", null)).isInstanceOf(MisuseException.class)
+            .as("the key is in the message; the place stays the call, or nothing can route on it")
+            .hasMessage("Descriptor.with(value): the value of key \"title\" was not given");
     }
 
     /**
@@ -112,12 +113,12 @@ class ElementDescriptorTest {
             Heading.h2("Title").build().asMap(), Caption.meta("12 entries").build().asMap());
         assertThat(section.slotNames()).containsExactly("items", "footer");
 
-        assertThatThrownBy(() -> maker.slot(null, List.of())).isInstanceOf(NullPointerException.class)
-            .hasMessageContaining("name");
-        assertThatThrownBy(() -> maker.slot("items", null)).isInstanceOf(NullPointerException.class)
-            .hasMessageContaining("items");
+        assertThatThrownBy(() -> maker.slot(null, List.of())).isInstanceOf(MisuseException.class)
+            .hasMessage("Descriptor.slot(name): was not given");
+        assertThatThrownBy(() -> maker.slot("items", null)).isInstanceOf(MisuseException.class)
+            .hasMessage("Descriptor.slot(items): was not given");
         assertThatThrownBy(() -> maker.slot("items", Arrays.asList(Heading.h2("x"), null)))
-            .isInstanceOf(NullPointerException.class).hasMessageContaining("slot item");
+            .isInstanceOf(MisuseException.class).hasMessageContaining("Descriptor.slot(items) — one of them");
     }
 
     /** A dependency is a script element and nothing else: anything else would be rendered as an adapter. */
@@ -131,11 +132,12 @@ class ElementDescriptorTest {
         Element<Element.Script> wearsTheMarker =
             Element.Descriptor.<Element.Script>of("fragments/my/card", "notAScriptEl").build();
         assertThatThrownBy(() -> Element.raw("t", "cardEl").requires(wearsTheMarker))
-            .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("script element");
+            .isInstanceOf(MisuseException.class).hasMessageContaining("script element");
         assertThatThrownBy(() -> Element.raw("t", "cardEl").requires((Element<Element.Script>[]) null))
-            .isInstanceOf(NullPointerException.class).hasMessageContaining("scripts");
+            .isInstanceOf(MisuseException.class).hasMessage("Descriptor.requires(scripts): was not given");
         assertThatThrownBy(() -> Element.raw("t", "cardEl").requires(js, null))
-            .isInstanceOf(NullPointerException.class).hasMessageContaining("script");
+            .isInstanceOf(MisuseException.class)
+            .hasMessage("Descriptor.requires(scripts) — one of them: was not given");
     }
 
     /** An illustration is a sample framed for display, and says so in the descriptor. */

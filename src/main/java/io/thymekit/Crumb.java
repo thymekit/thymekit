@@ -34,15 +34,15 @@ import org.jspecify.annotations.Nullable;
 record Crumb(@Nullable String url, String label) {
 
     Crumb {
-        Element.requireText(label, "label");
+        Element.requireText(label, "Crumb(label)");
         if (url != null) {
-            Element.requireNavigable(url, "url");
+            Element.requireNavigable(url, "Crumb(url)");
         }
     }
 
     /** A step above this page: where it goes, and what it is called. */
     static Crumb link(String url, String label) {
-        return new Crumb(Element.requireNavigable(url, "url"), label);
+        return new Crumb(Element.requireNavigable(url, "Crumb.link(url)"), label);
     }
 
     /** The page the trail ends at: named, and going nowhere. */

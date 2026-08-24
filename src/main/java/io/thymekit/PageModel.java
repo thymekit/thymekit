@@ -8,7 +8,6 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
@@ -56,7 +55,7 @@ public final class PageModel {
 
     /** A page canvas. */
     public static Canvas of(Model model) {
-        return new Builder(Objects.requireNonNull(model, "model"));
+        return new Builder(Element.required(model, "PageModel.of(model)"));
     }
 
     /**
@@ -179,39 +178,39 @@ public final class PageModel {
 
         @Override
         public Canvas pageClass(String classes) {
-            this.pageClass = require(classes, "classes") + " " + CANVAS;
+            this.pageClass = require(classes, "Canvas.pageClass(classes)") + " " + CANVAS;
             return this;
         }
 
         @Override
         public Canvas title(String title) {
-            this.title = require(title, "title");
+            this.title = require(title, "Canvas.title(title)");
             return this;
         }
 
         @Override
         public Canvas description(String description) {
-            this.description = require(description, "description");
+            this.description = require(description, "Canvas.description(description)");
             return this;
         }
 
         @Override
         public Canvas canonical(String url) {
-            this.canonical = Element.requireAbsolute(url, "canonical");
+            this.canonical = Element.requireAbsolute(url, "Canvas.canonical(url)");
             return this;
         }
 
         @Override
         public Canvas image(String url) {
-            this.image = Element.requireAbsolute(url, "image");
+            this.image = Element.requireAbsolute(url, "Canvas.image(url)");
             return this;
         }
 
         @Override
         public Canvas robots(Robots... directives) {
-            Objects.requireNonNull(directives, "directives");
+            Element.required(directives, "PageModel.robots(directives)");
             if (directives.length == 0) {
-                throw new IllegalArgumentException("robots without a directive: say what a crawler may not do, "
+                throw new MisuseException("PageModel.robots", "without a directive: say what a crawler may not do, "
                     + "or do not call robots at all");
             }
             this.robots = new LinkedHashSet<>(List.of(directives));
@@ -225,14 +224,14 @@ public final class PageModel {
          * result and the link preview alike — while a space inside a caption or a heading is content,
          * and content is nobody's to tidy.
          */
-        private static String require(String value, String name) {
-            return Element.requireText(value, name).strip();
+        private static String require(String value, String where) {
+            return Element.requireText(value, where).strip();
         }
 
         @Override
         public Canvas add(Composable<?> element) {
-            Element<?> settled = Element.settle(element, "element");
-            Element.requireRenderable(settled, "PageModel.add");
+            Element<?> settled = Element.settle(element, "PageModel.add(element)");
+            Element.requireRenderable(settled, "PageModel.add(element)");
             elements.add(settled);
             return this;
         }
@@ -324,9 +323,9 @@ public final class PageModel {
 
         @Override
         public String render(String view) {
-            Objects.requireNonNull(view, "view");
+            Element.required(view, "PageModel.render(view)");
             if (title == null) {
-                throw new IllegalStateException("page without a title: call title(...) before render()");
+                throw new MisuseException("PageModel.render", "page without a title: call title(...) before render()");
             }
             Outline.requireSound(elements);
             Anchors.requireDistinct(elements);

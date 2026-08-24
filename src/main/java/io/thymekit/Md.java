@@ -4,7 +4,6 @@
 package io.thymekit;
 
 import java.util.LinkedHashSet;
-import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -60,7 +59,7 @@ public final class Md {
          * is: a hint with nothing in it is an empty box where an explanation was meant to be.
          */
         public Builder emptyHint(String hint) {
-            b.with("emptyHint", Element.requireText(hint, "emptyHint"));
+            b.with("emptyHint", Element.requireText(hint, "Md.emptyHint(hint)"));
             hasHint = true;
             return this;
         }
@@ -70,7 +69,8 @@ public final class Md {
          * The block does not know what it is, so the wording and the shape stay with the consumer.
          */
         public Builder addAction(Composable<?> action) {
-            b.with("addAction", Element.requireRenderableElement(Element.settle(action, "action"), "Md.addAction").asMap());
+            b.with("addAction", Element.requireRenderableElement(
+                Element.settle(action, "Md.addAction(action)"), "Md.addAction(action)").asMap());
             hasAction = true;
             return this;
         }
@@ -93,12 +93,12 @@ public final class Md {
         @Override
         public Element<Md> build() {
             if (hasAction && (hasText || !hasHint)) {
-                throw new IllegalStateException("an affordance with nowhere to show it: it stands beside the "
+                throw new MisuseException("Md.build", "an affordance with nowhere to show it: it stands beside the "
                     + "empty state, which needs text that is absent and a hint that is not");
             }
             if (!linkRel.isEmpty()) {
                 if (!hasText) {
-                    throw new IllegalStateException("linkRel on a block with no text: the policy would apply to "
+                    throw new MisuseException("Md.build", "linkRel on a block with no text: the policy would apply to "
                         + "nothing — give the block its markdown, or drop the policy");
                 }
                 b.with("linkRel", Rel.tokens(linkRel));

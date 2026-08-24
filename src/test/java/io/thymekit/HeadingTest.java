@@ -47,10 +47,11 @@ class HeadingTest {
     void aHeadingWithNothingToSayIsRefused() {
         for (String nothing : List.of("", " ", "\t\n  ")) {
             assertThatThrownBy(() -> Heading.h2(nothing))
-                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("text");
+                .isInstanceOf(MisuseException.class)
+                    .hasMessage("Heading(text): is blank — a page shows what it was given, and this is nothing");
         }
         assertThatThrownBy(() -> Heading.h1(null))
-            .isInstanceOf(NullPointerException.class).hasMessageContaining("text");
+            .isInstanceOf(MisuseException.class).hasMessage("Heading(text): was not given");
         assertThat(Heading.h2("  Baobab  ").build().asMap())
             .as("what is written is kept as written").containsEntry("text", "  Baobab  ");
     }
@@ -68,10 +69,10 @@ class HeadingTest {
 
         for (String notAnAnchor : List.of("", "  ", "two words", "with\ttab", "line\nbreak")) {
             assertThatThrownBy(() -> Heading.h2("x").id(notAnAnchor))
-                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("anchor");
+                .isInstanceOf(MisuseException.class).hasMessageContaining("anchor");
         }
         assertThatThrownBy(() -> Heading.h2("x").id(null))
-            .isInstanceOf(NullPointerException.class).hasMessageContaining("id");
+            .isInstanceOf(MisuseException.class).hasMessage("Heading.id(id): was not given");
     }
 
     /**
@@ -89,12 +90,12 @@ class HeadingTest {
         for (String script : List.of("javascript:alert(1)", "JavaScript:alert(1)", " data:text/html,x",
                 "vbscript:x", "java\tscript:alert(1)", "java\nscript:alert(1)", "jav ascript:alert(1)")) {
             assertThatThrownBy(() -> Heading.h2("x").href(script))
-                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("not a link but a script");
+                .isInstanceOf(MisuseException.class).hasMessageContaining("not a link but a script");
         }
         assertThatThrownBy(() -> Heading.h2("x").href("  "))
-            .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("blank");
+            .isInstanceOf(MisuseException.class).hasMessageContaining("blank");
         assertThatThrownBy(() -> Heading.h2("x").href(null))
-            .isInstanceOf(NullPointerException.class).hasMessageContaining("href");
+            .isInstanceOf(MisuseException.class).hasMessage("Heading.href(href): was not given");
     }
 
     /**
@@ -121,11 +122,11 @@ class HeadingTest {
     @Test
     void whatOnlyALinkCanSayIsRefusedWithoutOne() {
         assertThatThrownBy(() -> Heading.h2("x").rel(Rel.UGC).build())
-            .isInstanceOf(IllegalStateException.class).hasMessageContaining("not a link");
+            .isInstanceOf(MisuseException.class).hasMessageContaining("not a link");
         assertThatThrownBy(() -> Heading.h2("x").newTab().build())
-            .isInstanceOf(IllegalStateException.class).hasMessageContaining("not a link");
+            .isInstanceOf(MisuseException.class).hasMessageContaining("not a link");
         assertThatThrownBy(() -> Heading.h2("x").rel())
-            .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("without a value");
+            .isInstanceOf(MisuseException.class).hasMessageContaining("name at least one");
     }
 
     /** The language of the text when it is not the page's, and a heading only a screen reader meets. */
@@ -133,7 +134,7 @@ class HeadingTest {
     void aHeadingMayNameItsLanguageAndMayBeForScreenReadersOnly() {
         assertThat(Heading.h3("Adansonia digitata").lang("la").build().asMap()).containsEntry("lang", "la");
         assertThatThrownBy(() -> Heading.h2("x").lang("по-русски"))
-            .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("language tag");
+            .isInstanceOf(MisuseException.class).hasMessageContaining("language tag");
 
         assertThat(Heading.h2("Navigation").srOnly().build().asMap()).containsEntry("srOnly", true);
     }

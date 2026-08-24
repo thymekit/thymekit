@@ -5,7 +5,6 @@ package io.thymekit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -224,9 +223,9 @@ class JsonTest {
     /** A null argument is a mistake at the call site, and it is named there. */
     @Test
     void refusesANullArgument() {
-        assertThatNullPointerException()
+        assertThatExceptionOfType(MisuseException.class)
             .isThrownBy(() -> Json.write(null))
-            .withMessageContaining("value");
+            .withMessage("Json.write(value): was not given");
     }
 
     /**
@@ -238,7 +237,7 @@ class JsonTest {
         var item = new LinkedHashMap<String, Object>();
         item.put("name", null);
 
-        assertThatExceptionOfType(IllegalArgumentException.class)
+        assertThatExceptionOfType(MisuseException.class)
             .isThrownBy(() -> Json.write(Map.of("itemListElement", List.of(item))))
             .withMessageContaining("itemListElement[0].name");
     }
@@ -249,7 +248,7 @@ class JsonTest {
      */
     @Test
     void refusesATypeItDoesNotAccept() {
-        assertThatExceptionOfType(IllegalArgumentException.class)
+        assertThatExceptionOfType(MisuseException.class)
             .isThrownBy(() -> Json.write(Map.of("date", LocalDate.of(2026, 3, 12))))
             .withMessageContaining("date")
             .withMessageContaining("LocalDate");
@@ -258,7 +257,7 @@ class JsonTest {
     /** Including the near misses: a double looks like a number and is not one of ours. */
     @Test
     void refusesADouble() {
-        assertThatExceptionOfType(IllegalArgumentException.class)
+        assertThatExceptionOfType(MisuseException.class)
             .isThrownBy(() -> Json.write(Map.of("rating", 4.5)))
             .withMessageContaining("rating")
             .withMessageContaining("Double");
@@ -267,7 +266,7 @@ class JsonTest {
     /** A map whose keys are not strings cannot become an object, and is refused as itself. */
     @Test
     void refusesAMapWithNonStringKeys() {
-        assertThatExceptionOfType(IllegalArgumentException.class)
+        assertThatExceptionOfType(MisuseException.class)
             .isThrownBy(() -> Json.write(Map.of(1, "one")))
             .withMessageContaining("Integer");
     }
@@ -281,7 +280,7 @@ class JsonTest {
         var withNullKey = new HashMap<Object, Object>();
         withNullKey.put(null, "orphan");
 
-        assertThatExceptionOfType(IllegalArgumentException.class)
+        assertThatExceptionOfType(MisuseException.class)
             .isThrownBy(() -> Json.write(withNullKey))
             .withMessageContaining("null");
     }
@@ -289,7 +288,7 @@ class JsonTest {
     /** The path is built through lists as well as maps, so a deep mistake is still findable. */
     @Test
     void namesThePathThroughNestedLists() {
-        assertThatExceptionOfType(IllegalArgumentException.class)
+        assertThatExceptionOfType(MisuseException.class)
             .isThrownBy(() -> Json.write(Map.of("a", List.of(List.of(LocalDate.EPOCH)))))
             .withMessageContaining("a[0][0]");
     }

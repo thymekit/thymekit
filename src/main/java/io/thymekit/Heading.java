@@ -5,7 +5,6 @@ package io.thymekit;
 
 import java.util.LinkedHashSet;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
@@ -86,7 +85,7 @@ public final class Heading {
         private Builder(int level, String text) {
             this.b = Element.Descriptor.<Heading>of("thymekit/heading", "headingEl")
                 .with("level", level)
-                .with("text", Element.requireText(text, "text"));
+                .with("text", Element.requireText(text, "Heading(text)"));
         }
 
         /**
@@ -108,7 +107,7 @@ public final class Heading {
          * is the last place any of them can be stopped before the page.
          */
         public Builder href(String href) {
-            b.with("href", Element.requireNavigable(href, "href"));
+            b.with("href", Element.requireNavigable(href, "Heading.href(href)"));
             linked = true;
             return this;
         }
@@ -137,7 +136,7 @@ public final class Heading {
          * language it was published in.
          */
         public Builder lang(String languageTag) {
-            b.with("lang", Element.requireTag(languageTag, "languageTag"));
+            b.with("lang", Element.requireTag(languageTag, "Heading.lang(languageTag)"));
             return this;
         }
 
@@ -154,9 +153,9 @@ public final class Heading {
          */
         /** An anchor is one word: given, not empty, and with nothing in it that ends an attribute. */
         private static String anchor(String id) {
-            Objects.requireNonNull(id, "id");
+            Element.required(id, "Heading.id(id)");
             if (id.isBlank() || BREAKS_AN_ANCHOR.matcher(id).find()) {
-                throw new IllegalArgumentException("not an anchor: \"" + id + "\" — an address inside a "
+                throw new MisuseException("Heading.id(id)", "not an anchor: \"" + id + "\" — an address inside a "
                     + "page holds together as one word, and an attribute keeps only what comes before "
                     + "the first space");
             }
@@ -166,7 +165,7 @@ public final class Heading {
         @Override
         public Element<Heading> build() {
             if (!linked && (newTab || !rel.isEmpty())) {
-                throw new IllegalStateException("rel or newTab on a heading that is not a link: "
+                throw new MisuseException("Heading.build", "rel or newTab on a heading that is not a link: "
                     + "call href(...) as well, or drop them — an attribute with no <a> to sit on is printed nowhere");
             }
             Set<Rel> values = newTab ? Rel.forNewTab(rel) : rel;   // a copy: the builder is left as it was

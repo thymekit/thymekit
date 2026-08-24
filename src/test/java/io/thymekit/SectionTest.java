@@ -42,15 +42,15 @@ class SectionTest {
     @Test
     void thereIsNoSectionWithoutAHeading() {
         assertThatThrownBy(() -> Section.of(null))
-            .isInstanceOf(NullPointerException.class).hasMessageContaining("heading");
+            .isInstanceOf(MisuseException.class).hasMessage("Section.of(heading): was not given");
         assertThatThrownBy(() -> Section.of(() -> null))
-            .isInstanceOf(NullPointerException.class).hasMessageContaining("built nothing");
+            .isInstanceOf(MisuseException.class).hasMessageContaining("built nothing");
 
         @SuppressWarnings("unchecked")
         Composable<Heading> notAHeading = (Composable<Heading>) (Composable<?>) Caption.label("Composition");
         assertThatThrownBy(() -> Section.of(notAHeading))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("heading only").hasMessageContaining("captionEl");
+            .isInstanceOf(MisuseException.class).hasMessageStartingWith("Section.of(heading):")
+            .hasMessageContaining("headingEl").hasMessageContaining("captionEl");
     }
 
     /** A heading alone is a section: whether there is anything worth showing is the consumer's to know. */
@@ -79,10 +79,10 @@ class SectionTest {
     @Test
     void aScriptIsNotWhatGoesUnderAHeading() {
         assertThatThrownBy(() -> Section.of(Heading.h2("Composition")).add(Element.script("t", "myJs")))
-            .isInstanceOf(IllegalArgumentException.class)
+            .isInstanceOf(MisuseException.class)
             .hasMessageContaining("Section.add").hasMessageContaining("requires()");
         assertThatThrownBy(() -> Section.of(Heading.h2("Composition")).add(null))
-            .isInstanceOf(NullPointerException.class).hasMessageContaining("element");
+            .isInstanceOf(MisuseException.class).hasMessage("Section.add(element): was not given");
     }
 
     /** A maker may go on being written, and the section that was built does not follow it. */

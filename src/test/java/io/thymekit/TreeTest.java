@@ -5,6 +5,7 @@ package io.thymekit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -49,9 +50,27 @@ class TreeTest {
         assertThat(stopped).as("what the visitor refuses to enter stays unvisited")
             .containsExactly("pageEl", "frameEl");
 
-        assertThatCode(() -> Tree.walk(null, descriptor -> true)).doesNotThrowAnyException();
         assertThatCode(() -> Tree.walk(java.util.Arrays.asList(page, null, "not a descriptor", 42),
-            descriptor -> true)).doesNotThrowAnyException();
+            descriptor -> true)).as("a hole inside a page is what the page carries, not a mistake at this call")
+            .doesNotThrowAnyException();
+    }
+
+    /**
+     * What was handed to the walk is another matter, and this expectation used to say the opposite: a
+     * null page walked to nothing and said nothing. A check written over it then checks nothing and
+     * passes, which is the exact failure this class exists to warn about, one line into its own comment.
+     * A hole <i>inside</i> a page stays what it was — the page's business — and the case above keeps it.
+     */
+    @Test
+    void whatIsHandedToTheWalkIsRequired() {
+        assertThatThrownBy(() -> Tree.walk(null, descriptor -> true))
+            .isInstanceOf(MisuseException.class).hasMessage("Tree.walk(node): was not given");
+        assertThatThrownBy(() -> Tree.walk(List.of(), null))
+            .isInstanceOf(MisuseException.class).hasMessage("Tree.walk(visit): was not given");
+        assertThatThrownBy(() -> Tree.assetsOf(null))
+            .isInstanceOf(MisuseException.class).hasMessage("Tree.assetsOf(roots): was not given");
+        assertThatThrownBy(() -> Tree.describedBy(null))
+            .isInstanceOf(MisuseException.class).hasMessage("Tree.describedBy(roots): was not given");
     }
 
     private static Element<Object> describing(String name, Map<String, ?> node) {

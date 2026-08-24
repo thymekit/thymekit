@@ -54,7 +54,12 @@ public final class Demo {
     private static String version() {
         var properties = new java.util.Properties();
         try (var in = Demo.class.getResourceAsStream("/thymekit/version.properties")) {
-            properties.load(java.util.Objects.requireNonNull(in, "thymekit/version.properties"));
+            if (in == null) {
+                throw new io.thymekit.MisuseException("Demo.version",
+                    "thymekit/version.properties is not on the classpath: the build writes it, "
+                    + "and a jar without it cannot say which version it is");
+            }
+            properties.load(in);
         } catch (java.io.IOException unreadable) {
             throw new java.io.UncheckedIOException("cannot read the version of the kit", unreadable);
         }
