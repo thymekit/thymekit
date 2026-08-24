@@ -52,6 +52,13 @@ tasks.register('verify') {
 // dependsOn does not order, it only requires; without this the delete can land in the middle.
 tasks.matching { it.name != 'clean' }.configureEach { mustRunAfter tasks.named('clean') }
 
+// The one place the version is written is this file, so the page that states it reads it from here
+// rather than repeating it. A number a page says about itself and nothing checks is a number that
+// drifts — this one had, by two releases, before anybody looked.
+tasks.named('processResources') {
+    filesMatching('thymekit/version.properties') { expand(version: project.version) }
+}
+
 repositories { mavenCentral() }
 
 dependencies {
