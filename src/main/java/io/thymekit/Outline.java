@@ -27,8 +27,8 @@ import java.util.TreeSet;
  * it. An illustration is skipped: a sample framed for display is not the structure of the page it sits
  * on. A page with no headings is legal.
  *
- * <p>This class knows how to walk a tree of elements and what an outline must be, and it knows no
- * descriptor keys at all: whether something is a heading, and at what level, is {@link Heading}'s to
+ * <p>This class knows what an outline must be and nothing else — the walking is {@link Tree}'s — and
+ * it knows no descriptor keys at all: whether something is a heading, and at what level, is {@link Heading}'s to
  * say, and what counts as an illustration is {@link Element}'s. That is the whole reason it lives on
  * its own — the currency of composition should not know the name of one element's adapter.
  *
@@ -45,7 +45,7 @@ public final class Outline {
     public static void requireSound(Collection<?> roots) {
         List<String> h1 = new ArrayList<>();
         TreeSet<Integer> levels = new TreeSet<>();
-        Element.walk(roots, descriptor -> {
+        Tree.walk(roots, descriptor -> {
             if (Element.isIllustration(descriptor)) {
                 return false;                       // a sample framed for display is not the page
             }

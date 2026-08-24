@@ -4,7 +4,6 @@
 package io.thymekit;
 
 import java.util.LinkedHashSet;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -21,19 +20,6 @@ import org.jspecify.annotations.Nullable;
  */
 public final class Heading {
 
-    /**
-     * Everything a browser throws away before it reads the scheme of an address: spaces, tabs, newlines
-     * and control characters. {@code java\tscript:} is {@code javascript:} by the time it is followed,
-     * so the guard has to look at the address the same way.
-     */
-    private static final Pattern IGNORED_IN_SCHEME = Pattern.compile("[\\s\\p{Cntrl}]");
-
-    /**
-     * Schemes that execute instead of navigating. {@code blob:} and {@code file:} are not here: they
-     * navigate, and a heading is not where either becomes dangerous.
-     */
-    private static final Set<String> EXECUTING_SCHEMES = Set.of("javascript:", "data:", "vbscript:");
-
     /** An anchor is an address inside a page: whatever it is made of, it holds together as one word. */
     private static final Pattern BREAKS_AN_ANCHOR = Pattern.compile("\\s");
 
@@ -44,7 +30,7 @@ public final class Heading {
      *
      * <p>Recognising a heading is this element's business and nobody else's: it owns the adapter, so it
      * owns the name of it. The outline of a page asks here rather than knowing the answer, and so may a
-     * check of yours walking a page with {@link Element#walk} — the three readers below are published
+     * check of yours walking a page with {@link Tree#walk} — the three readers below are published
      * together, since a check that can read the text of a heading but not its level is half a gift.
      *
      * <p>A level counts however it was written — as a number or as text. The factories above always
@@ -122,17 +108,7 @@ public final class Heading {
          * is the last place any of them can be stopped before the page.
          */
         public Builder href(String href) {
-            String value = Objects.requireNonNull(href, "href").strip();
-            if (value.isEmpty()) {
-                throw new IllegalArgumentException("href is blank");
-            }
-            String asFollowed = IGNORED_IN_SCHEME.matcher(value).replaceAll("").toLowerCase(Locale.ROOT);
-            for (String executing : EXECUTING_SCHEMES) {
-                if (asFollowed.startsWith(executing)) {
-                    throw new IllegalArgumentException("href is not a link but a script: \"" + href + "\"");
-                }
-            }
-            b.with("href", value);
+            b.with("href", Element.requireNavigable(href, "href"));
             linked = true;
             return this;
         }

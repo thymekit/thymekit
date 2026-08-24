@@ -1,0 +1,26 @@
+<!--/* This Source Code Form is subject to the terms of the Mozilla Public
+       License, v. 2.0. If a copy of the MPL was not distributed with this
+       file, You can obtain one at https://mozilla.org/MPL/2.0/. */-->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+
+<!--/* topbar: a way back, and the trail. A plain wrapper and not a landmark of its own — the trail
+       brings the only one this bar needs, and a second would split the navigation in two for no gain.
+
+       The way back is printed before the trail is rendered, so it stands outside that landmark. Inside
+       it, it would be announced as a step of a navigation it is not part of and would be missing from
+       the graph.
+
+       The mark beside the words is decoration: the glyph comes from a handle, and the element carrying
+       it says aria-hidden so it is not read out. */-->
+<!--/* keys: crumbs, backHref, backLabel */-->
+<div th:fragment="topbarEl(e)" class="tk-topbar">
+    <a th:if="${e['backHref'] != null}" class="tk-topbar-back" th:href="${e['backHref']}"
+       ><span class="tk-topbar-back-mark" aria-hidden="true"></span
+       ><th:block th:text="${e['backLabel']}">Back</th:block></a>
+    <th:block th:replace="~{thymekit/element :: render(${e['crumbs']})}"/>
+</div>
+
+</body>
+</html>

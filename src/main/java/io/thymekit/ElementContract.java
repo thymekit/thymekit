@@ -183,7 +183,8 @@ public final class ElementContract {
             declaresItself(element, template, address, failures);
             declarationMatches(element, template, address, failures,
                 declaredByAdapter, carriedByAdapter, slotsDeclaredByAdapter, slotsFilledByAdapter);
-            for (Element<Element.Script> asset : element.assets()) {   // requires() already refuses anything but a script
+            // requires() already refuses anything but a script
+            for (Element<Element.Script> asset : Tree.assetsOf(List.of(element))) {
                 declaresItself(asset, read(asset.template() + ".html"),
                     address + " — its script " + asset.template() + " :: " + asset.fragment(), failures);
             }
@@ -418,14 +419,26 @@ public final class ElementContract {
     private @Nullable String read(String resource) {
         for (String root : templateRoots) {
             String candidate = root + resource;
-            try (InputStream in = ElementContract.class.getClassLoader().getResourceAsStream(candidate)) {
-                if (in != null) {
-                    return new String(in.readAllBytes(), StandardCharsets.UTF_8);
-                }
-            } catch (IOException unreadable) {   // a resource that exists and cannot be read is not a verdict to swallow
-                throw new UncheckedIOException("cannot read " + candidate, unreadable);
+            InputStream in = ElementContract.class.getClassLoader().getResourceAsStream(candidate);
+            if (in != null) {
+                return textOf(in, candidate);
             }
         }
         return null;
+    }
+
+    /**
+     * The text of a resource that was found. Its own method because the failure it has to handle — a
+     * resource that exists and cannot be read — is unreachable through a classpath and would otherwise
+     * be a corner nothing ever enters and nothing ever checks. Swallowing it is not an option: a walk
+     * that could not read a template would report the element as declaring nothing, which is a verdict
+     * about the element rather than about the disk.
+     */
+    static String textOf(InputStream found, String candidate) {
+        try (found) {
+            return new String(found.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (IOException unreadable) {
+            throw new UncheckedIOException("cannot read " + candidate, unreadable);
+        }
     }
 }

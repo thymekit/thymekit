@@ -122,39 +122,6 @@ class ElementTest {
         assertThat(plain.asMap()).doesNotContainKey("slots");
     }
 
-    /**
-     * A page is a tree of descriptors, and this is how it is walked: elements, the maps they are, and
-     * collections of either, at any depth. The visitor answers whether to go deeper, so a check of your
-     * own may stop where the page stops being its structure — which is what the kit's own two checks do,
-     * one of them stopping at an illustration and the other not.
-     */
-    @Test
-    void theTreeOfAPageIsWalkedFromHere() {
-        Element<Element.Raw> deep = Element.raw("t", "aEl").with("title", "deep").build();
-        Element<Element.Raw> frame = Element.raw("t", "frameEl").illustration()
-            .slot("items", List.of(deep)).build();
-        Element<Element.Raw> page = Element.raw("t", "pageEl").slot("items", List.of(frame)).build();
-
-        var seen = new ArrayList<String>();
-        Element.walk(List.of(page), descriptor -> {
-            seen.add(String.valueOf(descriptor.get("fragment")));
-            return true;
-        });
-        assertThat(seen).containsExactly("pageEl", "frameEl", "aEl");
-
-        var stopped = new ArrayList<String>();
-        Element.walk(List.of(page), descriptor -> {
-            stopped.add(String.valueOf(descriptor.get("fragment")));
-            return !Element.isIllustration(descriptor);
-        });
-        assertThat(stopped).as("what the visitor refuses to enter stays unvisited")
-            .containsExactly("pageEl", "frameEl");
-
-        assertThatCode(() -> Element.walk(null, descriptor -> true)).doesNotThrowAnyException();
-        assertThatCode(() -> Element.walk(java.util.Arrays.asList(page, null, "not a descriptor", 42),
-            descriptor -> true)).doesNotThrowAnyException();
-    }
-
     /** A script element is rendered without an argument, and says which it is. */
     @Test
     void aScriptElementSaysItIsOne() {

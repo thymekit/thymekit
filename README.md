@@ -68,6 +68,17 @@ robots — one source, so a browser tab and an `og:title` cannot come to disagre
 refused, because whoever scrapes your page has no document to resolve it against. A page that declared a
 picture and is not kept out of the index asks for a large preview by itself.
 
+**And what a page means is said in a form a machine reads.** An element may describe itself — a trail
+of links says it is a trail, and says which step is which — and the canvas collects what the page's
+elements said, names the vocabulary once, turns it into text and prints a single block. An element
+never prints its own, and never carries finished markup: it contributes data. Two things follow. The
+escaping that keeps a label from ending the block it is printed inside happens in one place rather than
+wherever somebody remembered it. And an element is in a position to build both halves from one set of
+values, which is what the rules a search engine publishes ask of you and the usual thing to get wrong
+when the two are assembled apart — the trail this kit ships is written that way, and an element of
+yours keeps the property by doing the same. Nothing checks it for you: a contribution is data, and data
+can say anything.
+
 **The output is plain, stateless HTML.** No UI state on the server, nothing to keep per visitor, nothing
 that cannot be cached — and no trace of how the templates were indented.
 
@@ -116,7 +127,7 @@ The core is what would be left if every element were deleted. The kit would ship
 still be a way to compose a page and render it — which is the honest test of what belongs here and what
 merely lives in the same jar.
 
-Seven things:
+Eight things:
 
 | | what it is |
 |---|---|
@@ -126,6 +137,7 @@ Seven things:
 | `thymekit/element` | **the dispatcher — a template, not a class.** One fragment renders everything: `render(e)` for one element, `renderAll(items)` for a flow, `slot(e, name)` for a slot, `scripts(items)` for behaviour. A container names no brick because it calls this |
 | `Outline` | the headings of a whole page: one title, no gap in the levels, none HTML does not have |
 | `Anchors` | the addresses inside a page: no two things answering to one name |
+| `Tree` | walking the tree of a page: the traversal the two checks above are written on, plus what a page yields — the scripts it depends on and what its elements say about themselves for machines |
 | `ElementContract` | the walk over a triple, taken by the kit over its own elements and handed to you for yours |
 
 One member of that list is a template and not a Java class, which is deliberate. The dispatcher has to be
@@ -213,7 +225,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'io.thymekit:thymekit:0.2.0'
+    implementation 'io.thymekit:thymekit:0.3.0'
 }
 ```
 
@@ -452,7 +464,7 @@ flowchart LR
     K --> R
 ```
 
-The last of the four needs naming, because it is the part a reader cannot see in the code. Twenty-three rules
+The last of the four needs naming, because it is the part a reader cannot see in the code. Twenty-five rules
 state what this package is:
 
 - a class that hands out elements is final and cannot be instantiated;
@@ -462,6 +474,7 @@ state what this package is:
 - nor inside a collection, which is holding it too;
 - nothing public is mutable;
 - nothing hidden is written for a caller that does not exist;
+- nor kept for a reader that does not exist, unless the compiler folded it out of sight;
 - what more than one element uses is public, since two users make a policy and not a detail;
 - nothing keeps state beside the call that made it;
 - a cached answer is filed under the whole question: the arguments by position, and the object asked;
@@ -476,6 +489,7 @@ state what this package is:
 - a name the kit puts in somebody else's registry carries the kit's own;
 - no class names another element's adapter, unless it owns it or is asking for one;
 - every adapter address the readme prints leads to a fragment that exists;
+- structured data is printed by the head and by nothing else;
 - the run that judges a commit deletes what the last one left before it starts;
 - and no line of the sources ends in a space.
 
@@ -685,10 +699,13 @@ your elements are built from them too.
 | Hero | `Hero.of(Element<Heading>)` — eyebrow, subtitle, meta lines, a `statusBadgeEl` badge and an `actionsEl` row of your own | `hero :: heroEl` | `hero.css` |
 | Md | `Md.of(markdown)` — nothing written, null or blank, shows the empty state; an action beside it; `linkRel` for the links of somebody else's text | `md :: mdEl` | `md.css` |
 | Section | `Section.of(Composable<Heading>)` — `add(...)` for whatever goes under the heading: a markdown block, a row of cards, another section. Takes its accessible name from the heading's anchor | `section :: sectionEl` | `section.css` |
+| Breadcrumbs | `Breadcrumbs.named(label)` — `add(url, label)` for a step above, `current(label)` for the page you are on and the end of the trail, `site(origin)` to make the addresses a crawler reads absolute. Prints the trail and describes it as a `BreadcrumbList`, both from one list of steps | `breadcrumbs :: breadcrumbsEl` | `breadcrumbs.css` |
+| Topbar | `Topbar.of(Composable<Breadcrumbs>)` — `back(href, label)` for the way back. A plain wrapper, not a second landmark: the way back is printed outside the trail's `<nav>`, and the mark beside it is decoration a screen reader does not read | `topbar :: topbarEl` | `topbar.css` |
 | Canvas | `PageModel.of(model)` — own page classes, flow of elements, `render(view)`; renders as the `page` element | `canvas :: canvasEl` | `canvas.css` |
 | — | `Element<K>` — the currency itself: an address, data, and value semantics. `Element.Descriptor.of(...)` mints one, `Element.raw/script(...)` wrap a fragment of yours, and the guards a host needs — `settle`, `requireAdapter`, `requireRenderable`, `requireTag` — are public beside them | — | — |
 | — | `Outline` — the headings of a page and whether they add up: one H1, no level skipped, none HTML does not have. The canvas checks it before rendering | — | — |
 | — | `Anchors` — the addresses inside a page: no two things answering to one name. Checked by the canvas beside the outline | — | — |
+| — | `Tree` — walking the tree of a page: `Tree.walk(...)` hands every descriptor to a visitor that answers whether to go deeper, `Tree.assetsOf(...)` gathers the scripts a page depends on, `Tree.describedBy(...)` what its elements say about themselves for machines | — | — |
 | — | `Composable<K>` — whatever becomes an element; `ElementContract` — the walk over a triple, for your elements as much as ours | — | — |
 | — | `Rel` — what a link says about itself, with the policy that goes with it: `Rel.of(...)` guards and orders, `Rel.forNewTab(...)` cannot lose `noopener`, `Rel.tokens(...)` writes the attribute | — | — |
 | Head | filled by the canvas — title, description, canonical, image, `robots`; renders as the `head` element | `head :: headEl` | — (it prints tags, not looks) |
@@ -784,6 +801,28 @@ That is why a guard about HTML being correct belongs here — one H1 to a page, 
 your site works never does. There is no notion of a page kind, no layout to inherit from, no theme
 object, no component lifecycle. What the kit adds to Spring and Thymeleaf is one object; the flow stays
 yours.
+
+The line has a second half, and it is the one that matters to whoever depends on this. You cannot
+change the core — so anything the core can do, your elements can do too. Two rules keep that true.
+
+**Every faculty is published the day it exists.** When the kit teaches itself something new that an
+element may have — named slots, a script it depends on, a node it contributes about itself — that
+arrives as public API in the same commit, not later and not on request. The kit's own elements have no
+private door. That is what makes the core growing tolerable: it grows for everybody at once, and an
+element of yours is never a second-class one that has to wait.
+
+**A faculty is shaped around the capability, never around the element that first needed it.** The
+element that pays for one is whichever needed it first, and it is easy to build exactly what that one
+element wanted. Structured data takes any node, not a trail of links, because the element after it will
+be a picture or a product. The test is the second user: if a faculty needs the core opened again for
+it, the faculty was fitted to the first, and the fault is ours rather than yours.
+
+What this does not yet cover is worth naming, since a promise with an unlisted exception is worse than
+none. An element of yours does not take part in the two page checks: the outline and the anchors
+recognise the kit's own heading and no other, so a heading of yours can put a second H1 on a page and
+the canvas will not stop it. You can write the same check over your own page — the walk is yours as
+much as ours — but the one the canvas runs will pass. That is a hole, it is known, and closing it means
+letting an element declare what a key of it *means*, which is the direction the last chapter describes.
 
 It buys four things and costs one.
 

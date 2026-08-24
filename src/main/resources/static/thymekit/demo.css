@@ -25,6 +25,8 @@
     --demo-mid:    #5a5650;
     --demo-light:  #767068;
     --demo-border: #e8e3da;
+    --demo-gold-light: #d4b47a;
+    --demo-panel:      #f5f3ef;
     --demo-serif:  'Cormorant Garamond', 'Iowan Old Style', Palatino, Georgia, serif;
     --demo-sans:   system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
     /* The document */
@@ -33,6 +35,37 @@
     --tk-page-gap:     32px;             /* the space between elements belongs to the page */
     /* The hero, dressed entirely through handles: centred, with a short gold rule
       instead of the stock full-width one */
+    /* The bar above the page, wearing the look of the application this kit grew out of: a panel with
+       a gold stripe down its left side, the way back on the first line in small tracked capitals, and
+       the trail beneath it. Every value here is a handle of the element — this file names no place and
+       no kit class. */
+    --tk-topbar-direction:      column;
+    --tk-topbar-align:          flex-start;
+    --tk-topbar-gap:            10px;
+    --tk-topbar-bg:             var(--demo-panel);
+    --tk-topbar-padding:        10px 14px;
+    --tk-topbar-radius:         8px;
+    --tk-topbar-accent:         2px solid var(--demo-gold-light);
+    --tk-topbar-back-color:     var(--demo-mid);
+    --tk-topbar-back-size:      11px;
+    --tk-topbar-back-weight:    500;
+    --tk-topbar-back-tracking:  2px;
+    --tk-topbar-back-transform: uppercase;
+    --tk-topbar-back-mark-gap:  6px;
+
+    --tk-breadcrumbs-size:              12px;
+    --tk-breadcrumbs-gap:               6px;
+    --tk-breadcrumbs-separator-color:   var(--demo-gold-light);
+    --tk-breadcrumbs-separator-size:    13px;
+    --tk-breadcrumbs-link-color:        var(--demo-light);
+    --tk-breadcrumbs-link-hover-color:  var(--demo-gold);
+    --tk-breadcrumbs-link-decoration:   none;
+    --tk-breadcrumbs-current-font:      var(--demo-serif);
+    --tk-breadcrumbs-current-style:     italic;
+    --tk-breadcrumbs-current-size:      15px;
+    --tk-breadcrumbs-current-tracking:  0.3px;
+    --tk-breadcrumbs-current-color:     var(--demo-dark);
+
     --tk-hero-align:         center;
     --tk-hero-divider-width: 40px;
     --tk-hero-divider-color: var(--demo-gold);

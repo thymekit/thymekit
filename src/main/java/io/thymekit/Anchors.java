@@ -23,9 +23,14 @@ import java.util.Map;
  * {@code id}, and the kit does not own what that word means in somebody else's element: a card
  * carrying the id of a product in a database is carrying data, not an address. Only the anchors the kit
  * itself puts on a page are counted — today, the ones a heading was given — because a guard that fired
- * on two products sharing a number would be the kit inventing a rule nobody agreed to. As other
- * elements learn to carry an anchor of their own, they say so the way {@link Heading} does, and they
- * are counted from that day.
+ * on two products sharing a number would be the kit inventing a rule nobody agreed to.
+ *
+ * <p>Today that means <b>headings and nothing else</b>, including yours: the reader this asks refuses
+ * to answer for any adapter but its own, so an element of yours carrying an anchor is not counted here
+ * however it carries it, and two of them may quietly answer to one name. There is no way for it to
+ * join from outside, and saying otherwise would be a promise this code does not keep. Closing it means
+ * letting an element declare what a key of it <i>means</i>, which is the direction the readme names in
+ * its last chapter.
  */
 public final class Anchors {
 
@@ -34,7 +39,7 @@ public final class Anchors {
     /** Refuses a page where two things answer to one name, and says which name and what they are. */
     public static void requireDistinct(Collection<?> roots) {
         Map<String, String> byAnchor = new LinkedHashMap<>();
-        Element.walk(roots, descriptor -> {
+        Tree.walk(roots, descriptor -> {
             String anchor = Heading.idIn(descriptor);
             if (anchor != null) {
                 String first = byAnchor.putIfAbsent(anchor, Heading.textIn(descriptor));
