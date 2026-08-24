@@ -283,7 +283,12 @@ class ElementContractTest {
         PageModel.of(model).title("Page").description("What this page is")
             .canonical("https://shop/page").image("https://shop/page.jpg")
             .robots(PageModel.Robots.NOARCHIVE)
-            .add(Heading.h1("Title")).render();
+            .add(Heading.h1("Title"))
+            // an element that says something about itself for machines, so the head carries a graph:
+            // a key an adapter declares and no sample fills is a key this very walk refuses
+            .add(Breadcrumbs.named("Breadcrumb").site("https://shop").add("/ingredients", "Ingredients")
+                .current("Aloe"))
+            .render();
 
         return List.of(
             Heading.h3("Section"),
@@ -298,6 +303,8 @@ class ElementContractTest {
                 .meta(Caption.meta("/slug"))
                 .badge(Element.raw("test/pieces", "statusBadgeEl").with("text", "in stock").build())
                 .actions(Element.raw("test/pieces", "actionsEl").with("text", "Buy").build()),
+            Breadcrumbs.named("Breadcrumb").add("/ingredients", "Ingredients").current("Aloe"),
+            Topbar.of(Breadcrumbs.named("Breadcrumb").current("Aloe")).back("/ingredients", "All ingredients"),
             fromModel(model, "head"), fromModel(model, "page"));
     }
 
@@ -347,6 +354,27 @@ class ElementContractTest {
         }
         assertThat(declared).contains("headingEl", "captionEl", "heroEl", "mdEl", "sectionEl", "headEl", "canvasEl");
         assertThat(samples()).extracting(sample -> sample.build().fragment()).containsAll(declared);
+    }
+
+    /**
+     * A resource that exists and cannot be read is not swallowed. Unreachable through a classpath, so
+     * it is asked of the seam that handles it: a walk that could not read a template would otherwise
+     * report the element as declaring nothing, which is a verdict about the disk dressed as a verdict
+     * about the element.
+     */
+    @Test
+    void aTemplateThatCannotBeReadIsNotMistakenForAnEmptyOne() {
+        var unreadable = new java.io.InputStream() {
+            @Override
+            public int read() throws java.io.IOException {
+                throw new java.io.IOException("the disk said no");
+            }
+        };
+
+        assertThatThrownBy(() -> ElementContract.textOf(unreadable, "templates/thymekit/heading.html"))
+            .isInstanceOf(java.io.UncheckedIOException.class)
+            .hasMessageContaining("cannot read")
+            .hasMessageContaining("heading.html");
     }
 
     /** The kit's own stylesheets, from the manifest rather than from a list somebody keeps. */

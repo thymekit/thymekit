@@ -3,6 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 package io.thymekit.demo;
 
+import io.thymekit.Breadcrumbs;
 import io.thymekit.Caption;
 import io.thymekit.Element;
 import io.thymekit.Heading;
@@ -11,6 +12,7 @@ import io.thymekit.Md;
 import io.thymekit.PageModel;
 import io.thymekit.Rel;
 import io.thymekit.Section;
+import io.thymekit.Topbar;
 import java.time.LocalDate;
 import java.util.List;
 import org.springframework.ui.Model;
@@ -42,7 +44,7 @@ public final class Demo {
      * How many elements the kit has, said on the page. A number the showcase states about itself is a
      * claim like any other, so the snapshot test counts the adapters in the jar and holds this to it.
      */
-    private static final int ELEMENTS = 5;
+    private static final int ELEMENTS = 7;
 
     private Demo() {}
 
@@ -96,6 +98,12 @@ public final class Demo {
             .description("Every element of the kit, rendered by the kit itself: the page you are "
                 + "looking at is composed in Java and dressed by one stylesheet of handle values.")
             .pageClass("page-showcase")
+            // Absolute on purpose, unlike a trail inside an application: this page is meant to be
+            // mounted in somebody else's, where a path of ours would point at a page of theirs.
+            .add(Topbar.of(Breadcrumbs.named("Breadcrumb")
+                    .add("https://github.com/thymekit/thymekit", "thymekit")
+                    .current("Showcase"))
+                .back("https://thymekit.github.io/thymekit/", "All builds"))
             .add(Hero.of(Heading.h1("thymekit"))
                 .eyebrow(Caption.eyebrow("showcase"))
                 .subtitle(Caption.subtitle("the elements on this page are composed in Java and rendered by the kit itself"))

@@ -126,7 +126,7 @@ class ElementDescriptorTest {
         Element<Element.Script> js = Element.script("fragments/my/card", "myCardJs");
         Element.Descriptor<Element.Raw> maker = Element.raw("t", "cardEl");
 
-        assertThat(maker.requires(js).build().assets()).containsExactly(js);
+        assertThat(Tree.assetsOf(List.of(maker.requires(js).build()))).containsExactly(js);
         // the marker alone is not the shape: a descriptor can wear it without being a script
         Element<Element.Script> wearsTheMarker =
             Element.Descriptor.<Element.Script>of("fragments/my/card", "notAScriptEl").build();

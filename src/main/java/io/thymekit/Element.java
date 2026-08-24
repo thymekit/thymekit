@@ -40,8 +40,9 @@ import org.jspecify.annotations.Nullable;
  *   <li><b>the guards a host uses</b> — {@link #settle}, {@link #requireRenderable},
  *       {@link #requireRenderableElement}, {@link #requireAdapter}, {@link #requireTag}, all public,
  *       because an element of yours hosts other elements the same way the kit's own do;</li>
- *   <li><b>the scripts of a tree</b> — {@link #assets()} and {@link #assetsOf}, so that nobody wires a
- *       behaviour script by hand.</li>
+ *   <li><b>and nothing about trees.</b> What a page or a subtree yields — the scripts it depends on,
+ *       what its elements say about themselves — is {@link Tree}'s business, as is every other question
+ *       whose answer needs more than one element.</li>
  * </ul>
  *
  * <p>Each is specified by a file of its own next to {@code ElementTest}. What used to be a fifth thing
@@ -51,7 +52,8 @@ import org.jspecify.annotations.Nullable;
 public final class Element<K> implements Composable<K> {
 
     /** Descriptor keys reserved by the engine; data cannot use them. */
-    static final Set<String> RESERVED = Set.of("template", "fragment", "bare", "slots", "assets", "illustration");
+    static final Set<String> RESERVED =
+        Set.of("template", "fragment", "bare", "slots", "assets", "illustration", "describes");
 
     private final Map<String, Object> m;
 
@@ -97,73 +99,49 @@ public final class Element<K> implements Composable<K> {
     }
 
     /**
-     * Script dependencies of the whole element tree — its own {@code requires} plus every nested one,
-     * deduplicated by address in traversal order. The canvas collects them and renders each once, so a
-     * consumer never wires a script by hand.
+     * An address that leaves the page — into a canonical link, into Open Graph, into a graph a crawler
+     * reads — is absolute or it is broken. Whoever reads it is not looking at the document and has
+     * nothing to resolve a path against, and the failure is silent: no preview, or a canonical pointing
+     * at a stranger.
+     *
+     * <p>Public because two elements need it, and two users make a policy rather than a detail.
      */
-    public List<Element<Script>> assets() {
-        return assetsOf(List.of(m));
+    public static String requireAbsolute(String url, String name) {
+        String value = requireText(url, name).strip();
+        if (!value.regionMatches(true, 0, "https://", 0, 8) && !value.regionMatches(true, 0, "http://", 0, 7)) {
+            throw new IllegalArgumentException(name + " is not an absolute address: \"" + value
+                + "\" — this value leaves the page, and whoever reads it has no document to resolve it against");
+        }
+        return value;
     }
 
-    /** Same, for a collection of elements, descriptors or page models. */
-    public static List<Element<Script>> assetsOf(Collection<?> roots) {
-        LinkedHashMap<String, Element<Script>> acc = new LinkedHashMap<>();
-        collectAssets(roots, acc);
-        return List.copyOf(acc.values());
-    }
+    /** A browser drops these before it reads a scheme, so they cannot be used to hide one. */
+    private static final Pattern IGNORED_IN_SCHEME = Pattern.compile("[\\s\\p{Cntrl}]");
 
-    @SuppressWarnings("unchecked")
-    private static void collectAssets(@Nullable Object node, Map<String, Element<Script>> acc) {
-        walk(node, descriptor -> {
-            if (descriptor.get("assets") instanceof List<?> declared) {
-                for (Object a : declared) {
-                    Map<String, Object> d = (Map<String, Object>) a;
-                    String t = (String) d.get("template");
-                    String f = (String) d.get("fragment");
-                    acc.putIfAbsent(t + " :: " + f, script(t, f));
-                }
-            }
-            return true;
-        });
-    }
+    /** Schemes that execute rather than navigate. */
+    private static final Set<String> EXECUTING_SCHEMES = Set.of("javascript:", "data:", "vbscript:");
 
     /**
-     * Every descriptor of a tree, whatever the tree is made of: elements, the maps they are, and
-     * collections of either, at any depth. The visitor is handed each descriptor and answers whether to
-     * go deeper into it — an illustration is a place one walker stops and another does not.
+     * An address that navigates. Kept trimmed, refused when blank, and refused when its scheme executes
+     * rather than goes somewhere — {@code javascript:}, {@code data:}, {@code vbscript:}, however they
+     * are spelled, since a browser drops spaces, tabs and control characters before reading a scheme and
+     * {@code java\tscript:} is the plain one by the time it is followed.
      *
-     * <pre>{@code
-     * Element.walk(page, descriptor -> {
-     *     if (myKit.isPicture(descriptor) && descriptor.get("alt") == null) {
-     *         throw new IllegalStateException("a picture with nothing said about it");
-     *     }
-     *     return true;
-     * });
-     * }</pre>
-     *
-     * <p>Here because the shape of the tree is what a descriptor is, and this class is the descriptor.
-     * Written once because it is the kind of code that goes subtly wrong in a copy: a walk that misses a
-     * branch finds nothing there and says nothing about it, which is the quietest way for a check to
-     * stop checking. Public for the same reason the guards are — a check of your own over a page of
-     * yours is written the way the kit writes its own, and {@link Outline} and {@link Anchors} are the
-     * two examples.
+     * <p>Public because two elements need it, and an href is the last place any of those can be stopped
+     * before the page.
      */
-    public static void walk(@Nullable Object node, java.util.function.Predicate<Map<?, ?>> visit) {
-        if (node instanceof Element<?> element) {
-            walk(element.m, visit);
-        } else if (node instanceof Map<?, ?> map) {
-            // a descriptor is a map that names an adapter; the others a tree holds — the slots of an
-            // element, data of your own — are passed through rather than offered to the visitor
-            if (!map.containsKey("fragment") || visit.test(map)) {
-                for (Object value : map.values()) {
-                    walk(value, visit);
-                }
-            }
-        } else if (node instanceof Collection<?> items) {
-            for (Object item : items) {
-                walk(item, visit);
+    public static String requireNavigable(String href, String name) {
+        // no check for empty after this: requireText has already refused a blank, and stripping a text
+        // that has something in it cannot leave nothing. The check was here when this guard belonged to
+        // the heading and its first line was a bare null check; it survived the move and meant nothing
+        String value = requireText(href, name).strip();
+        String asFollowed = IGNORED_IN_SCHEME.matcher(value).replaceAll("").toLowerCase(java.util.Locale.ROOT);
+        for (String executing : EXECUTING_SCHEMES) {
+            if (asFollowed.startsWith(executing)) {
+                throw new IllegalArgumentException(name + " is not a link but a script: \"" + href + "\"");
             }
         }
+        return value;
     }
 
     private static final Pattern LANGUAGE_TAG = Pattern.compile("[A-Za-z0-9]+(-[A-Za-z0-9]+)*");
@@ -368,6 +346,48 @@ public final class Element<K> implements Composable<K> {
                 return Collections.unmodifiableList(copy);
             }
             return value;
+        }
+
+        /**
+         * What this element says about itself for machines — a JSON-LD node, as <b>data</b>. The canvas
+         * collects the contributions of a page, turns them into text once and prints one block; an
+         * element never prints its own, and never carries finished text, because a descriptor holding
+         * markup is the one seam through which markup could reach a page that was stored rather than
+         * composed.
+         *
+         * <p>One element describes itself once. A second call is a mistake either way — accumulating
+         * would guess at what was meant, replacing would lose the first quietly — so it is refused.
+         */
+        public Descriptor<K> describes(Map<String, ?> node) {
+            Objects.requireNonNull(node, "node");
+            if (d.containsKey("describes")) {
+                throw new IllegalStateException("this element already describes itself: one element, one node");
+            }
+            if (node.isEmpty()) {
+                throw new IllegalArgumentException("an empty contribution describes nothing");
+            }
+            refuseAddressKeys(node);
+            d.put("describes", snapshot(node));
+            return this;
+        }
+
+        /**
+         * A contribution may not carry the keys that mark a descriptor, at any depth: the walk knows an
+         * element by exactly those, and would take a node for one — then look for an adapter that is
+         * not there.
+         */
+        private static void refuseAddressKeys(@Nullable Object value) {
+            if (value instanceof Map<?, ?> node) {
+                for (Map.Entry<?, ?> entry : node.entrySet()) {
+                    if ("template".equals(entry.getKey()) || "fragment".equals(entry.getKey())) {
+                        throw new IllegalArgumentException("a contribution may not carry \"" + entry.getKey()
+                            + "\": the walk knows a descriptor by that key and would take this for an element");
+                    }
+                    refuseAddressKeys(entry.getValue());
+                }
+            } else if (value instanceof Collection<?> items) {
+                items.forEach(Descriptor::refuseAddressKeys);
+            }
         }
 
         /**

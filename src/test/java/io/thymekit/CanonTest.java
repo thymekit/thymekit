@@ -209,6 +209,57 @@ class CanonTest {
     }
 
     /**
+     * And nothing hidden is kept for nobody either. The mirror of the rule above, and it exists because
+     * the rule above cannot see a field: a guard was moved out of one class into a shared one and left
+     * the two constants it used behind, where they meant nothing and nothing complained.
+     *
+     * <p>Neither gate can complain, which is the point. A static constant is initialised when its class
+     * loads, so its instructions are exercised by anything that touches the class at all — dead
+     * constants read as fully covered, and there is no mutant of a value nobody reads. Only the reading
+     * of a field counts here for the same reason: the initialiser writes to it, so a field that is only
+     * ever written looks used to anything that counts accesses rather than reads.
+     */
+    @Test
+    void nothingHiddenIsKeptForNobody() {
+        com.tngtech.archunit.lang.syntax.ArchRuleDefinition.fields()
+            .that().arePrivate().or().arePackagePrivate()
+            .and().areDeclaredInClassesThat().resideInAPackage("io.thymekit")
+            .should(new com.tngtech.archunit.lang.ArchCondition<com.tngtech.archunit.core.domain.JavaField>(
+                "be read by something in the kit") {
+                @Override
+                public void check(com.tngtech.archunit.core.domain.JavaField field,
+                                  com.tngtech.archunit.lang.ConditionEvents events) {
+                    if (field.getModifiers().contains(com.tngtech.archunit.core.domain.JavaModifier.SYNTHETIC)
+                            || isFolded(field)) {
+                        return;
+                    }
+                    boolean read = field.getAccessesToSelf().stream().anyMatch(access -> access.getAccessType()
+                        == com.tngtech.archunit.core.domain.JavaFieldAccess.AccessType.GET);
+                    if (!read) {
+                        events.add(com.tngtech.archunit.lang.SimpleConditionEvent.violated(field,
+                            field.getFullName() + " is hidden and read by nothing in the kit"));
+                    }
+                }
+            })
+            .because("a hidden value nobody reads is left over from something, and no gate can see it")
+            .check(KIT);
+    }
+
+    /**
+     * A compile-time constant — {@code static final} holding a string or a primitive — is copied into
+     * every place that uses it, and the field is never read at run time. Nothing can tell such a
+     * constant from a dead one by looking at bytecode, so the rule above says nothing about them rather
+     * than saying something false. What it does see is every other hidden value, which is where the
+     * defect it was written for lived: the two it missed were a compiled pattern and a set.
+     */
+    private static boolean isFolded(com.tngtech.archunit.core.domain.JavaField field) {
+        var modifiers = field.getModifiers();
+        return modifiers.contains(com.tngtech.archunit.core.domain.JavaModifier.STATIC)
+            && modifiers.contains(com.tngtech.archunit.core.domain.JavaModifier.FINAL)
+            && (field.getRawType().isPrimitive() || field.getRawType().getName().equals("java.lang.String"));
+    }
+
+    /**
      * The rule above about holding a Composable, read once more: a collection of them is holding them
      * too. Written by hand over the generic type, because the erased one says only List.
      */
@@ -638,6 +689,35 @@ class CanonTest {
         }
         assertThat(found).as("the readme prints the addresses of the kit's adapters").isNotZero();
         assertThat(absent).as("addresses the readme prints that lead nowhere").isEmpty();
+    }
+
+    /**
+     * Structured data is printed by the head and by nothing else.
+     *
+     * <p>The element this rule stands behind was written the other way before it came here: it built a
+     * json string in Java and its adapter printed the block itself. Two things follow from that shape,
+     * and both are quiet. A descriptor ends up carrying finished markup, which is the one seam through
+     * which markup could reach a page that was stored rather than composed — and the argument for
+     * storing pages at all rests on there being no such seam. And a page with several such elements
+     * prints several blocks, each having escaped the text on its own, in as many places as there are
+     * authors.
+     *
+     * <p>So an element contributes a node as data and the canvas turns the page's contributions into
+     * text once. This watches the fragments, because that is where the temptation is: printing a block
+     * beside the markup it describes always looks like the tidy thing to do.
+     */
+    @Test
+    void onlyTheHeadPrintsStructuredData() throws java.io.IOException {
+        var templates = java.nio.file.Path.of("src/main/resources/templates/thymekit");
+        java.util.List<String> printing = new java.util.ArrayList<>();
+        try (var files = java.nio.file.Files.walk(templates)) {
+            for (var file : files.filter(java.nio.file.Files::isRegularFile).toList()) {
+                if (java.nio.file.Files.readString(file).contains("application/ld+json")) {
+                    printing.add(file.getFileName().toString());
+                }
+            }
+        }
+        assertThat(printing).as("adapters printing a block of structured data").containsExactly("head.html");
     }
 
     /** The model belongs to the canvas: one place writes it, so a document knows what to expect. */

@@ -1,0 +1,32 @@
+<!--/* This Source Code Form is subject to the terms of the Mozilla Public
+       License, v. 2.0. If a copy of the MPL was not distributed with this
+       file, You can obtain one at https://mozilla.org/MPL/2.0/. */-->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+
+<!--/* breadcrumbs: the trail of a page. A navigation landmark, named by the consumer because a screen
+       reader announces the name out loud and it belongs in the language of their visitors.
+
+       An ordered list, because the order of the steps is what the trail means — and the same order is
+       what the machine-readable half counts in its positions.
+
+       A step that goes somewhere is a link; the page you are on is not, and carries aria-current. The
+       practices allow a link there too, but an anchor without an address is an empty shell that adds
+       nothing.
+
+       Separators are drawn by the stylesheet. Written as text they would be read out between every two
+       steps, which is noise nobody asked for. */-->
+<!--/* keys: label, items */-->
+<nav th:fragment="breadcrumbsEl(e)" class="tk-breadcrumbs" th:attr="aria-label=${e['label']}">
+    <ol class="tk-breadcrumbs-list">
+        <li class="tk-breadcrumbs-step" th:each="step : ${e['items']}">
+            <a th:if="${step['url'] != null}" th:href="${step['url']}" th:text="${step['label']}">Step</a>
+            <span th:if="${step['url'] == null}" class="tk-breadcrumbs-current" aria-current="page"
+                  th:text="${step['label']}">Here</span>
+        </li>
+    </ol>
+</nav>
+
+</body>
+</html>

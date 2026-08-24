@@ -1,5 +1,48 @@
 # Changelog
 
+## 0.3.0 — 2026-08-24
+
+**Breaking.**
+
+- `Element.walk(...)` and `Element.assetsOf(...)` are now `Tree.walk(...)` and `Tree.assetsOf(...)`.
+  Walking the tree of a page is a question about a page, not a property of an element — the same
+  reason `Outline` and `Anchors` left the currency in 0.2.0, applied to the traversal they were
+  written on. `element.assets()` goes with them — it asked about a subtree, which is the same species
+  of question — and `Tree.assetsOf(List.of(element))` says the same thing.
+
+**New.**
+
+- **Structured data.** An element declares a JSON-LD node as data with
+  `Element.Descriptor.describes(...)`; the canvas gathers the contributions of the page, names the
+  vocabulary, turns them into text once and prints a single `<script type="application/ld+json">` in
+  the head. An element never prints its own block and never carries finished text, so a descriptor
+  stays data all the way down. `Tree.describedBy(...)` is the gathering.
+- **`Breadcrumbs`** — the trail of a page, visible and machine-readable from one list of steps, so the
+  two halves cannot come to describe different pages. `named(label)` because a screen reader says that
+  name aloud; `site(origin)` makes the addresses a crawler reads absolute while the links on the page
+  stay as they were written.
+- **`Topbar`** — the bar above a page: the way back, then the trail. An element rather than a thing to
+  assemble, because assembled by hand the way back lands inside the trail's landmark.
+- `Element.requireAbsolute(...)` and `Element.requireNavigable(...)` — the guards for an address that
+  leaves the page and for one that navigates rather than executes, public now that more than one
+  element needs each.
+- Handles for the two new elements, including direction and a stripe for the bar, so a theme can dress
+  it without a single selector over a kit class.
+
+**Fixed.**
+
+- A step of a trail is guarded like any other link the kit prints: an address whose scheme executes
+  instead of navigating is refused where it is written.
+- An origin is scheme and host only. Given a path or a trailing slash it would be joined to every step
+  written from the root, producing an address that resolves somewhere else with nothing to notice it
+  by. An address that already names a host — including `//host/path` — is left alone.
+- Two guards that could never fire and two constants nobody read, all of them left over from moving
+  code rather than from writing it.
+
+**Inside.** Two more rules of the canon, twenty-five now: structured data is printed by the head and by
+nothing else, and nothing hidden is kept for a reader that does not exist. The second exists because no
+gate can see a dead field — a constant is initialised when its class loads, so it reads as covered.
+
 ## 0.2.0 — 2026-08-23
 
 Every class of the kit was taken through the same walk: a spec of what it ought to be, written before

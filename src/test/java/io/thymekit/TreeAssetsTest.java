@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test;
  * that script once, in the order the page meets it. A consumer who forgot to add a tag is a bug that
  * cannot happen, which is worth more than the collection itself.
  */
-class ElementAssetsTest {
+class TreeAssetsTest {
 
     private final Element<Element.Script> drawer = Element.script("fragments/my/drawer", "drawerJs");
     private final Element<Element.Script> toggle = Element.script("fragments/my/toggle", "toggleJs");
@@ -28,9 +28,9 @@ class ElementAssetsTest {
     void anElementDeclaresWhatItNeeds() {
         Element<Element.Raw> card = Element.raw("t", "cardEl").requires(drawer).build();
 
-        assertThat(card.assets()).containsExactly(drawer);
-        assertThat(Element.raw("t", "plainEl").build().assets()).isEmpty();
-        assertThat(Heading.h2("Title").build().assets()).isEmpty();
+        assertThat(Tree.assetsOf(List.of(card))).containsExactly(drawer);
+        assertThat(Tree.assetsOf(List.of(Element.raw("t", "plainEl").build()))).isEmpty();
+        assertThat(Tree.assetsOf(List.of(Heading.h2("Title").build()))).isEmpty();
     }
 
     /** A container carries what its children need, however deep they sit. */
@@ -40,7 +40,7 @@ class ElementAssetsTest {
         Element<Element.Raw> row = Element.raw("t", "rowEl").slot("items", List.of(card)).build();
         Element<Element.Raw> section = Element.raw("t", "sectionEl").slot("items", List.of(row)).build();
 
-        assertThat(section.assets()).containsExactly(drawer);
+        assertThat(Tree.assetsOf(List.of(section))).containsExactly(drawer);
     }
 
     /** Each script once, in the order the page meets it — a page renders a tag, not a count. */
@@ -53,7 +53,7 @@ class ElementAssetsTest {
             .slot("items", List.of(withDrawer, withBoth, withDrawer))
             .build();
 
-        assertThat(page.assets()).containsExactly(drawer, toggle);
+        assertThat(Tree.assetsOf(List.of(page))).containsExactly(drawer, toggle);
     }
 
     /** The same, over whatever a canvas holds: elements, the descriptors they are made of, and holes. */
@@ -61,13 +61,13 @@ class ElementAssetsTest {
     void theSameOverWhateverACanvasHolds() {
         Element<Element.Raw> card = Element.raw("t", "cardEl").requires(drawer).build();
 
-        assertThat(Element.assetsOf(List.of(card))).containsExactly(drawer);
-        assertThat(Element.assetsOf(List.of(card.asMap()))).containsExactly(drawer);
-        assertThat(Element.assetsOf(Arrays.asList(card, null, "not an element", 42)))
+        assertThat(Tree.assetsOf(List.of(card))).containsExactly(drawer);
+        assertThat(Tree.assetsOf(List.of(card.asMap()))).containsExactly(drawer);
+        assertThat(Tree.assetsOf(Arrays.asList(card, null, "not an element", 42)))
             .as("what is not an element carries no scripts, and is not an error either")
             .containsExactly(drawer);
-        assertThat(Element.assetsOf(List.of())).isEmpty();
-        assertThat(Element.assetsOf(List.of(List.of(card)))).as("nested collections too").containsExactly(drawer);
+        assertThat(Tree.assetsOf(List.of())).isEmpty();
+        assertThat(Tree.assetsOf(List.of(List.of(card)))).as("nested collections too").containsExactly(drawer);
     }
 
     /** What comes back is a value: a page cannot be given scripts by whoever received the list. */
@@ -75,7 +75,7 @@ class ElementAssetsTest {
     void whatComesBackIsAValue() {
         Element<Element.Raw> card = Element.raw("t", "cardEl").requires(drawer).build();
 
-        org.assertj.core.api.Assertions.assertThatThrownBy(() -> card.assets().add(toggle))
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> Tree.assetsOf(List.of(card)).add(toggle))
             .isInstanceOf(UnsupportedOperationException.class);
     }
 
@@ -93,6 +93,6 @@ class ElementAssetsTest {
             Element.raw("t", "bEl").requires(sameAsDrawer).build(),
             Element.raw("t", "cEl").requires(neighbour).build())).build();
 
-        assertThat(page.assets()).containsExactly(drawer, neighbour);
+        assertThat(Tree.assetsOf(List.of(page))).containsExactly(drawer, neighbour);
     }
 }

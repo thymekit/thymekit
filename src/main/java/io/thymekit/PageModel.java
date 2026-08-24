@@ -4,6 +4,7 @@
 package io.thymekit;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -196,13 +197,13 @@ public final class PageModel {
 
         @Override
         public Canvas canonical(String url) {
-            this.canonical = requireAbsolute(url, "canonical");
+            this.canonical = Element.requireAbsolute(url, "canonical");
             return this;
         }
 
         @Override
         public Canvas image(String url) {
-            this.image = requireAbsolute(url, "image");
+            this.image = Element.requireAbsolute(url, "image");
             return this;
         }
 
@@ -226,20 +227,6 @@ public final class PageModel {
          */
         private static String require(String value, String name) {
             return Element.requireText(value, name).strip();
-        }
-
-        /**
-         * An address that leaves the page — into a canonical link, into Open Graph — is absolute or it
-         * is broken. Whoever reads it is not looking at the document and has nothing to resolve a path
-         * against, and the failure is silent: no preview, or a canonical pointing at a stranger.
-         */
-        private static String requireAbsolute(String url, String name) {
-            String value = require(url, name);
-            if (!value.regionMatches(true, 0, "https://", 0, 8) && !value.regionMatches(true, 0, "http://", 0, 7)) {
-                throw new IllegalArgumentException(name + " is not an absolute address: \"" + value
-                    + "\" — this value leaves the page, and whoever reads it has no document to resolve it against");
-            }
-            return value;
         }
 
         @Override
@@ -287,7 +274,47 @@ public final class PageModel {
             if (crawler != null) {
                 head.with("robots", crawler);
             }
+            String graph = graph();
+            if (graph != null) {
+                head.with("graph", graph);
+            }
             return head.build().asMap();
+        }
+
+        /**
+         * What the elements of the page said about themselves, as the text of one block — or nothing at
+         * all, when they said nothing, since an empty block is worse than none.
+         *
+         * <p>Here rather than in the head's assembly above, which is a list of what the canvas was
+         * told. This is the other kind of thing a head carries: what the canvas found by looking at the
+         * page. The two are printed side by side and gathered apart.
+         *
+         * <p>One node is printed as itself and several as an array, because that is what a reader
+         * expects of each.
+         */
+        private @Nullable String graph() {
+            List<Map<String, Object>> said = Tree.describedBy(elements);
+            if (said.isEmpty()) {
+                return null;
+            }
+            List<Map<String, Object>> named = said.stream().map(Builder::inContext).toList();
+            return Json.write(named.size() == 1 ? named.get(0) : named);
+        }
+
+        /**
+         * The vocabulary is named by the canvas, so no element carries that literal and two of them
+         * cannot come to disagree about it. Each node gets its own, because an array of self-contained
+         * nodes is understood everywhere while the wrapper that would let it be written once is not.
+         * A node that already names a context keeps it: the canvas fills a gap, it does not overrule.
+         */
+        private static Map<String, Object> inContext(Map<String, Object> node) {
+            if (node.containsKey("@context")) {
+                return node;
+            }
+            Map<String, Object> named = new LinkedHashMap<>();
+            named.put("@context", "https://schema.org");
+            named.putAll(node);
+            return named;
         }
 
         @Override
@@ -306,7 +333,7 @@ public final class PageModel {
             model.addAttribute("pageTitle", title);
             model.addAttribute("head", head());
             model.addAttribute("page", page());
-            model.addAttribute("assets", Element.assetsOf(elements).stream().map(Element::asMap).toList());
+            model.addAttribute("assets", Tree.assetsOf(elements).stream().map(Element::asMap).toList());
             return view;
         }
     }
