@@ -48,9 +48,10 @@ flowchart LR
     end
 ```
 
-And every factory returns the same type. That one decision is what lets elements go into elements
-without limit — a caption into a heading group, a heading into a section, a section onto a page —
-and it is why the kit needs no notion of a container, a slot type or a page kind.
+And every factory returns something that *becomes* an element — a `Composable<K>`, which a built
+element is too, by returning itself. That one type is what lets elements go into elements without
+limit — a caption into a heading group, a heading into a section, a section onto a page — and it is
+why the kit needs no notion of a container, a slot type or a page kind.
 
 ### What it looks like
 
@@ -231,7 +232,8 @@ free of any registry: an element carries the address of its own adapter, and the
 the call from the descriptor. Add an element to the kit — or write one of your own — and nothing in
 this list changes.
 
-Everything else is built on top: the elements (`Heading`, `Caption`, `Hero`, `Md`, `Section`), the
+Everything else is built on top: the elements themselves — all of them in
+[The elements](#the-elements), where a rule of the canon holds the table to what the kit ships — the
 rendering it needs (the markdown renderer and its `#md` dialect, tidy rendering), the Spring
 auto-configuration, and the showcase, which is no more than the first consumer.
 
@@ -680,8 +682,11 @@ anchors. The canvas asks both before it renders, and a page that fails either do
 | whether a level exists in HTML | h7 | the adapter renders nothing at all for it |
 | whether two things share an anchor | the second one | a name a page uses twice is a name it cannot use |
 
-Headings and the hero form that outline. A caption never joins it: it is text beside a heading, not
-a rung of the ladder.
+Headings form that outline wherever they stand — in a hero, in a section, in the flow of the page —
+because the outline asks what a key *is*, not where it sits nor whose adapter carries it. Any element
+that says `means("level", HEADING_LEVEL)` is counted, yours as much as ours; see [And your elements
+take part in the checks](#and-your-elements-take-part-in-the-checks). A caption never joins it: it is
+text beside a heading, not a rung of the ladder.
 
 ### Stricter on a programmer than on data
 
@@ -811,8 +816,9 @@ dressed version, which is exactly what the showcase does with it.
 
 Two notes, since a theme is also a file a browser has to fetch.
 
-`ui.css` imports one file per element — a shape that is easy to read and six requests to fetch. If
-that matters on your pages, bundle it in your build: it is plain CSS with no processing behind it.
+`ui.css` imports one file per element, which is easy to read and one request per element to fetch.
+If that matters on your pages, bundle it in your build: it is plain CSS with no processing behind
+it.
 
 And if your theme wants a webfont, link it in the document rather than `@import`-ing it from inside
 a stylesheet, where it costs a round trip before the first line can be drawn. The kit's own showcase asks for no webfont
@@ -865,6 +871,19 @@ element carries that its adapter never reads is data travelling for nothing, and
 other direction — a key an adapter reads that nothing puts in, a branch of the template nothing can
 reach — is a claim about your samples, not about the element, so it is asked for with
 `coveringEveryKey()`; the kit makes that claim about its own.
+
+### Saying what a key of it is
+
+If your element carries a heading level or an address inside the page, say so, and the two checks a
+page gets will hold your element to what they hold the kit's own to:
+
+```java
+.with("depth", 2).means("depth", Element.Role.HEADING_LEVEL)
+```
+
+A role is checked at `build()`: a key given a role and never given a value is a promise the element
+does not keep. And one role belongs to one key — two keys claiming to be the anchor is a question
+with two answers, and a check would have to pick one.
 
 ### Checking it the way the kit checks its own
 
@@ -924,15 +943,15 @@ guards the elements are built from, published because your elements are built fr
 
 | Element | Factory | Adapter | CSS |
 |---|---|---|---|
-| Heading | `Heading.h1(text)…h6(text)` — an anchor `id`, `href` with `rel`/`newTab`, `lang`, `srOnly`; `Heading.levelIn/idIn/textIn(...)` read a heading back out of a descriptor, for a check of your own | `heading :: headingEl` | `heading.css` |
+| Heading | `Heading.h1(text)…h6(text)` — an anchor `id`, `href` with `rel`/`newTab`, `lang`, `srOnly`; `Heading.textIn(...)` reads the words back out of a descriptor, for a message a person will read | `heading :: headingEl` | `heading.css` |
 | Caption | `Caption.eyebrow/subtitle/label/meta(text)` — `time`, `lang`; `Caption.inRole(...)` is the guard a host of yours uses to ask for one | `caption :: captionEl` | `caption.css` |
-| Hero | `Hero.of(Element<Heading>)` — eyebrow, subtitle, meta lines, a `statusBadgeEl` badge and an `actionsEl` row of your own | `hero :: heroEl` | `hero.css` |
+| Hero | `Hero.of(Composable<Heading>)` — eyebrow, subtitle, meta lines, a `statusBadgeEl` badge and an `actionsEl` row of your own | `hero :: heroEl` | `hero.css` |
 | Md | `Md.of(markdown)` — nothing written, null or blank, shows the empty state; an action beside it; `linkRel` for the links of somebody else's text | `md :: mdEl` | `md.css` |
 | Section | `Section.of(Composable<Heading>)` — `add(...)` for whatever goes under the heading: a markdown block, a row of cards, another section. Takes its accessible name from the heading's anchor | `section :: sectionEl` | `section.css` |
 | Breadcrumbs | `Breadcrumbs.named(label)` — `add(url, label)` for a step above, `current(label)` for the page you are on and the end of the trail, `site(origin)` to make the addresses a crawler reads absolute. Prints the trail and describes it as a `BreadcrumbList`, both from one list of steps | `breadcrumbs :: breadcrumbsEl` | `breadcrumbs.css` |
 | Topbar | `Topbar.of(Composable<Breadcrumbs>)` — `back(href, label)` for the way back. A plain wrapper, not a second landmark: the way back is printed outside the trail's `<nav>`, and the mark beside it is decoration a screen reader does not read | `topbar :: topbarEl` | `topbar.css` |
 | Canvas | `PageModel.of(model)` — own page classes, flow of elements, `render(view)`; renders as the `page` element | `canvas :: canvasEl` | `canvas.css` |
-| — | `Element<K>` — the currency itself: an address, data, and value semantics. `Element.Descriptor.of(...)` mints one, `Element.raw/script(...)` wrap a fragment of yours, and the guards a host needs — `settle`, `requireAdapter`, `requireRenderable`, `requireTag` — are public beside them | — | — |
+| — | `Element<K>` — the currency itself: an address, data, and value semantics. `Descriptor.means(key, Role)` says what a key of an element is — `HEADING_LEVEL`, `ANCHOR` — and `Element.headingLevelIn/anchorIn/roleIn(...)` read it back, which is how an element of yours joins the checks a page gets. `Element.Descriptor.of(...)` mints one, `Element.raw/script(...)` wrap a fragment of yours, and the guards a host needs — `settle`, `requireAdapter`, `requireRenderable`, `requireTag` — are public beside them | — | — |
 | — | `Outline` — the headings of a page and whether they add up: one H1, no level skipped, none HTML does not have. The canvas checks it before rendering | — | — |
 | — | `Anchors` — the addresses inside a page: no two things answering to one name. Checked by the canvas beside the outline | — | — |
 | — | `Tree` — walking the tree of a page: `Tree.walk(...)` hands every descriptor to a visitor that answers whether to go deeper, `Tree.assetsOf(...)` gathers the scripts a page depends on, `Tree.describedBy(...)` what its elements say about themselves for machines | — | — |
@@ -1067,16 +1086,31 @@ one element wanted. Structured data takes any node, not a trail of links, becaus
 it will be a picture or a product. The test is the second user: if a faculty needs the core opened
 again for it, the faculty was fitted to the first, and the fault is ours rather than yours.
 
-### The hole that is known
+### And your elements take part in the checks
 
-What this does not yet cover is worth naming, since a promise with an unlisted exception is worse
-than none. An element of yours does not take part in the two page checks: the outline and the
-anchors recognise the kit's own heading and no other, so a heading of yours can put a second H1 on a
-page and the canvas will not stop it. You can write the same check over your own page — the walk is
-yours as much as ours — but the one the canvas runs will pass. That is a hole, it is known, it is written down as two
-expectations in the suite that will turn red the day it closes, and it is filed as
-[issue #20](https://github.com/thymekit/thymekit/issues/20). Closing it means letting an element
-declare what a key of it *means* — the direction the last chapter describes.
+Until recently they did not, and it is worth saying what changed. The outline and the anchors used to
+ask a reader that answered for the kit's own heading and refused every other adapter, so a heading of
+yours could put a second H1 on a page and the canvas would not stop it — the guarantee was weaker for
+your elements than for ours, which is the one thing this chapter promises never to be.
+
+An element now says what a key of it **is**, and the checks ask that:
+
+```java
+Element.Descriptor.<Chapter>of("fragments/my/chapter", "chapterEl")
+    .with("depth", 2).with("slug", "in-the-south")
+    .means("depth", Element.Role.HEADING_LEVEL)   // the outline counts it
+    .means("slug", Element.Role.ANCHOR)           // and no two things may answer to it
+    .build();
+```
+
+Two roles, because the two page checks need two — a role is a question somebody asks of every page,
+not a label for whatever an element happens to carry, and a third arrives when a third check does.
+The kit's own heading says exactly this about itself and has no other privilege: `headingEl` appears
+nowhere in `Outline`, in `Anchors`, or in the readers they use.
+
+What is still yours to do is say it. A key called `level` that was never declared to be one is data,
+and data is none of the kit's business — a card carrying the id of a product is carrying a number,
+not an address.
 
 ### What that buys, and what it costs
 
@@ -1166,12 +1200,17 @@ and answered by naming the element at fault instead of a line in the output:
 - a heading structure nobody can navigate.
 
 Two things make this fit rather than bolt on. The line already allows it: the kit may know about
-HTML. And the mechanism is already built — a fragment declares its keys and its slots in a comment,
-and that declaration can as easily say what a key *is*: this one carries the accessible name of a
-control, that one the alternative text of an image. Nothing to implement and nothing to register; a
-fragment says what it renders, and the walk holds every page to it. The first step of it is
-[issue #20](https://github.com/thymekit/thymekit/issues/20), which is also what closes the hole
-named two chapters above.
+HTML. And the mechanism is already standing: an element says what a key of it *is*, and two of the
+questions a page gets asked are answered that way today — which key is a heading level, which is an
+address. The rest are more of the same word. This one carries the accessible name of a control; that
+one the alternative text of an image; and the check that reads it is written once, for every page,
+for every element that says so.
+
+Where it goes next is the declaration in the fragment. A key's role is said in Java today, which is
+where the value is written; a fragment already declares which keys it reads, and the same comment
+could as easily say what it does with one — so that an adapter printing an `alt` attribute says so,
+and a walk can tell an element that promised an alternative text from one that merely carries a key
+of that name.
 
 The honest limit: a determined team can check much of this by parsing the rendered HTML instead.
 What is different here is when it runs, what it can name, and that it can see what is *missing* — a
@@ -1195,7 +1234,8 @@ of keys:
 
 ```json
 { "template": "thymekit/heading", "fragment": "headingEl",
-  "level": 2, "text": "Ingredients", "id": "ingredients" }
+  "level": 2, "text": "Ingredients", "id": "ingredients",
+  "means": { "level": "HEADING_LEVEL", "id": "ANCHOR" } }
 ```
 
 `Heading.h2("Ingredients").id("ingredients")` does not render a heading. It *produces that map*. The

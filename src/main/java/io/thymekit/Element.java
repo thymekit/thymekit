@@ -50,8 +50,8 @@ import org.jspecify.annotations.Nullable;
 public final class Element<K> implements Composable<K> {
 
     /** Descriptor keys reserved by the engine; data cannot use them. */
-    static final Set<String> RESERVED =
-        Set.of("template", "fragment", "bare", "slots", "assets", "illustration", "describes");
+    static final Set<String> RESERVED = Set.of("template", "fragment", "bare", "slots", "assets",
+        "illustration", "describes", "means");
 
     private final Map<String, Object> m;
 
@@ -94,6 +94,71 @@ public final class Element<K> implements Composable<K> {
     public Set<String> slotNames() {
         Map<String, List<Map<String, Object>>> slots = (Map<String, List<Map<String, Object>>>) m.get("slots");
         return slots == null ? Set.of() : new LinkedHashSet<>(slots.keySet());
+    }
+
+    /**
+     * What a key of an element <b>is</b>, as far as the checks a page gets are concerned.
+     *
+     * <p>Two of them, because the two page checks need two and no more: a role is a question somebody
+     * asks of every page, not a label for whatever an element happens to carry. A third arrives when a
+     * third check does.
+     *
+     * <p>This is not {@code describes}, and the two are worth telling apart. A contribution says what a
+     * page means <b>to a machine outside</b> — a search engine reading a trail. A role says what a key
+     * means <b>to this kit</b>, so a check written for every page can find it. One leaves in the HTML;
+     * the other never does.
+     */
+    public enum Role {
+
+        /** The key carries the level of a heading: 1..6, as a number or as text that reads as one. */
+        HEADING_LEVEL,
+
+        /** The key carries an address inside the page — an {@code id} something links to. */
+        ANCHOR
+    }
+
+    /**
+     * What a descriptor declared for a role, or {@code null} when it declared nothing. The kit's own
+     * elements answer here exactly as yours do: this asks what a key <b>is</b>, never which adapter
+     * carries it, which is what lets a heading of yours join a check written for ours.
+     */
+    public static @Nullable Object roleIn(Map<?, ?> descriptor, Role role) {
+        required(descriptor, "Element.roleIn(descriptor)");
+        required(role, "Element.roleIn(role)");
+        if (!(descriptor.get("means") instanceof Map<?, ?> means)) {
+            return null;
+        }
+        for (Map.Entry<?, ?> entry : means.entrySet()) {
+            if (role.name().equals(entry.getValue())) {
+                return descriptor.get(entry.getKey());
+            }
+        }
+        return null;
+    }
+
+    /**
+     * The heading level a descriptor declares, whatever adapter it belongs to — a number, or text that
+     * reads as one, because a descriptor minted by hand may write it either way and a check that
+     * understood only a number would let a second title onto a page.
+     */
+    public static @Nullable Integer headingLevelIn(Map<?, ?> descriptor) {
+        Object level = roleIn(descriptor, Role.HEADING_LEVEL);
+        if (level instanceof Number number) {
+            return number.intValue();
+        }
+        if (level instanceof String text) {
+            try {
+                return Integer.valueOf(text.strip());
+            } catch (NumberFormatException notALevel) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    /** The anchor a descriptor declares, or {@code null} when it declares none. */
+    public static @Nullable String anchorIn(Map<?, ?> descriptor) {
+        return roleIn(descriptor, Role.ANCHOR) instanceof String anchor ? anchor : null;
     }
 
     /**
@@ -422,6 +487,33 @@ public final class Element<K> implements Composable<K> {
         }
 
         /**
+         * Says what a key of this element <b>is</b>, so that a check written for every page can find it
+         * without knowing which adapter carries it. The heading the kit ships and a chapter of yours say
+         * the same thing here, and the outline counts both.
+         *
+         * <p>The key has to be one this element carries — checked at {@link #build()}, because the two
+         * calls may be written in either order and refusing early would decide that for you.
+         *
+         * <p>One role, one key: two keys claiming to be the anchor of one element is a question with two
+         * answers, and a check would have to guess which.
+         */
+        public Descriptor<K> means(String key, Role role) {
+            required(key, "Descriptor.means(key)");
+            required(role, "Descriptor.means(role)");
+            @SuppressWarnings("unchecked")
+            Map<String, String> means = (Map<String, String>) d.computeIfAbsent("means",
+                k -> new LinkedHashMap<String, String>());
+            for (Map.Entry<String, String> said : means.entrySet()) {
+                if (said.getValue().equals(role.name()) && !said.getKey().equals(key)) {
+                    throw new MisuseException("Descriptor.means(role)", "this element already says that \""
+                        + said.getKey() + "\" is its " + role + ": one role, one key");
+                }
+            }
+            means.put(key, role.name());
+            return this;
+        }
+
+        /**
          * A named slot of a composite element. What may go in is constrained by the factory's slot
          * method, not here; an empty list leaves the slot unrendered.
          */
@@ -467,6 +559,15 @@ public final class Element<K> implements Composable<K> {
         @SuppressWarnings("unchecked")
         public Element<K> build() {
             LinkedHashMap<String, Object> copy = new LinkedHashMap<>(d);
+            if (copy.get("means") instanceof Map<?, ?> means) {
+                for (Object key : means.keySet()) {
+                    if (!copy.containsKey(key)) {
+                        throw new MisuseException("Descriptor.means(key)",
+                            "\"" + key + "\" was given a role and never given a value");
+                    }
+                }
+                copy.put("means", Collections.unmodifiableMap(new LinkedHashMap<>((Map<String, String>) means)));
+            }
             if (copy.get("slots") instanceof Map<?, ?> slots) {   // snapshot: the builder may go on, the element must not change
                 copy.put("slots", Collections.unmodifiableMap(new LinkedHashMap<>((Map<String, Object>) slots)));
             }

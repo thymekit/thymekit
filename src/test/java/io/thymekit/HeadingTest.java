@@ -140,29 +140,24 @@ class HeadingTest {
     }
 
     /**
-     * And what a heading is, read back out of a descriptor. The outline of a page and its anchors are
-     * built from these three, and so is a check of yours walking a page — which is why they are public.
+     * And what a heading is, read back out of a descriptor: a heading says which of its keys is the
+     * level and which is the anchor, so the checks a page gets find them without asking whose adapter
+     * this is. The text stays here, because no role describes it — it is what a message shows a person.
      */
     @Test
-    void aHeadingIsRecognisedFromItsDescriptor() {
+    void aHeadingSaysWhatItsKeysAre() {
         Map<String, Object> heading = Heading.h2("Composition").id("composition").build().asMap();
 
-        assertThat(Heading.levelIn(heading)).isEqualTo(2);
-        assertThat(Heading.idIn(heading)).isEqualTo("composition");
+        assertThat(Element.headingLevelIn(heading)).isEqualTo(2);
+        assertThat(Element.anchorIn(heading)).isEqualTo("composition");
         assertThat(Heading.textIn(heading)).isEqualTo("Composition");
 
         Map<String, Object> caption = Caption.meta("12 entries").build().asMap();
-        assertThat(Heading.levelIn(caption)).as("something else is not a heading").isNull();
-        assertThat(Heading.idIn(caption)).isNull();
+        assertThat(Element.headingLevelIn(caption)).as("something else is not a heading").isNull();
+        assertThat(Element.anchorIn(caption)).isNull();
 
-        assertThat(Heading.idIn(Heading.h2("Nameless").build().asMap()))
+        assertThat(Element.anchorIn(Heading.h2("Nameless").build().asMap()))
             .as("a heading with no anchor has none").isNull();
-        assertThat(Heading.levelIn(Element.raw("thymekit/heading", "headingEl")
-            .with("level", " 2 ").with("text", "by hand").build().asMap()))
-            .as("a level counts however it was written").isEqualTo(2);
-        assertThat(Heading.levelIn(Element.raw("thymekit/heading", "headingEl")
-            .with("level", "two").with("text", "x").build().asMap()))
-            .as("and what does not read as one is not a level").isNull();
     }
 
     /** A heading is a value: two written the same way are the same heading. */

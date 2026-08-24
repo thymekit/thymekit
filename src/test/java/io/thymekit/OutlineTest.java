@@ -83,7 +83,8 @@ class OutlineTest {
     void htmlHasSixLevels() {
         for (Object impossible : List.of(7, "7", 0L)) {
             assertThatThrownBy(() -> Outline.requireSound(List.of(Element.raw("thymekit/heading", "headingEl")
-                    .with("level", impossible).with("text", "x").build())))
+                    .with("level", impossible).with("text", "x")
+                    .means("level", Element.Role.HEADING_LEVEL).build())))
                 .isInstanceOf(UnsoundPageException.class).hasMessageContaining("outside h1..h6");
         }
         assertThatCode(() -> Outline.requireSound(List.of(
@@ -100,13 +101,16 @@ class OutlineTest {
     @Test
     void aLevelCountsHoweverItWasWritten() {
         assertThatThrownBy(() -> Outline.requireSound(List.of(Heading.h1("Page").build(),
-                Element.raw("thymekit/heading", "headingEl").with("level", "1").with("text", "sneaky").build())))
+                Element.raw("thymekit/heading", "headingEl").with("level", "1").with("text", "sneaky")
+                    .means("level", Element.Role.HEADING_LEVEL).build())))
             .isInstanceOf(UnsoundPageException.class).hasMessageContaining("sneaky");
         assertThatCode(() -> Outline.requireSound(List.of(Heading.h1("Page").build(),
-                Element.raw("thymekit/heading", "headingEl").with("level", " 2 ").with("text", "spaced").build())))
+                Element.raw("thymekit/heading", "headingEl").with("level", " 2 ").with("text", "spaced")
+                    .means("level", Element.Role.HEADING_LEVEL).build())))
             .as("text with spaces still reads as a level").doesNotThrowAnyException();
         assertThatCode(() -> Outline.requireSound(List.of(
-                Element.raw("thymekit/heading", "headingEl").with("level", "two").with("text", "x").build(),
+                Element.raw("thymekit/heading", "headingEl").with("level", "two").with("text", "x")
+                    .means("level", Element.Role.HEADING_LEVEL).build(),
                 Element.raw("thymekit/heading", "headingEl").with("text", "no level at all").build())))
             .as("what does not read as a level is not the guard's business").doesNotThrowAnyException();
     }
@@ -116,17 +120,31 @@ class OutlineTest {
      * heading of every level side by side, and the outline of the page it stands on is untouched by it.
      */
     /**
-     * And the same limit from the other side: a heading of somebody else's does not count towards the
-     * outline, so a page of theirs may skip from two to four and pass. The kit refuses that on its own
-     * headings and cannot see theirs — which is the hole this pair leaves, kept here as a red-on-purpose
-     * expectation for the day an element can say what its keys mean.
+     * And a heading of somebody else's counts towards the outline exactly as ours does. A page of theirs
+     * may not skip from two to four either — which is the point: the outline asks what a key <b>is</b>,
+     * so an element that says its key is a heading level joins the check without asking anybody.
      */
     @Test
-    void aHeadingOfSomebodyElsesIsNotCountedYet() {
+    void aHeadingOfSomebodyElsesIsCountedToo() {
+        assertThatThrownBy(() -> Outline.requireSound(List.of(chapter(2), chapter(4))))
+            .isInstanceOf(UnsoundPageException.class).hasMessageContaining("h3");
+
+        assertThatCode(() -> Outline.requireSound(List.of(chapter(2), chapter(3))))
+            .as("and a page of theirs that adds up is a page like any other").doesNotThrowAnyException();
+
         assertThatCode(() -> Outline.requireSound(List.of(
                 Element.raw("fragments/my/chapter", "chapterEl").with("level", 2).build(),
                 Element.raw("fragments/my/chapter", "chapterEl").with("level", 4).build())))
+            .as("a key called level that was never said to be one is data, and data is theirs")
             .doesNotThrowAnyException();
+    }
+
+    /** A chapter of somebody else's, saying which of its keys is the level. */
+    private static Element<Element.Raw> chapter(int level) {
+        return Element.raw("fragments/my/chapter", "chapterEl")
+            .with("level", level).with("title", "Part " + level)
+            .means("level", Element.Role.HEADING_LEVEL)
+            .build();
     }
 
     @Test

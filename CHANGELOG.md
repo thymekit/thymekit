@@ -2,6 +2,28 @@
 
 ## Unreleased
 
+**Breaking.** The two checks a page gets ask what a key of an element *is*, and no longer which
+adapter carries it.
+
+- `Element.Descriptor.means(key, Element.Role)` says that a key of an element is its heading level or
+  its anchor. The kit's own heading says it about itself and has no other privilege — `headingEl`
+  appears nowhere in `Outline`, in `Anchors`, or in the readers they use. An element of yours that
+  says the same joins both checks: their page may not carry two titles, skip a level or answer twice
+  to one name either, which is what [#20](https://github.com/thymekit/thymekit/issues/20) asked for.
+- `Heading.levelIn(...)` and `Heading.idIn(...)` are gone. They began by asking whether the adapter
+  was the kit's own, which is the privilege being removed; `Element.headingLevelIn(...)` and
+  `Element.anchorIn(...)` answer for every element that declares a role, and `Element.roleIn(...)`
+  for anyone reading a role directly. `Heading.textIn(...)` stays: no role describes the words.
+- a descriptor minted by hand at the kit's own heading address is no longer counted in the outline
+  unless it declares the role. Saying what you are is now the way in, for everybody.
+
+**Fixed.** Three sentences of the readme described things that exist and described them wrongly, and
+two of its lists had not followed the kit as it grew
+([#22](https://github.com/thymekit/thymekit/issues/22),
+[#23](https://github.com/thymekit/thymekit/issues/23)): what a factory returns, the type the hero
+takes, what forms the outline, the elements named in prose, and the number of requests `ui.css`
+costs — the last of which no longer carries a number to go stale.
+
 **Inside.** The readme was rebuilt from its own sentences: every one of them was read, put with the
 sentences that say the same kind of thing, and the chapters were whatever came out of that — fifteen
 of them, and the topics inside them are the ones the text actually had rather than the ones its old

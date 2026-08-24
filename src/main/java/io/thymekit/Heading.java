@@ -7,7 +7,6 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
-import org.jspecify.annotations.Nullable;
 
 /**
  * Owner of the heading concept: anything with a heading composes this element instead of writing its
@@ -27,43 +26,15 @@ public final class Heading {
     /**
      * The level of a heading in a descriptor, or {@code null} where the descriptor is not one.
      *
-     * <p>Recognising a heading is this element's business and nobody else's: it owns the adapter, so it
-     * owns the name of it. The outline of a page asks here rather than knowing the answer, and so may a
-     * check of yours walking a page with {@link Tree#walk} — the three readers below are published
-     * together, since a check that can read the text of a heading but not its level is half a gift.
-     *
-     * <p>A level counts however it was written — as a number or as text. The factories above always
-     * write a number, but an element minted by hand may not, and a guard that understood only one of
-     * the two would let a second H1 through while the adapter rendered it happily.
+     * <p>What a heading <b>is</b> is no longer read from here. This element used to own two readers —
+     * the level and the anchor — and both began by asking whether the adapter was its own, which made
+     * the checks a page gets weaker for an element of somebody else's than for this one. A heading now
+     * says what its keys are, like any element, and {@link Element#headingLevelIn} and
+     * {@link Element#anchorIn} answer for every element that says so. What is left here is the text,
+     * which no role describes: it is what a message shows a person.
      */
-    public static @Nullable Integer levelIn(Map<?, ?> descriptor) {
-        if (!"headingEl".equals(descriptor.get("fragment"))) {
-            return null;
-        }
-        Object level = descriptor.get("level");
-        if (level instanceof Number number) {
-            return number.intValue();
-        }
-        if (level instanceof String text) {
-            try {
-                return Integer.valueOf(text.strip());
-            } catch (NumberFormatException notALevel) {
-                return null;
-            }
-        }
-        return null;
-    }
 
-    /**
-     * The anchor of a heading in a descriptor, or {@code null} where there is none — the heading was
-     * given no id, or the descriptor is not a heading at all. Recognising one is this element's business
-     * for the same reason its level is: it owns the adapter, so it owns what the keys mean.
-     */
-    public static @Nullable String idIn(Map<?, ?> descriptor) {
-        return levelIn(descriptor) == null ? null : (String) descriptor.get("id");
-    }
-
-    /** What such a heading says, for a message a person will read. */
+    /** What a heading says, for a message a person will read. */
     public static String textIn(Map<?, ?> descriptor) {
         return String.valueOf(descriptor.get("text"));
     }
@@ -85,6 +56,7 @@ public final class Heading {
         private Builder(int level, String text) {
             this.b = Element.Descriptor.<Heading>of("thymekit/heading", "headingEl")
                 .with("level", level)
+                .means("level", Element.Role.HEADING_LEVEL)
                 .with("text", Element.requireText(text, "Heading(text)"));
         }
 
@@ -95,7 +67,7 @@ public final class Heading {
          * author's: a slug, a number, a word in their own language.
          */
         public Builder id(String id) {
-            b.with("id", anchor(id));
+            b.with("id", anchor(id)).means("id", Element.Role.ANCHOR);
             return this;
         }
 

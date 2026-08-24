@@ -76,7 +76,8 @@ class HeroTest {
 
         @SuppressWarnings("unchecked")
         Composable<Heading> byHand = (Composable<Heading>) (Composable<?>) Element.raw("thymekit/heading", "headingEl")
-            .with("level", "1").with("text", "written as text");
+            .with("level", "1").with("text", "written as text")
+            .means("level", Element.Role.HEADING_LEVEL);
         assertThat(Hero.of(byHand).build().asMap()).as("a level counts however it was written")
             .containsKey("heading");
 

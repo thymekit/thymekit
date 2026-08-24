@@ -100,20 +100,25 @@ class AnchorsTest {
     }
 
     /**
-     * And a limit, written down so it is a fact and not an oversight: an element of somebody else's
-     * that carries a real anchor — a chapter of theirs, addressed by a link — is not counted either,
-     * because the reader this asks answers for one adapter only. Two of them may quietly share a name,
-     * and the kit's own two headings may not: the guarantee is weaker for their elements than for ours.
-     *
-     * <p>Nothing here distinguishes this from the case above; that is exactly the trouble. The day an
-     * element can declare what a key of it means, this expectation is wrong and turns red, which is
-     * what it is for.
+     * And an anchor of somebody else's is counted exactly as ours is, because what is asked is what the
+     * key <b>is</b> and not which adapter carries it. This expectation was the opposite until an element
+     * could say so: the guarantee used to be weaker for their elements than for the kit's own, which is
+     * the one thing the kit promises never to be.
      */
     @Test
-    void anAnchorOfSomebodyElsesIsNotCountedYet() {
-        assertThatCode(() -> Anchors.requireDistinct(List.of(
-                Element.raw("fragments/my/chapter", "chapterEl").with("level", 2).with("id", "part").build(),
-                Element.raw("fragments/my/chapter", "chapterEl").with("level", 2).with("id", "part").build())))
-            .doesNotThrowAnyException();
+    void anAnchorOfSomebodyElsesIsCountedToo() {
+        assertThatThrownBy(() -> Anchors.requireDistinct(List.of(chapter("part", "Origins"),
+                chapter("part", "In cooking"))))
+            .isInstanceOf(UnsoundPageException.class)
+            .hasMessageStartingWith("Anchors.requireDistinct:")
+            .hasMessageContaining("part");
+    }
+
+    /** A chapter of somebody else's: their address, their keys, and a word about what one of them is. */
+    private static Element<Element.Raw> chapter(String id, String title) {
+        return Element.raw("fragments/my/chapter", "chapterEl")
+            .with("id", id).with("title", title)
+            .means("id", Element.Role.ANCHOR)
+            .build();
     }
 }

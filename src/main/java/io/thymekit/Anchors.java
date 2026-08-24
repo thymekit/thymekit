@@ -40,7 +40,7 @@ public final class Anchors {
     public static void requireDistinct(Collection<?> roots) {
         Map<String, String> byAnchor = new LinkedHashMap<>();
         Tree.walk(roots, descriptor -> {
-            String anchor = Heading.idIn(descriptor);
+            String anchor = Element.anchorIn(descriptor);
             if (anchor != null) {
                 String first = byAnchor.putIfAbsent(anchor, Heading.textIn(descriptor));
                 if (first != null) {

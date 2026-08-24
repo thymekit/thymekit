@@ -48,7 +48,7 @@ public final class Outline {
             if (Element.isIllustration(descriptor)) {
                 return false;                       // a sample framed for display is not the page
             }
-            Integer level = Heading.levelIn(descriptor);
+            Integer level = Element.headingLevelIn(descriptor);
             if (level != null) {
                 levels.add(level);
                 if (level == 1) {

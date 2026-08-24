@@ -25,7 +25,7 @@ public final class Hero {
     public static Builder of(Composable<Heading> h1) {
         Element<Heading> heading = Element.settle(h1, "Hero.of(h1)");
         Element.requireAdapter(heading, "headingEl", "Hero.of(h1)");
-        Integer level = Heading.levelIn(heading.asMap());
+        Integer level = Element.headingLevelIn(heading.asMap());
         if (level == null || level != 1) {
             throw new MisuseException("Hero.of(h1)", "accepts an H1 only, and got level " + level);
         }
