@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+**Inside.** The readme was rebuilt from its own sentences: every one of them was read, put with the
+sentences that say the same kind of thing, and the chapters were whatever came out of that — fifteen
+of them, and the topics inside them are the ones the text actually had rather than the ones its old
+headings claimed. Seven pairs of sentences said the same thing twice and are now one each.
+
+Two things it said about itself were wrong, and both are now held by a rule: the core was announced as
+seven things and is eight, and the canon was announced as thirty rules with twenty-seven listed. Three more rules, thirty-three now: this list is as long as the number in front of it; the version the
+readme hands a consumer to copy is the version the build publishes, which was a release behind; and
+the map at the top of the readme names every chapter of it, in order.
+
 ## 0.4.0 — 2026-08-24
 
 **Breaking.** The kit throws its own failures and no longer borrows anyone's.

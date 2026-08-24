@@ -480,7 +480,7 @@ class CanonTest {
             "seventeen", "eighteen", "nineteen");
         var tens = java.util.Map.of("twenty", 20, "thirty", 30, "forty", 40, "fifty", 50);
         String readme = java.nio.file.Files.readString(java.nio.file.Path.of("README.md"));
-        var said = java.util.regex.Pattern.compile("([A-Za-z-]+) rules\\s+state what this package is").matcher(readme);
+        var said = java.util.regex.Pattern.compile("([A-Za-z-]+)\\s+rules\\s+state what this package is").matcher(readme);
         assertThat(said.find()).as("the readme says how many rules the canon keeps").isTrue();
 
         String source = java.nio.file.Files.readString(
@@ -923,7 +923,8 @@ class CanonTest {
      * keeps and a rule holds it to that; the changelog says how many were added and what they are, and
      * nothing held that — so it went out of this very branch claiming twenty-seven while the canon kept
      * twenty-nine. Only the topmost entry is judged: the ones below it are history, and history is
-     * right to say what was true when it was written.
+     * right to say what was true when it was written — including the entry at the top, once a release
+     * has dated it, which is a thing this rule had to learn the day after it was made.
      */
     @Test
     void theChangelogEntryBeingWrittenCountsTheRulesCorrectly() throws java.io.IOException {
@@ -933,6 +934,9 @@ class CanonTest {
         var tens = java.util.Map.of("twenty", 20, "thirty", 30, "forty", 40, "fifty", 50);
         String changelog = java.nio.file.Files.readString(java.nio.file.Path.of("CHANGELOG.md"));
         String newest = changelog.split("(?m)^## ")[1];
+        if (newest.startsWith("0") || newest.startsWith("1")) {
+            return;      // the newest entry is a released one, and history is right as it was written
+        }
         var said = java.util.regex.Pattern.compile("rules, ([a-z]+)(?:-([a-z]+))? now").matcher(newest);
         if (!said.find()) {
             return;                 // an entry that claims no count cannot be wrong about one
@@ -944,6 +948,59 @@ class CanonTest {
             + (said.group(2) != null ? spelled.indexOf(said.group(2)) : 0);
         assertThat(counted).as("the entry says \"%s now\" and the canon keeps %d", said.group(0), rules)
             .isEqualTo(rules);
+    }
+
+    /**
+     * And the list in the readme is as long as the number in front of it. The number was held to the
+     * canon and the list was not, so the list fell three behind while the number stayed right — which
+     * is the more expensive half to lose: a reader counts on the list, and a number nobody can check
+     * against anything is a number nobody reads.
+     */
+    @Test
+    void theReadmeListsAsManyRulesAsItCounts() throws java.io.IOException {
+        String readme = java.nio.file.Files.readString(java.nio.file.Path.of("README.md"));
+        String after = readme.split("rules\\s+state what this package is:", 2)[1];
+        String list = after.split("(?m)^\\s*$\\s*(?=[^-\\s])", 2)[0];
+        long listed = list.lines().filter(line -> line.startsWith("- ")).count();
+        int rules = (int) java.util.regex.Pattern.compile("(?m)^\\s+@Test$")
+            .matcher(java.nio.file.Files.readString(
+                java.nio.file.Path.of("src/test/java/io/thymekit/CanonTest.java"))).results().count();
+        assertThat(listed).as("rules the readme lists, against the %d the canon keeps", rules)
+            .isEqualTo(rules);
+    }
+
+    /**
+     * And the version the readme tells a consumer to depend on is the version this build publishes. It
+     * said 0.3.0 the day after 0.4.0 went out, which is the first line of the first page a consumer
+     * copies — and the only line of this document that a reader pastes into their own build.
+     */
+    @Test
+    void theReadmeAsksForTheVersionThisBuildPublishes() throws java.io.IOException {
+        var asked = java.util.regex.Pattern
+            .compile("io\\.thymekit:thymekit:([0-9]+\\.[0-9]+\\.[0-9]+)")
+            .matcher(java.nio.file.Files.readString(java.nio.file.Path.of("README.md")));
+        assertThat(asked.find()).as("the readme shows a dependency to copy").isTrue();
+        var built = java.util.regex.Pattern.compile("(?m)^version = '([^']+)'")
+            .matcher(java.nio.file.Files.readString(java.nio.file.Path.of("build.gradle")));
+        assertThat(built.find()).as("the build names a version").isTrue();
+        assertThat(asked.group(1)).as("the version the readme hands out").isEqualTo(built.group(1));
+    }
+
+    /**
+     * And the map at the top of the readme names every chapter of it, in order. A document this long is
+     * navigated from that line or not at all, and a map that has fallen behind sends a reader to a
+     * chapter that was renamed — which is worse than no map, because they trust it.
+     */
+    @Test
+    void theMapNamesEveryChapterOfTheReadme() throws java.io.IOException {
+        String readme = java.nio.file.Files.readString(java.nio.file.Path.of("README.md"));
+        var chapters = java.util.regex.Pattern.compile("(?m)^## (.+)$").matcher(readme).results()
+            .map(m -> m.group(1)).toList();
+        String map = readme.split("\\*\\*The whole of it, in order:\\*\\*", 2)[1].split("\n\n", 3)[1];
+        var named = java.util.regex.Pattern.compile("\\[([^\\]]+)\\]\\(#").matcher(map).results()
+            .map(m -> m.group(1)).toList();
+        assertThat(named).as("the chapters the map names, against the chapters there are")
+            .isEqualTo(chapters);
     }
 
     /** The model belongs to the canvas: one place writes it, so a document knows what to expect. */
