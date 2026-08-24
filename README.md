@@ -48,9 +48,10 @@ flowchart LR
     end
 ```
 
-And every factory returns the same type. That one decision is what lets elements go into elements
-without limit — a caption into a heading group, a heading into a section, a section onto a page —
-and it is why the kit needs no notion of a container, a slot type or a page kind.
+And every factory returns something that *becomes* an element — a `Composable<K>`, which a built
+element is too, by returning itself. That one type is what lets elements go into elements without
+limit — a caption into a heading group, a heading into a section, a section onto a page — and it is
+why the kit needs no notion of a container, a slot type or a page kind.
 
 ### What it looks like
 
@@ -86,7 +87,7 @@ Four paths through it, depending on what you came for.
 | you came to… | read | how long |
 |---|---|---|
 | **try it** | [Getting started](#getting-started), ending at [See it live](#see-it-live) | ten minutes |
-| **understand it** | [The core](#the-core) — the eight things everything is built from — then [What keeps it consistent](#what-keeps-it-consistent) | half an hour |
+| **understand it** | [The core](#the-core) — the ten things everything is built from — then [What keeps it consistent](#what-keeps-it-consistent) | half an hour |
 | **decide** | [Why this shape](#why-this-shape), [When not to take it](#when-not-to-take-it), [Where the line runs](#where-the-line-runs) | half an hour |
 | **build with it** | [Theming](#theming), [Writing your own element](#writing-your-own-element), [The elements](#the-elements), and [what it refuses](#what-it-refuses-and-what-to-do-about-it) before you write a handler | as needed |
 
@@ -212,7 +213,7 @@ The core is what would be left if every element were deleted. The kit would ship
 would still be a way to compose a page and render it — which is the honest test of what belongs here
 and what merely lives in the same jar.
 
-Eight names, and you will meet all of them again in this document:
+Ten names, and you will meet all of them again in this document:
 
 | | what it is |
 |---|---|
@@ -222,6 +223,8 @@ Eight names, and you will meet all of them again in this document:
 | `thymekit/element` | **the dispatcher — a template, not a class.** One fragment renders everything: `render(e)` for one element, `renderAll(items)` for a flow, `slot(e, name)` for a slot, `scripts(items)` for behaviour. A container names no brick because it calls this |
 | `Outline` | the headings of a whole page: one title, no gap in the levels, none HTML does not have |
 | `Anchors` | the addresses inside a page: no two things answering to one name |
+| `Guards` | what a value must be before a page carries it — six refusals about text and about HTML, and not one of them knows what an element is: a heading that is blank, a language that is not a tag, an address that executes instead of navigating |
+| `Roles` | what a page asks of an element: which key is a heading level, which is an address inside the page, what to call it in a message. An element says so where it puts the value; the two checks above read it back here, and so may a check of yours |
 | `Tree` | walking the tree of a page: the traversal the two checks above are written on, plus what a page yields — the scripts it depends on and what its elements say about themselves for machines |
 | `ElementContract` | the walk over a triple, taken by the kit over its own elements and handed to you for yours |
 
@@ -231,7 +234,8 @@ free of any registry: an element carries the address of its own adapter, and the
 the call from the descriptor. Add an element to the kit — or write one of your own — and nothing in
 this list changes.
 
-Everything else is built on top: the elements (`Heading`, `Caption`, `Hero`, `Md`, `Section`), the
+Everything else is built on top: the elements themselves — all of them in
+[The elements](#the-elements), where a rule of the canon holds the table to what the kit ships — the
 rendering it needs (the markdown renderer and its `#md` dialect, tidy rendering), the Spring
 auto-configuration, and the showcase, which is no more than the first consumer.
 
@@ -515,7 +519,7 @@ optional:
 |---|---|---|
 | **form** | voluntary | implement `Composable` and callers stop writing `.build()` — or wrap somebody else's fragment in three lines and be a full citizen having implemented nothing |
 | **content** | a test | the walk: the address resolves, the declaration is true both ways, something comes out |
-| **invariants** | a guard, where the value is minted | the shape of an address, the reserved keys, the nulls |
+| **invariants** | a guard, where the value is minted | `Guards` for a value, `Element` for an element: the shape of an address, the reserved keys, the nulls |
 
 Those are the same three moments the kit holds itself to, and
 [What keeps it consistent](#what-keeps-it-consistent) is about how.
@@ -616,7 +620,7 @@ flowchart LR
 
 ### The canon
 
-The last of the four needs naming, because it is the part a reader cannot see in the code. Thirty-three
+The last of the four needs naming, because it is the part a reader cannot see in the code. Thirty-four
 rules state what this package is:
 
 - a class that hands out elements is final and cannot be instantiated;
@@ -652,6 +656,7 @@ rules state what this package is:
 - this list is as long as the number above it;
 - the version this document hands out is the version the build publishes;
 - the map at the top of this document names every chapter of it, in order;
+- a class that publishes a reader over a descriptor names no adapter;
 - and no line of the sources ends in a space.
 
 None of them names a class: a rule that lists what it applies to is a list to forget, which is the
@@ -677,11 +682,16 @@ anchors. The canvas asks both before it renders, and a page that fails either do
 |---|---|---|
 | how many first-level headings | more than one | the title of a page is one thing; sections start at h2 |
 | whether a level is missing | h4 on a page with no h3 | a screen reader walking headings falls straight through the hole |
-| whether a level exists in HTML | h7 | the adapter renders nothing at all for it |
 | whether two things share an anchor | the second one | a name a page uses twice is a name it cannot use |
 
-Headings and the hero form that outline. A caption never joins it: it is text beside a heading, not
-a rung of the ladder.
+Headings form that outline wherever they stand — in a hero, in a section, in the flow of a page —
+because the outline asks what a key *is*, not where it sits nor whose adapter carries it. Any element
+that says `headingLevel(key, level)` is counted, yours as much as ours; see [And your elements take
+part in the checks](#and-your-elements-take-part-in-the-checks). A caption never joins it: it is text
+beside a heading, not a rung of the ladder.
+
+A level HTML does not have is refused where it is written rather than counted here, so this check has
+one question fewer than it used to.
 
 ### Stricter on a programmer than on data
 
@@ -811,8 +821,9 @@ dressed version, which is exactly what the showcase does with it.
 
 Two notes, since a theme is also a file a browser has to fetch.
 
-`ui.css` imports one file per element — a shape that is easy to read and six requests to fetch. If
-that matters on your pages, bundle it in your build: it is plain CSS with no processing behind it.
+`ui.css` imports one file per element, which is easy to read and one request per element to fetch.
+If that matters on your pages, bundle it in your build: it is plain CSS with no processing behind
+it.
 
 And if your theme wants a webfont, link it in the document rather than `@import`-ing it from inside
 a stylesheet, where it costs a round trip before the first line can be drawn. The kit's own showcase asks for no webfont
@@ -866,6 +877,17 @@ other direction — a key an adapter reads that nothing puts in, a branch of the
 reach — is a claim about your samples, not about the element, so it is asked for with
 `coveringEveryKey()`; the kit makes that claim about its own.
 
+### Saying what a key of it is
+
+If your element carries a heading level or an address inside the page, say so in the call that puts
+the value, and the two checks a page gets will hold your element to what they hold the kit's own to:
+
+```java
+.headingLevel("depth", 2).anchor("slug", "in-the-south").name("title", "In the south")
+```
+
+Nothing is registered and nothing is implemented. A key that says nothing is data, and stays yours.
+
 ### Checking it the way the kit checks its own
 
 The third file is the stylesheet, and it needs no ceremony: it carries the element's handles, listed
@@ -911,8 +933,8 @@ builder implement `Composable<Price>` (one method it already has) and callers st
 
 ### Refusals from an element of yours
 
-The constructors of the kit's three failure types are public, and so are `Element.required` and the
-rest of the guards the kit's own elements use. A guard of yours refusing a bad argument is the same
+The constructors of the kit's three failure types are public, and so is every guard the kit's own
+elements use — `Guards.required`, `Guards.text` and the rest. A guard of yours refusing a bad argument is the same
 kind of event as a guard of ours, and routes the same way for whoever handles it — name the place
 after your own call, and a handler cannot tell whose element it came from, which is the point.
 
@@ -926,16 +948,18 @@ guards the elements are built from, published because your elements are built fr
 |---|---|---|---|
 | Heading | `Heading.h1(text)…h6(text)` — an anchor `id`, `href` with `rel`/`newTab`, `lang`, `srOnly`; `Heading.levelIn/idIn/textIn(...)` read a heading back out of a descriptor, for a check of your own | `heading :: headingEl` | `heading.css` |
 | Caption | `Caption.eyebrow/subtitle/label/meta(text)` — `time`, `lang`; `Caption.inRole(...)` is the guard a host of yours uses to ask for one | `caption :: captionEl` | `caption.css` |
-| Hero | `Hero.of(Element<Heading>)` — eyebrow, subtitle, meta lines, a `statusBadgeEl` badge and an `actionsEl` row of your own | `hero :: heroEl` | `hero.css` |
+| Hero | `Hero.of(Composable<Heading>)` — eyebrow, subtitle, meta lines, a `statusBadgeEl` badge and an `actionsEl` row of your own | `hero :: heroEl` | `hero.css` |
 | Md | `Md.of(markdown)` — nothing written, null or blank, shows the empty state; an action beside it; `linkRel` for the links of somebody else's text | `md :: mdEl` | `md.css` |
 | Section | `Section.of(Composable<Heading>)` — `add(...)` for whatever goes under the heading: a markdown block, a row of cards, another section. Takes its accessible name from the heading's anchor | `section :: sectionEl` | `section.css` |
 | Breadcrumbs | `Breadcrumbs.named(label)` — `add(url, label)` for a step above, `current(label)` for the page you are on and the end of the trail, `site(origin)` to make the addresses a crawler reads absolute. Prints the trail and describes it as a `BreadcrumbList`, both from one list of steps | `breadcrumbs :: breadcrumbsEl` | `breadcrumbs.css` |
 | Topbar | `Topbar.of(Composable<Breadcrumbs>)` — `back(href, label)` for the way back. A plain wrapper, not a second landmark: the way back is printed outside the trail's `<nav>`, and the mark beside it is decoration a screen reader does not read | `topbar :: topbarEl` | `topbar.css` |
 | Canvas | `PageModel.of(model)` — own page classes, flow of elements, `render(view)`; renders as the `page` element | `canvas :: canvasEl` | `canvas.css` |
-| — | `Element<K>` — the currency itself: an address, data, and value semantics. `Element.Descriptor.of(...)` mints one, `Element.raw/script(...)` wrap a fragment of yours, and the guards a host needs — `settle`, `requireAdapter`, `requireRenderable`, `requireTag` — are public beside them | — | — |
+| — | `Element<K>` — the currency itself: an address, data, and value semantics. `Element.Descriptor.of(...)` mints one, `Element.raw/script(...)` wrap a fragment of yours, and the guards over an element — `settle`, `requireAdapter`, `requireRenderable` — are public beside them | — | — |
 | — | `Outline` — the headings of a page and whether they add up: one H1, no level skipped, none HTML does not have. The canvas checks it before rendering | — | — |
 | — | `Anchors` — the addresses inside a page: no two things answering to one name. Checked by the canvas beside the outline | — | — |
 | — | `Tree` — walking the tree of a page: `Tree.walk(...)` hands every descriptor to a visitor that answers whether to go deeper, `Tree.assetsOf(...)` gathers the scripts a page depends on, `Tree.describedBy(...)` what its elements say about themselves for machines | — | — |
+| — | `Guards` — what a value must be before a page carries it: `Guards.required/text/tag/absolute/navigable/anchor(value, where)`, the six the kit's own elements make | — | — |
+| — | `Roles` — what a page asks of an element: `Roles.headingLevelIn/anchorIn/nameOf(...)`, answered by whatever said so, whosever element it is | — | — |
 | — | `Composable<K>` — whatever becomes an element; `ElementContract` — the walk over a triple, for your elements as much as ours | — | — |
 | — | `Rel` — what a link says about itself, with the policy that goes with it: `Rel.of(...)` guards and orders, `Rel.forNewTab(...)` cannot lose `noopener`, `Rel.tokens(...)` writes the attribute | — | — |
 | Head | filled by the canvas — title, description, canonical, image, `robots`; renders as the `head` element | `head :: headEl` | — (it prints tags, not looks) |
@@ -1067,16 +1091,48 @@ one element wanted. Structured data takes any node, not a trail of links, becaus
 it will be a picture or a product. The test is the second user: if a faculty needs the core opened
 again for it, the faculty was fitted to the first, and the fault is ours rather than yours.
 
-### The hole that is known
+### And your elements take part in the checks
 
-What this does not yet cover is worth naming, since a promise with an unlisted exception is worse
-than none. An element of yours does not take part in the two page checks: the outline and the
-anchors recognise the kit's own heading and no other, so a heading of yours can put a second H1 on a
-page and the canvas will not stop it. You can write the same check over your own page — the walk is
-yours as much as ours — but the one the canvas runs will pass. That is a hole, it is known, it is written down as two
-expectations in the suite that will turn red the day it closes, and it is filed as
-[issue #20](https://github.com/thymekit/thymekit/issues/20). Closing it means letting an element
-declare what a key of it *means* — the direction the last chapter describes.
+Until recently they did not, and it is worth saying what changed. The outline and the anchors asked a
+reader that answered for the kit's own heading and refused every other adapter, so a heading of yours
+could put a second H1 on a page and the canvas would not stop it — the guarantee was weaker for your
+elements than for ours, which is the one thing this chapter promises never to be.
+
+An element says what a key of it **is**, in the call that puts the value:
+
+```java
+Element.Descriptor.<Chapter>of("fragments/my/chapter", "chapterEl")
+    .headingLevel("depth", 2)          // the outline counts it, wherever it stands
+    .anchor("slug", "in-the-south")    // and no two things on a page may answer to it
+    .name("title", "In the south")     // what a refusal calls it
+    .with("body", markdown)            // an ordinary key, which is what most keys are
+    .build();
+```
+
+Three of them, because two checks and one message need three. A role is a question somebody asks of
+every page, not a label for whatever an element happens to carry — a fourth arrives when a fourth
+question does.
+
+That is a closed list, and this kit says it keeps none. The distinction is worth making rather than
+glossing over: it is a list of **questions the kit knows how to ask**, not a list of **elements**.
+Adding an element never touches it, forgetting to put an element in it is not a thing that can happen,
+and the failure a registry has — somebody writes a brick and forgets to register it — has nothing to
+catch here. `Roles` is where those questions are read back, and it is public for the same reason
+the guards are: a check of your own asks them the same way the kit's two do.
+
+The shape of the call is the argument. The key is named once, in the call that puts the value, so a
+role for a key with no value cannot be written; the type is the signature's, so `anchor("slug", 12)`
+does not compile. Two mistakes that would otherwise need two guards are unwritable — and whether a
+level is one HTML has is asked of the whole page by [the two
+checks](#the-two-checks-a-page-gets), where a page assembled from stored data is judged too.
+
+The kit's own heading says exactly this about itself and holds no other privilege: `headingEl`
+appears nowhere in `Outline`, in `Anchors`, or in `Roles` — and a rule of the canon keeps it that
+way, because a class that reads a descriptor back may not know an address to read it for.
+
+What is still yours to do is say it. A key called `level` that was never declared to be one is data,
+and data is none of the kit's business: a card carrying the id of a product is carrying a number, not
+an address.
 
 ### What that buys, and what it costs
 
@@ -1240,7 +1296,8 @@ renderer for it — which is to say, building by hand what is sitting here as a 
 
 What it would cost is the reason it is written down and not started: an editor is an interface,
 which is a product and not a feature; stored pages need a descriptor version, because renaming a key
-breaks every page saved before it, which means migrations; and after that come drafts, preview and
+— or a role, which travels in the descriptor as `"roles": {"ANCHOR": "slug"}` — breaks every page
+saved before it, which means migrations; and after that come drafts, preview and
 permissions. That is a content system standing on the kit, and the right moment for it is after the
 first two directions have given anyone a reason to pick the kit up at all.
 

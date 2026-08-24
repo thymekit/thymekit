@@ -26,10 +26,10 @@ import java.util.TreeSet;
  * it. An illustration is skipped: a sample framed for display is not the structure of the page it sits
  * on. A page with no headings is legal.
  *
- * <p>This class knows what an outline must be and nothing else — the walking is {@link Tree}'s — and
- * it knows no descriptor keys at all: whether something is a heading, and at what level, is {@link Heading}'s to
- * say, and what counts as an illustration is {@link Element}'s. That is the whole reason it lives on
- * its own — the currency of composition should not know the name of one element's adapter.
+ * <p>This class knows what an outline must be and nothing else. The walking is {@link Tree}'s; whether
+ * something is a heading, and at what level, is what the element said and {@link Roles} reads back;
+ * what counts as an illustration is {@link Element}'s. No adapter address appears here, which is what
+ * lets a heading of somebody else's be counted exactly as the kit's own is.
  *
  * <p>The guarantee stops where the kit stops. A heading an author wrote inside markdown is not seen
  * here — that text is data and arrives as HTML long after this runs. Such headings are placed under the
@@ -48,11 +48,11 @@ public final class Outline {
             if (Element.isIllustration(descriptor)) {
                 return false;                       // a sample framed for display is not the page
             }
-            Integer level = Heading.levelIn(descriptor);
+            Integer level = Roles.headingLevelIn(descriptor);
             if (level != null) {
                 levels.add(level);
                 if (level == 1) {
-                    h1.add(Heading.textIn(descriptor));
+                    h1.add(Roles.nameOf(descriptor));
                 }
             }
             return true;
@@ -66,8 +66,9 @@ public final class Outline {
             return;
         }
         if (levels.first() < 1 || levels.last() > 6) {
-            throw new UnsoundPageException("Outline.requireSound", "heading level outside h1..h6 on the page: " + levels
-                + " — html has six, and the adapter renders nothing at all for anything else");
+            throw new UnsoundPageException("Outline.requireSound", "heading level outside h1..h6 on the "
+                + "page: " + levels + " — html has six, and the adapter renders nothing at all for "
+                + "anything else");
         }
         for (int level = levels.first(); level < levels.last(); level++) {
             if (!levels.contains(level + 1)) {

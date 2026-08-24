@@ -4,10 +4,7 @@
 package io.thymekit;
 
 import java.util.LinkedHashSet;
-import java.util.Map;
 import java.util.Set;
-import java.util.regex.Pattern;
-import org.jspecify.annotations.Nullable;
 
 /**
  * Owner of the heading concept: anything with a heading composes this element instead of writing its
@@ -20,53 +17,15 @@ import org.jspecify.annotations.Nullable;
 public final class Heading {
 
     /** An anchor is an address inside a page: whatever it is made of, it holds together as one word. */
-    private static final Pattern BREAKS_AN_ANCHOR = Pattern.compile("\\s");
-
     private Heading() {}
 
     /**
-     * The level of a heading in a descriptor, or {@code null} where the descriptor is not one.
-     *
-     * <p>Recognising a heading is this element's business and nobody else's: it owns the adapter, so it
-     * owns the name of it. The outline of a page asks here rather than knowing the answer, and so may a
-     * check of yours walking a page with {@link Tree#walk} — the three readers below are published
-     * together, since a check that can read the text of a heading but not its level is half a gift.
-     *
-     * <p>A level counts however it was written — as a number or as text. The factories above always
-     * write a number, but an element minted by hand may not, and a guard that understood only one of
-     * the two would let a second H1 through while the adapter rendered it happily.
+     * What a heading <b>is</b> is not read from here. This element used to own three readers, and each
+     * began by asking whether the adapter was its own — which made the checks a page gets weaker for an
+     * element of somebody else's than for this one. A heading now says what its keys are, like any
+     * element, and {@link Roles#headingLevelIn}, {@link Roles#anchorIn} and {@link Roles#nameOf}
+     * answer for everything that says so.
      */
-    public static @Nullable Integer levelIn(Map<?, ?> descriptor) {
-        if (!"headingEl".equals(descriptor.get("fragment"))) {
-            return null;
-        }
-        Object level = descriptor.get("level");
-        if (level instanceof Number number) {
-            return number.intValue();
-        }
-        if (level instanceof String text) {
-            try {
-                return Integer.valueOf(text.strip());
-            } catch (NumberFormatException notALevel) {
-                return null;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * The anchor of a heading in a descriptor, or {@code null} where there is none — the heading was
-     * given no id, or the descriptor is not a heading at all. Recognising one is this element's business
-     * for the same reason its level is: it owns the adapter, so it owns what the keys mean.
-     */
-    public static @Nullable String idIn(Map<?, ?> descriptor) {
-        return levelIn(descriptor) == null ? null : (String) descriptor.get("id");
-    }
-
-    /** What such a heading says, for a message a person will read. */
-    public static String textIn(Map<?, ?> descriptor) {
-        return String.valueOf(descriptor.get("text"));
-    }
 
     public static Builder h1(String text) { return new Builder(1, text); }
     public static Builder h2(String text) { return new Builder(2, text); }
@@ -84,8 +43,8 @@ public final class Heading {
 
         private Builder(int level, String text) {
             this.b = Element.Descriptor.<Heading>of("thymekit/heading", "headingEl")
-                .with("level", level)
-                .with("text", Element.requireText(text, "Heading(text)"));
+                .headingLevel("level", level)
+                .name("text", Guards.text(text, "Heading(text)"));
         }
 
         /**
@@ -95,7 +54,7 @@ public final class Heading {
          * author's: a slug, a number, a word in their own language.
          */
         public Builder id(String id) {
-            b.with("id", anchor(id));
+            b.anchor("id", Guards.anchor(id, "Heading.id(id)"));
             return this;
         }
 
@@ -107,7 +66,7 @@ public final class Heading {
          * is the last place any of them can be stopped before the page.
          */
         public Builder href(String href) {
-            b.with("href", Element.requireNavigable(href, "Heading.href(href)"));
+            b.with("href", Guards.navigable(href, "Heading.href(href)"));
             linked = true;
             return this;
         }
@@ -136,7 +95,7 @@ public final class Heading {
          * language it was published in.
          */
         public Builder lang(String languageTag) {
-            b.with("lang", Element.requireTag(languageTag, "Heading.lang(languageTag)"));
+            b.with("lang", Guards.tag(languageTag, "Heading.lang(languageTag)"));
             return this;
         }
 
@@ -151,17 +110,6 @@ public final class Heading {
          * cannot change the result: {@code noopener} joins a new tab whether the tab was asked for
          * before the rel values or after them.
          */
-        /** An anchor is one word: given, not empty, and with nothing in it that ends an attribute. */
-        private static String anchor(String id) {
-            Element.required(id, "Heading.id(id)");
-            if (id.isBlank() || BREAKS_AN_ANCHOR.matcher(id).find()) {
-                throw new MisuseException("Heading.id(id)", "not an anchor: \"" + id + "\" — an address inside a "
-                    + "page holds together as one word, and an attribute keeps only what comes before "
-                    + "the first space");
-            }
-            return id;
-        }
-
         @Override
         public Element<Heading> build() {
             if (!linked && (newTab || !rel.isEmpty())) {

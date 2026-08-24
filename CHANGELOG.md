@@ -2,15 +2,59 @@
 
 ## Unreleased
 
+**Breaking.** The two checks a page gets ask what a key of an element *is*, and no longer which adapter
+carries it.
+
+- an element says what a key is in the call that puts the value: `headingLevel(key, int)`,
+  `anchor(key, String)`, `name(key, String)`. An element of yours that says so takes part in the
+  outline and in the anchor check exactly as the kit's own do — their page may not carry two titles,
+  skip a level, or answer twice to one name either, which is what
+  [#20](https://github.com/thymekit/thymekit/issues/20) asked for.
+- `Roles` is where those questions are read back: `Roles.headingLevelIn`, `Roles.anchorIn`,
+  `Roles.nameOf`. Its own class, for the reason `Outline`, `Anchors` and `Tree` are theirs — a
+  question about a page is not a property of an element, and the currency holds what a descriptor is
+  made of rather than what a page wants to know about one.
+- `Heading.levelIn`, `Heading.idIn` and `Heading.textIn` are gone. Each began by asking whether the
+  adapter was the kit's own, which is the privilege being removed. `Element.headingLevelIn`,
+  `Element.anchorIn` and `Element.nameIn` answer for everything that says what it is.
+- a level is taken as it is given and judged with the page: `Outline` refuses one outside h1..h6, so
+  a page assembled from stored data is judged as one composed by a call. A descriptor minted by hand
+  takes part in the outline only by saying that a key of it is a level.
+- an anchor is one word wherever it is declared — the rule moved out of the heading, so an anchor of
+  yours goes through the check the kit's own does.
+
+- the six guards over a **value** — `required`, `text`, `tag`, `absolute`, `navigable`, `anchor` —
+  are `Guards.…` now, not `Element.require…`. None of them knows what an element is, and while they
+  lived in the currency, everything that guards anything depended on it: two classes had come to hold
+  each other through `Element.required`. Guards over an *element* stay where an element is —
+  `Element.settle`, `Element.requireAdapter`, `Element.requireRenderable` — and that line is what
+  keeps the dependency one-way.
+- the reserved key that carries what an element said is `roles`, not `means`: the word a stored page
+  shows is now a word the documentation uses.
+
+**Fixed.** Three sentences of the readme described things that exist and described them wrongly, and
+two of its lists had not followed the kit as it grew
+([#22](https://github.com/thymekit/thymekit/issues/22),
+[#23](https://github.com/thymekit/thymekit/issues/23)): what a factory returns, the type the hero
+takes, what forms the outline, the elements named in prose, and the number of requests `ui.css`
+costs — the last of which no longer carries a number to go stale.
+
+**Inside.** The walk over a triple gained a question: an element that says one of its keys is an
+address inside the page must print it as an `id`, where there is an engine to render with. The anchor
+check holds every page to that value, and until now nothing could tell whether a browser would ever
+find it.
+
 **Inside.** The readme was rebuilt from its own sentences: every one of them was read, put with the
 sentences that say the same kind of thing, and the chapters were whatever came out of that — fifteen
 of them, and the topics inside them are the ones the text actually had rather than the ones its old
 headings claimed. Seven pairs of sentences said the same thing twice and are now one each.
 
 Two things it said about itself were wrong, and both are now held by a rule: the core was announced as
-seven things and is eight, and the canon was announced as thirty rules with twenty-seven listed. Three more rules, thirty-three now: this list is as long as the number in front of it; the version the
-readme hands a consumer to copy is the version the build publishes, which was a release behind; and
-the map at the top of the readme names every chapter of it, in order.
+seven things and is eight, and the canon was announced as thirty rules with twenty-seven listed. Four more rules, thirty-four now: this list is as long as the number in front of it; the version the
+readme hands a consumer to copy is the version the build publishes, which was a release behind; the map
+at the top of the readme names every chapter of it, in order; and a class that publishes a reader over a
+descriptor names no adapter — which is the rule that would have stopped the outline growing blind to
+everybody else's elements, and could not have been written before it happened.
 
 ## 0.4.0 — 2026-08-24
 

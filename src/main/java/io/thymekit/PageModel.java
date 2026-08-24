@@ -55,7 +55,7 @@ public final class PageModel {
 
     /** A page canvas. */
     public static Canvas of(Model model) {
-        return new Builder(Element.required(model, "PageModel.of(model)"));
+        return new Builder(Guards.required(model, "PageModel.of(model)"));
     }
 
     /**
@@ -196,19 +196,19 @@ public final class PageModel {
 
         @Override
         public Canvas canonical(String url) {
-            this.canonical = Element.requireAbsolute(url, "Canvas.canonical(url)");
+            this.canonical = Guards.absolute(url, "Canvas.canonical(url)");
             return this;
         }
 
         @Override
         public Canvas image(String url) {
-            this.image = Element.requireAbsolute(url, "Canvas.image(url)");
+            this.image = Guards.absolute(url, "Canvas.image(url)");
             return this;
         }
 
         @Override
         public Canvas robots(Robots... directives) {
-            Element.required(directives, "PageModel.robots(directives)");
+            Guards.required(directives, "PageModel.robots(directives)");
             if (directives.length == 0) {
                 throw new MisuseException("PageModel.robots", "without a directive: say what a crawler may not do, "
                     + "or do not call robots at all");
@@ -225,7 +225,7 @@ public final class PageModel {
          * and content is nobody's to tidy.
          */
         private static String require(String value, String where) {
-            return Element.requireText(value, where).strip();
+            return Guards.text(value, where).strip();
         }
 
         @Override
@@ -323,7 +323,7 @@ public final class PageModel {
 
         @Override
         public String render(String view) {
-            Element.required(view, "PageModel.render(view)");
+            Guards.required(view, "PageModel.render(view)");
             if (title == null) {
                 throw new MisuseException("PageModel.render", "page without a title: call title(...) before render()");
             }

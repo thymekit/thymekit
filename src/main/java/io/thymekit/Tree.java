@@ -49,8 +49,8 @@ public final class Tree {
      * }</pre>
      */
     public static void walk(Object node, java.util.function.Predicate<Map<?, ?>> visit) {
-        Element.required(node, "Tree.walk(node)");
-        Element.required(visit, "Tree.walk(visit)");
+        Guards.required(node, "Tree.walk(node)");
+        Guards.required(visit, "Tree.walk(visit)");
         descend(node, visit);
     }
 
@@ -83,7 +83,7 @@ public final class Tree {
      * script by hand.
      */
     public static List<Element<Element.Script>> assetsOf(Collection<?> roots) {
-        Element.required(roots, "Tree.assetsOf(roots)");
+        Guards.required(roots, "Tree.assetsOf(roots)");
         LinkedHashMap<String, Element<Element.Script>> found = new LinkedHashMap<>();
         collectAssets(roots, found);
         return List.copyOf(found.values());
@@ -96,7 +96,7 @@ public final class Tree {
      */
     @SuppressWarnings("unchecked")
     public static List<Map<String, Object>> describedBy(Collection<?> roots) {
-        Element.required(roots, "Tree.describedBy(roots)");
+        Guards.required(roots, "Tree.describedBy(roots)");
         List<Map<String, Object>> found = new ArrayList<>();
         walk(roots, descriptor -> {
             if (descriptor.get("describes") instanceof Map<?, ?> node && !found.contains(node)) {

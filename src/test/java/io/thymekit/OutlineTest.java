@@ -81,9 +81,10 @@ class OutlineTest {
     /** Html has six levels, and an element carrying anything else renders nothing at all. */
     @Test
     void htmlHasSixLevels() {
-        for (Object impossible : List.of(7, "7", 0L)) {
-            assertThatThrownBy(() -> Outline.requireSound(List.of(Element.raw("thymekit/heading", "headingEl")
-                    .with("level", impossible).with("text", "x").build())))
+        for (int impossible : List.of(7, 0, -1)) {
+            assertThatThrownBy(() -> Outline.requireSound(List.of(
+                    Element.raw("t", "chapterEl").headingLevel("depth", impossible).build())))
+                .as("a level html does not have is refused before the page renders")
                 .isInstanceOf(UnsoundPageException.class).hasMessageContaining("outside h1..h6");
         }
         assertThatCode(() -> Outline.requireSound(List.of(
@@ -93,22 +94,25 @@ class OutlineTest {
     }
 
     /**
-     * A level counts however it was written. The kit's factories always write a number, but an element
-     * minted by hand may carry text — and a guard that understood only one of the two would have let a
-     * second H1 through while the adapter rendered it happily.
+     * A level is counted whoever wrote it. An element minted by hand at any address takes part by
+     * saying that one of its keys is a heading level — and a key that says nothing is data, which is
+     * none of this check's business however it is spelled.
      */
     @Test
-    void aLevelCountsHoweverItWasWritten() {
+    void aLevelIsCountedWhoeverWroteIt() {
         assertThatThrownBy(() -> Outline.requireSound(List.of(Heading.h1("Page").build(),
-                Element.raw("thymekit/heading", "headingEl").with("level", "1").with("text", "sneaky").build())))
+                Element.raw("fragments/my/chapter", "chapterEl").headingLevel("depth", 1)
+                    .name("title", "sneaky").build())))
             .isInstanceOf(UnsoundPageException.class).hasMessageContaining("sneaky");
+
         assertThatCode(() -> Outline.requireSound(List.of(Heading.h1("Page").build(),
-                Element.raw("thymekit/heading", "headingEl").with("level", " 2 ").with("text", "spaced").build())))
-            .as("text with spaces still reads as a level").doesNotThrowAnyException();
+                Element.raw("fragments/my/chapter", "chapterEl").headingLevel("depth", 2).build())))
+            .as("and a page of theirs that adds up is a page like any other").doesNotThrowAnyException();
+
         assertThatCode(() -> Outline.requireSound(List.of(
-                Element.raw("thymekit/heading", "headingEl").with("level", "two").with("text", "x").build(),
-                Element.raw("thymekit/heading", "headingEl").with("text", "no level at all").build())))
-            .as("what does not read as a level is not the guard's business").doesNotThrowAnyException();
+                Element.raw("fragments/my/card", "cardEl").with("level", 1).build(),
+                Element.raw("fragments/my/card", "cardEl").with("level", 4).build())))
+            .as("a key called level that was never said to be one is data").doesNotThrowAnyException();
     }
 
     /**

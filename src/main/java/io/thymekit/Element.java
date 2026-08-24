@@ -35,12 +35,14 @@ import org.jspecify.annotations.Nullable;
  *       descriptor's;</li>
  *   <li><b>the maker</b> — {@link Descriptor}, the one way an element is made, here and in consumer
  *       code, with {@link #raw} and {@link #script} as its two shortcuts;</li>
- *   <li><b>the guards a host uses</b> — {@link #settle}, {@link #requireRenderable},
- *       {@link #requireRenderableElement}, {@link #requireAdapter}, {@link #requireTag}, all public,
- *       because an element of yours hosts other elements the same way the kit's own do;</li>
- *   <li><b>and nothing about trees.</b> What a page or a subtree yields — the scripts it depends on,
- *       what its elements say about themselves — is {@link Tree}'s business, as is every other question
- *       whose answer needs more than one element.</li>
+ *   <li><b>the guards over an element</b> — {@link #settle}, {@link #requireRenderable},
+ *       {@link #requireRenderableElement}, {@link #requireAdapter}, all public, because an element of
+ *       yours hosts other elements the same way the kit's own do. Guards over a <b>value</b> are
+ *       {@link Guards}: none of those knows what an element is, and keeping them apart is what stops
+ *       everything that guards anything from depending on the currency;</li>
+ *   <li><b>and nothing about pages.</b> What a page or a subtree yields is {@link Tree}'s business,
+ *       what a page asks of an element is {@link Roles}', and every other question whose answer needs
+ *       more than one element belongs to whoever asks it.</li>
  * </ul>
  *
  * <p>Each is specified by a file of its own next to {@code ElementTest}. What used to be a fifth thing
@@ -50,8 +52,8 @@ import org.jspecify.annotations.Nullable;
 public final class Element<K> implements Composable<K> {
 
     /** Descriptor keys reserved by the engine; data cannot use them. */
-    static final Set<String> RESERVED =
-        Set.of("template", "fragment", "bare", "slots", "assets", "illustration", "describes");
+    static final Set<String> RESERVED = Set.of("template", "fragment", "bare", "slots", "assets",
+        "illustration", "describes", "roles");
 
     private final Map<String, Object> m;
 
@@ -85,7 +87,7 @@ public final class Element<K> implements Composable<K> {
     @SuppressWarnings("unchecked")
     public List<Map<String, Object>> slot(String name) {
         Map<String, List<Map<String, Object>>> slots = (Map<String, List<Map<String, Object>>>) m.get("slots");
-        List<Map<String, Object>> items = slots == null ? null : slots.get(required(name, "Element.slot(name)"));
+        List<Map<String, Object>> items = slots == null ? null : slots.get(Guards.required(name, "Element.slot(name)"));
         return items == null ? List.of() : items;
     }
 
@@ -97,103 +99,21 @@ public final class Element<K> implements Composable<K> {
     }
 
     /**
-     * A value that had to be given. Replaces {@code Objects.requireNonNull} everywhere in the kit: the
-     * exception it throws is somebody else's, and a consumer cannot tell it from their own code
-     * failing — which is the whole reason this family exists.
-     */
-    public static <T> T required(@Nullable T value, String where) {
-        if (value == null) {
-            throw new MisuseException(where, "was not given");
-        }
-        return value;
-    }
-
-    /**
-     * An address that leaves the page — into a canonical link, into Open Graph, into a graph a crawler
-     * reads — is absolute or it is broken. Whoever reads it is not looking at the document and has
-     * nothing to resolve a path against, and the failure is silent: no preview, or a canonical pointing
-     * at a stranger.
+     * What a key of an element is, as far as the checks a page gets are concerned.
      *
-     * <p>Public because two elements need it, and two users make a policy rather than a detail.
-     */
-    public static String requireAbsolute(String url, String where) {
-        String value = requireText(url, where).strip();
-        if (!value.regionMatches(true, 0, "https://", 0, 8) && !value.regionMatches(true, 0, "http://", 0, 7)) {
-            throw new MisuseException(where, "is not an absolute address: \"" + value
-                + "\" — this value leaves the page, and whoever reads it has no document to resolve it against");
-        }
-        return value;
-    }
-
-    /** A browser drops these before it reads a scheme, so they cannot be used to hide one. */
-    private static final Pattern IGNORED_IN_SCHEME = Pattern.compile("[\\s\\p{Cntrl}]");
-
-    /** Schemes that execute rather than navigate. */
-    private static final Set<String> EXECUTING_SCHEMES = Set.of("javascript:", "data:", "vbscript:");
-
-    /**
-     * An address that navigates. Kept trimmed, refused when blank, and refused when its scheme executes
-     * rather than goes somewhere — {@code javascript:}, {@code data:}, {@code vbscript:}, however they
-     * are spelled, since a browser drops spaces, tabs and control characters before reading a scheme and
-     * {@code java\tscript:} is the plain one by the time it is followed.
+     * <p>Not public, and that is the design rather than an omission: what a consumer needs are the
+     * three verbs below and the three readers of {@link Roles}. This is the vocabulary of what may be
+     * written into a descriptor, which is why it lives with the descriptor; the questions asked of it
+     * live with the checks that ask them.
      *
-     * <p>Public because two elements need it, and an href is the last place any of those can be stopped
-     * before the page.
+     * <p>This is not {@code describes}: a contribution says what a page means to a machine outside, a
+     * role says what a key means to this kit. One leaves in the HTML; the other never does.
      */
-    public static String requireNavigable(String href, String where) {
-        // no check for empty after this: requireText has already refused a blank, and stripping a text
-        // that has something in it cannot leave nothing. The check was here when this guard belonged to
-        // the heading and its first line was a bare null check; it survived the move and meant nothing
-        String value = requireText(href, where).strip();
-        String asFollowed = IGNORED_IN_SCHEME.matcher(value).replaceAll("").toLowerCase(java.util.Locale.ROOT);
-        for (String executing : EXECUTING_SCHEMES) {
-            if (asFollowed.startsWith(executing)) {
-                throw new MisuseException(where, "is not a link but a script: \"" + href + "\"");
-            }
-        }
-        return value;
-    }
-
-    private static final Pattern LANGUAGE_TAG = Pattern.compile("[A-Za-z0-9]+(-[A-Za-z0-9]+)*");
+    enum Role { HEADING_LEVEL, ANCHOR, NAME }
 
     /** A template path and a fragment name, as a template resolver would accept them. */
     private static final Pattern TEMPLATE = Pattern.compile("[A-Za-z0-9_][A-Za-z0-9/_.-]*");
     private static final Pattern FRAGMENT = Pattern.compile("[A-Za-z0-9_][A-Za-z0-9_]*");
-
-    /**
-     * Text a page will show: given, and not empty. Two elements refuse the same thing for the same
-     * reason — a caption with nothing in it is an empty box, a heading with nothing in it is a place in
-     * the outline a screen reader stops at and finds nothing — so the refusal is one rule in one place
-     * rather than two spellings of it.
-     *
-     * <p>What is given is kept exactly: a space inside a line belongs to whoever wrote the line. Only
-     * a text that is nothing at all is refused.
-     */
-    public static String requireText(String text, String where) {
-        required(text, where);
-        if (text.isBlank()) {
-            throw new MisuseException(where, "is blank — a page shows what it was given, "
-                + "and this is nothing");
-        }
-        return text;
-    }
-
-    /**
-     * A language tag, the way {@code lang} wants it: letters, digits and hyphens, nothing else. Not the
-     * full BCP-47 grammar — just enough that a sentence, a translation or an empty string never ends up
-     * in the attribute, where it would silently make the page claim a language it does not speak.
-     *
-     * <p>Public with the other guards: two elements of the kit already use it, which makes it the policy
-     * of a concept rather than a detail of either, and an element of yours that offers {@code lang}
-     * needs the same check the kit's own make.
-     */
-    public static String requireTag(String tag, String where) {
-        required(tag, where);
-        if (!LANGUAGE_TAG.matcher(tag).matches()) {
-            throw new MisuseException(where, "is not a language tag: \"" + tag + "\"");
-        }
-        return tag;
-    }
 
     /**
      * Whether a descriptor is an illustration: a sample framed for display rather than part of what the
@@ -230,7 +150,7 @@ public final class Element<K> implements Composable<K> {
      * kit follows everywhere — accept what becomes an element, store only what has become one.
      */
     public static <K> Element<K> settle(Composable<K> composable, String where) {
-        Element<K> built = required(composable, where).build();
+        Element<K> built = Guards.required(composable, where).build();
         if (built == null) {
             throw new MisuseException(where, "built nothing");
         }
@@ -247,7 +167,7 @@ public final class Element<K> implements Composable<K> {
     }
 
     public static void requireRenderable(Element<?> e, String where) {
-        if (required(e, "Element.requireRenderable(element)").bare()) {
+        if (Guards.required(e, "Element.requireRenderable(element)").bare()) {
             throw new MisuseException(where, "a script element does not belong in the flow — "
                 + "declare it as an element dependency via requires(), the canvas collects assets");
         }
@@ -258,8 +178,8 @@ public final class Element<K> implements Composable<K> {
      * given element. Public on purpose — consumer elements guard their own narrow points the same way.
      */
     public static void requireAdapter(Element<?> e, String fragment, String where) {
-        required(e, "Element.requireAdapter(element)");
-        required(fragment, "Element.requireAdapter(fragment)");
+        Guards.required(e, "Element.requireAdapter(element)");
+        Guards.required(fragment, "Element.requireAdapter(fragment)");
         if (!fragment.equals(e.fragment())) {
             throw new MisuseException(where, "wanted the " + fragment + " adapter, and got " + e.fragment());
         }
@@ -304,7 +224,7 @@ public final class Element<K> implements Composable<K> {
         }
 
         private static String address(String value, String where, Pattern shape) {
-            required(value, where);
+            Guards.required(value, where);
             if (!shape.matcher(value).matches()) {
                 throw new MisuseException(where, "is not an adapter address: \"" + value
                     + "\" — the dispatcher turns it into an expression, so it may only be a path and a name");
@@ -329,7 +249,7 @@ public final class Element<K> implements Composable<K> {
          * caller still holds must not be able to change the element after it was built.
          */
         public Descriptor<K> with(String key, Object value) {
-            required(key, "Descriptor.with(key)");
+            Guards.required(key, "Descriptor.with(key)");
             if (RESERVED.contains(key)) {
                 throw new MisuseException("Descriptor.with(key)",
                     "the key \"" + key + "\" is reserved by the descriptor");
@@ -383,7 +303,7 @@ public final class Element<K> implements Composable<K> {
          * would guess at what was meant, replacing would lose the first quietly — so it is refused.
          */
         public Descriptor<K> describes(Map<String, ?> node) {
-            required(node, "Descriptor.describes(node)");
+            Guards.required(node, "Descriptor.describes(node)");
             if (d.containsKey("describes")) {
                 throw new MisuseException("Descriptor.describes",
                     "this element already describes itself: one element, one node");
@@ -422,13 +342,65 @@ public final class Element<K> implements Composable<K> {
         }
 
         /**
+         * The level of a heading this element carries, said and put in one call. An element that says
+         * so takes part in the outline of every page it lands on, the kit's own heading and yours
+         * alike — the check asks what a key is, never which adapter carries it.
+         *
+         * <p>Whether the level is one HTML has is judged by {@link Outline}, over the whole page,
+         * along with the levels around it. Refusing a seventh here as well would leave that judgement
+         * with nothing to reach it — and a page assembled from stored data would have no judge at all.
+         */
+        public Descriptor<K> headingLevel(String key, int level) {
+            Guards.required(key, "Descriptor.headingLevel(key)");
+            return says(key, Role.HEADING_LEVEL, level, "Descriptor.headingLevel");
+        }
+
+        /**
+         * An address inside the page this element carries. Two things on one page answering to one
+         * anchor is refused before the page renders, for your elements as for the kit's own.
+         */
+        public Descriptor<K> anchor(String key, String value) {
+            Guards.required(key, "Descriptor.anchor(key)");
+            return says(key, Role.ANCHOR, Guards.anchor(value, "Descriptor.anchor(value)"),
+                "Descriptor.anchor");
+        }
+
+        /**
+         * What to call this element in a message about the page — the words a person would recognise it
+         * by. Nothing prints it; a refusal names it.
+         */
+        public Descriptor<K> name(String key, String value) {
+            Guards.required(key, "Descriptor.name(key)");
+            return says(key, Role.NAME, Guards.text(value, "Descriptor.name(value)"), "Descriptor.name");
+        }
+
+        /**
+         * Says and puts in one call, which is the whole shape of it: a key can never be given a role
+         * and left without a value, so nothing has to check that it wasn't. One role belongs to one
+         * key — two keys claiming to be the anchor is a question with two answers, and a check would
+         * have to pick one.
+         */
+        private Descriptor<K> says(String key, Role role, Object value, String where) {
+            @SuppressWarnings("unchecked")
+            Map<String, String> roles = (Map<String, String>) d.computeIfAbsent("roles",
+                k -> new LinkedHashMap<String, String>());
+            String said = roles.get(role.name());
+            if (said != null && !said.equals(key)) {
+                throw new MisuseException(where, "this element already says that \"" + said
+                    + "\" is what it carries there: one role, one key");
+            }
+            roles.put(role.name(), key);
+            return with(key, value);
+        }
+
+        /**
          * A named slot of a composite element. What may go in is constrained by the factory's slot
          * method, not here; an empty list leaves the slot unrendered.
          */
         @SuppressWarnings("unchecked")
         public Descriptor<K> slot(String name, List<? extends Composable<?>> items) {
-            required(name, "Descriptor.slot(name)");
-            required(items, "Descriptor.slot(items)");
+            Guards.required(name, "Descriptor.slot(name)");
+            Guards.required(items, "Descriptor.slot(items)");
             Map<String, List<Map<String, Object>>> slots =
                 (Map<String, List<Map<String, Object>>>) d.computeIfAbsent("slots", k -> new LinkedHashMap<String, List<Map<String, Object>>>());
             slots.put(name, items.stream()
@@ -442,8 +414,8 @@ public final class Element<K> implements Composable<K> {
         public final Descriptor<K> requires(Element<Script>... scripts) {
             List<Map<String, Object>> list =
                 (List<Map<String, Object>>) d.computeIfAbsent("assets", k -> new ArrayList<Map<String, Object>>());
-            for (Element<Script> s : required(scripts, "Descriptor.requires(scripts)")) {
-                if (!required(s, "Descriptor.requires(scripts) — one of them").bare()) {
+            for (Element<Script> s : Guards.required(scripts, "Descriptor.requires(scripts)")) {
+                if (!Guards.required(s, "Descriptor.requires(scripts) — one of them").bare()) {
                     throw new MisuseException("Descriptor.requires(scripts) — one of them",
                         "a dependency must be a script element (Element.script)");
                 }
@@ -467,6 +439,9 @@ public final class Element<K> implements Composable<K> {
         @SuppressWarnings("unchecked")
         public Element<K> build() {
             LinkedHashMap<String, Object> copy = new LinkedHashMap<>(d);
+            if (copy.get("roles") instanceof Map<?, ?> roles) {
+                copy.put("roles", Collections.unmodifiableMap(new LinkedHashMap<>((Map<String, String>) roles)));
+            }
             if (copy.get("slots") instanceof Map<?, ?> slots) {   // snapshot: the builder may go on, the element must not change
                 copy.put("slots", Collections.unmodifiableMap(new LinkedHashMap<>((Map<String, Object>) slots)));
             }

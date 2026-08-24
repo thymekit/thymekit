@@ -48,7 +48,7 @@ final class Json {
      */
     static String write(Object value) {
         StringBuilder out = new StringBuilder();
-        write(Element.required(value, "Json.write(value)"), "", out);
+        write(Guards.required(value, "Json.write(value)"), "", out);
         return out.toString();
     }
 

@@ -63,7 +63,7 @@ public final class Caption {
         private Builder(String role, String text) {
             this.b = Element.Descriptor.<Caption>of("thymekit/caption", "captionEl")
                 .with("role", role)
-                .with("text", Element.requireText(text, "Caption(text)"));
+                .with("text", Guards.text(text, "Caption(text)"));
         }
 
         /**
@@ -74,7 +74,7 @@ public final class Caption {
          * the blind understand.
          */
         public Builder time(LocalDate day) {
-            b.with("datetime", Element.required(day, "Caption.time(day)").toString());
+            b.with("datetime", Guards.required(day, "Caption.time(day)").toString());
             return this;
         }
 
@@ -83,7 +83,7 @@ public final class Caption {
          * publication, an edit, an event. Calling either {@code time} after the other keeps the last.
          */
         public Builder time(Instant moment) {
-            b.with("datetime", DateTimeFormatter.ISO_INSTANT.format(Element.required(moment, "Caption.time(moment)")));
+            b.with("datetime", DateTimeFormatter.ISO_INSTANT.format(Guards.required(moment, "Caption.time(moment)")));
             return this;
         }
 
@@ -93,7 +93,7 @@ public final class Caption {
          * accordingly instead of reading it as broken page language.
          */
         public Builder lang(String languageTag) {
-            b.with("lang", Element.requireTag(languageTag, "Caption.lang(languageTag)"));
+            b.with("lang", Guards.tag(languageTag, "Caption.lang(languageTag)"));
             return this;
         }
 

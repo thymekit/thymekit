@@ -77,45 +77,6 @@ class ElementGuardsTest {
     }
 
     /**
-     * Text a page will show is given and is not empty. Two elements refuse the same thing for the same
-     * reason, which by the canon makes it one rule rather than two spellings — and what is given is kept
-     * exactly, since a space inside a line belongs to whoever wrote the line.
-     */
-    @Test
-    void textAPageWillShowIsNotNothing() {
-        assertThat(Element.requireText("Baobab", "Card.title(text)")).isEqualTo("Baobab");
-        assertThat(Element.requireText("  kept  ", "Card.title(text)")).isEqualTo("  kept  ");
-
-        for (String nothing : java.util.List.of("", " ", "\t\n ")) {
-            assertThatThrownBy(() -> Element.requireText(nothing, "Card.title(text)"))
-                .isInstanceOf(MisuseException.class)
-                .hasMessage("Card.title(text): is blank — a page shows what it was given, and this is nothing");
-        }
-        assertThatThrownBy(() -> Element.requireText(null, "Card.title(text)"))
-            .isInstanceOf(MisuseException.class).hasMessage("Card.title(text): was not given");
-    }
-
-    /**
-     * A language tag goes into an attribute that tells a screen reader how to pronounce a phrase, so a
-     * sentence or an empty string must not reach it — a page that claims a language it does not speak is
-     * worse than one that claims none.
-     */
-    @Test
-    void aLanguageTagIsATagAndNotASentence() {
-        assertThat(Element.requireTag("la", "Card.lang(languageTag)")).isEqualTo("la");
-        assertThat(Element.requireTag("pt-BR", "Card.lang(languageTag)")).isEqualTo("pt-BR");
-        assertThat(Element.requireTag("zh-Hant-HK", "Card.lang(languageTag)")).isEqualTo("zh-Hant-HK");
-
-        for (String notATag : java.util.List.of("", " ", "по-русски", "la la", "la_LA", "-la", "la-")) {
-            assertThatThrownBy(() -> Element.requireTag(notATag, "Card.lang(languageTag)"))
-                .isInstanceOf(MisuseException.class).hasMessageStartingWith("Card.lang(languageTag):")
-                .hasMessageContaining("is not a language tag");
-        }
-        assertThatThrownBy(() -> Element.requireTag(null, "Card.lang(languageTag)"))
-            .isInstanceOf(MisuseException.class).hasMessage("Card.lang(languageTag): was not given");
-    }
-
-    /**
      * And every one of them is reachable from outside. Two elements of the kit already share the tag
      * check, which by the canon makes it policy rather than detail — and a consumer writing a caption of
      * their own needs the same guards the kit's own hosts use, or the promise that their element is an

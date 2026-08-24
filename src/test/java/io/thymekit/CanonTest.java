@@ -23,6 +23,14 @@ import org.junit.jupiter.api.Test;
  *
  * <p>Rules about files — a fragment declared, a stylesheet imported, a class with a rule — live in
  * {@link ElementContractTest}, since no rule about java can see them.
+ * <p>Four of these rules are about the readme rather than about the shape of the code — the number of
+ * rules, the map of chapters, the version this document hands out, the length of the list. That is
+ * deliberate and worth saying, because it looks like drift: prose has no compiler, no test and no
+ * reviewer who reads it twice, so it goes stale faster than anything else here, and every one of those
+ * four was written after prose had already gone stale in exactly that way. The danger is the other
+ * one: a rule about prose is cheap to write and easy to satisfy without meaning it. So they earn their
+ * place the same way the rest do — each was made to fail first, on a real sentence that was wrong.
+ *
  */
 class CanonTest {
 
@@ -824,7 +832,8 @@ class CanonTest {
      */
     private static final java.util.List<String> GUARDS = java.util.List.of("required", "settle", "check",
         "requireText", "requireTag", "requireAbsolute", "requireNavigable", "requireRenderable",
-        "requireRenderableElement", "requireAdapter", "inRole", "address", "step", "require");
+        "requireRenderableElement", "requireAdapter", "inRole", "address", "step", "require", "says", "text", "tag", "absolute", "navigable",
+        "anchor");
 
     @Test
     void everyPlaceARefusalPointsAtIsACall() throws java.io.IOException {
@@ -1001,6 +1010,40 @@ class CanonTest {
             .map(m -> m.group(1)).toList();
         assertThat(named).as("the chapters the map names, against the chapters there are")
             .isEqualTo(chapters);
+    }
+
+    /**
+     * A class that publishes a reader over a descriptor names no adapter.
+     *
+     * <p>The rule is the defect and no wider. An element that reads descriptors back writes the reader
+     * the only way it can — beginning with "is this my adapter?" — and then every check built on that
+     * reader is blind to everybody else's elements. That is exactly how the outline of a page came to
+     * count the kit's own headings and no others, for two releases, while the readme promised that an
+     * element of yours is an element like ours.
+     *
+     * <p>Reading a descriptor back is not itself the trouble, and an earlier spelling of this rule said
+     * it was — which would have forced every future question about a page into the currency and made a
+     * junk drawer of it. What a reader may not do is answer for one address.
+     *
+     * <p>The neighbouring rule catches a class naming an adapter that is not its own. It cannot catch
+     * this one, because the class doing it is the owner.
+     */
+    @Test
+    void aReaderOverADescriptorNamesNoAdapter() throws java.io.IOException {
+        var reader = java.util.regex.Pattern.compile("public static [^;{]*\\(\\s*Map<\\?, \\?>");
+        var adapter = java.util.regex.Pattern.compile("\"[a-zA-Z0-9]+El\"");
+        java.util.List<String> knowing = new java.util.ArrayList<>();
+        try (var files = java.nio.file.Files.walk(java.nio.file.Path.of("src/main/java/io/thymekit"))) {
+            for (var file : files.filter(f -> f.toString().endsWith(".java")).sorted().toList()) {
+                String source = java.nio.file.Files.readString(file)
+                    .replaceAll("(?s)/\\*.*?\\*/", " ").replaceAll("//.*", " ");
+                if (reader.matcher(source).find() && adapter.matcher(source).find()) {
+                    knowing.add(file.getFileName().toString());
+                }
+            }
+        }
+        assertThat(knowing).as("classes that read a descriptor back and know an address to read it for")
+            .isEmpty();
     }
 
     /** The model belongs to the canvas: one place writes it, so a document knows what to expect. */

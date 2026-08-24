@@ -58,8 +58,8 @@ public final class Topbar {
          * "All ingredients" — is what somebody hears who cannot see the trail beside it.
          */
         public Builder back(String href, String label) {
-            this.back = new Back(Element.requireNavigable(href, "Topbar.back(href)"),
-                Element.requireText(label, "Topbar.back(label)"));
+            this.back = new Back(Guards.navigable(href, "Topbar.back(href)"),
+                Guards.text(label, "Topbar.back(label)"));
             return this;
         }
 

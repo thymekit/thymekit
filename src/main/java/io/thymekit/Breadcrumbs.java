@@ -61,7 +61,7 @@ public final class Breadcrumbs {
         private @Nullable String origin;
 
         private Builder(String label) {
-            this.label = Element.requireText(label, "Breadcrumbs.named(label)");
+            this.label = Guards.text(label, "Breadcrumbs.named(label)");
         }
 
         /**
@@ -73,7 +73,7 @@ public final class Breadcrumbs {
          * would need the address of the page, which is the one thing this element does not have.
          */
         public Builder site(String origin) {
-            String value = Element.requireAbsolute(origin, "Breadcrumbs.site(origin)");
+            String value = Guards.absolute(origin, "Breadcrumbs.site(origin)");
             // != -1 rather than >= 0: the search starts past the scheme, so a zero is not a boundary
             // this code can reach, and asking about one invites a question that has no answer
             if (value.indexOf('/', value.indexOf("//") + 2) != -1) {
@@ -94,14 +94,14 @@ public final class Breadcrumbs {
          * caller cannot look up. What they can open is the line they wrote, which is this one.
          */
         public Builder add(String url, String label) {
-            Element.requireNavigable(url, "Breadcrumbs.add(url)");
-            Element.requireText(label, "Breadcrumbs.add(label)");
+            Guards.navigable(url, "Breadcrumbs.add(url)");
+            Guards.text(label, "Breadcrumbs.add(label)");
             return step(Crumb.link(url, label), "Breadcrumbs.add");
         }
 
         /** The page you are on: the last step, and the end of the trail. */
         public Element<Breadcrumbs> current(String label) {
-            Element.requireText(label, "Breadcrumbs.current(label)");
+            Guards.text(label, "Breadcrumbs.current(label)");
             return step(Crumb.current(label), "Breadcrumbs.current").build();
         }
 

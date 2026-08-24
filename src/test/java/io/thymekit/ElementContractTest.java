@@ -377,6 +377,25 @@ class ElementContractTest {
             .hasMessage("ElementContract.check: cannot read templates/thymekit/heading.html");
     }
 
+    /**
+     * An anchor an element declares is an anchor a browser can find. The page check holds every page to
+     * that value; if the adapter never prints it as an id, the check guards a name that is not in the
+     * document — and nothing else in the kit can notice, because only the walk sees what came out.
+     */
+    @Test
+    void anAnchorDeclaredIsAnAnchorPrinted() {
+        var saysButDoesNotPrint = Element.raw("fragments/my/silent", "silentEl")
+            .anchor("slug", "in-the-south");
+
+        assertThatThrownBy(() -> ElementContract.of(saysButDoesNotPrint).renderedBy(ENGINE).check())
+            .isInstanceOf(ContractBrokenException.class)
+            .hasMessageContaining("prints no id with it");
+
+        assertThatCode(() -> ElementContract.of(Heading.h2("Composition").id("composition"))
+                .renderedBy(ENGINE).styledBy(kitStylesheets()).check())
+            .as("and the kit's own heading prints the one it declares").doesNotThrowAnyException();
+    }
+
     /** The kit's own stylesheets, from the manifest rather than from a list somebody keeps. */
     private static String[] kitStylesheets() {
         var manifest = new java.util.ArrayList<>(List.of("static/thymekit/ui.css"));

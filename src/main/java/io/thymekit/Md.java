@@ -59,7 +59,7 @@ public final class Md {
          * is: a hint with nothing in it is an empty box where an explanation was meant to be.
          */
         public Builder emptyHint(String hint) {
-            b.with("emptyHint", Element.requireText(hint, "Md.emptyHint(hint)"));
+            b.with("emptyHint", Guards.text(hint, "Md.emptyHint(hint)"));
             hasHint = true;
             return this;
         }

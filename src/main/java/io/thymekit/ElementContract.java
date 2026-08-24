@@ -110,7 +110,7 @@ public final class ElementContract {
 
     /** The elements to walk: one live sample of each, as a page would build them. */
     public static ElementContract of(Composable<?>... elements) {
-        Element.required(elements, "ElementContract.of(elements)");
+        Guards.required(elements, "ElementContract.of(elements)");
         List<Element<?>> settled = new ArrayList<>();
         for (Composable<?> element : elements) {
             settled.add(Element.settle(element, "ElementContract.of(elements) — one of them"));
@@ -124,7 +124,7 @@ public final class ElementContract {
 
     /** Renders each element through the dispatcher, with the engine your application uses. */
     public ElementContract renderedBy(ITemplateEngine engine) {
-        return new ElementContract(elements, Element.required(engine, "ElementContract.renderedBy(engine)"),
+        return new ElementContract(elements, Guards.required(engine, "ElementContract.renderedBy(engine)"),
             stylesheets, templateRoots, everyKey);
     }
 
@@ -136,7 +136,7 @@ public final class ElementContract {
      */
     public ElementContract templatesUnder(String... classpathPrefixes) {
         List<String> roots = new ArrayList<>(List.of(
-            Element.required(classpathPrefixes, "ElementContract.templatesUnder(classpathPrefixes)")));
+            Guards.required(classpathPrefixes, "ElementContract.templatesUnder(classpathPrefixes)")));
         roots.addAll(templateRoots);
         return new ElementContract(elements, engine, stylesheets, List.copyOf(roots), everyKey);
     }
@@ -148,7 +148,7 @@ public final class ElementContract {
      */
     public ElementContract styledBy(String... cssResources) {
         List<String> all = new ArrayList<>(stylesheets);            // said twice means both, never the last one only
-        all.addAll(List.of(Element.required(cssResources, "ElementContract.styledBy(cssResources)")));
+        all.addAll(List.of(Guards.required(cssResources, "ElementContract.styledBy(cssResources)")));
         return new ElementContract(elements, engine, List.copyOf(all), templateRoots, everyKey);
     }
 
@@ -195,6 +195,7 @@ public final class ElementContract {
                 if (html != null) {
                     printedClasses.addAll(classesIn(html));
                     everyKeyChangesTheOutput(element, engine, address, html, failures);
+                    anAnchorIsPrintedAsOne(element, address, html, failures);
                 }
             }
         }
@@ -347,6 +348,23 @@ public final class ElementContract {
         Context context = new Context();
         context.setVariable("e", descriptor);
         return engine.process("thymekit/element", Set.of("render"), context);
+    }
+
+    /**
+     * An element that says one of its keys is an address inside the page prints it as one. The anchor
+     * check holds every page to that value; if the adapter never puts it in an {@code id}, the check
+     * guards a name that is not in the document, and two pages could quietly answer to nothing.
+     *
+     * <p>Asked only where there is an engine to render with — a declaration is taken at its word until
+     * something can look at what came out.
+     */
+    private static void anAnchorIsPrintedAsOne(Element<?> element, String address, String html,
+                                               List<String> failures) {
+        String anchor = Roles.anchorIn(element.asMap());
+        if (anchor != null && !html.contains("id=\"" + anchor + "\"") && !html.contains("id='" + anchor + "'")) {
+            failures.add(address + " — says \"" + anchor + "\" is an address inside the page and prints no"
+                + " id with it: the anchor check would hold a page to a name no browser can find");
+        }
     }
 
     private static Set<String> classesIn(String html) {

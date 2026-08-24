@@ -73,7 +73,7 @@ public enum Rel {
      * refused — an option called with nothing to say is a line that meant something and lost it.
      */
     public static Set<Rel> of(Rel... values) {
-        Element.required(values, "Rel.of(values)");
+        Guards.required(values, "Rel.of(values)");
         if (values.length == 0) {
             throw new MisuseException("Rel.of(values)",
                 "no value was named — name at least one, or do not ask for one at all");
@@ -91,7 +91,7 @@ public enum Rel {
      * change the result, and asking twice says the same thing as asking once.
      */
     public static Set<Rel> forNewTab(Collection<Rel> values) {
-        Element.required(values, "Rel.forNewTab(values)");
+        Guards.required(values, "Rel.forNewTab(values)");
         Set<Rel> withSafety = guarded(values, "Rel.forNewTab(values) — one of them");
         withSafety.add(NOOPENER);
         return Collections.unmodifiableSet(withSafety);
@@ -103,9 +103,9 @@ public enum Rel {
      * when what comes back is not empty.
      */
     public static String tokens(Collection<Rel> values) {
-        Element.required(values, "Rel.tokens(values)");
+        Guards.required(values, "Rel.tokens(values)");
         return values.stream()
-            .map(value -> Element.required(value, "Rel.tokens(values) — one of them").token())
+            .map(value -> Guards.required(value, "Rel.tokens(values) — one of them").token())
             .collect(Collectors.joining(" "));
     }
 
@@ -118,7 +118,7 @@ public enum Rel {
     private static Set<Rel> guarded(Collection<Rel> values, String each) {
         Set<Rel> unique = new LinkedHashSet<>();
         for (Rel value : values) {
-            unique.add(Element.required(value, each));
+            unique.add(Guards.required(value, each));
         }
         return unique;
     }

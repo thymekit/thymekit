@@ -1,0 +1,8 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+<!--/* an element that says one of its keys is an address inside the page, and prints no id with it */-->
+<!--/* keys: slug */-->
+<span th:fragment="silentEl(e)" class="my-silent" th:text="${e['slug']}"></span>
+</body>
+</html>

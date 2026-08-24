@@ -76,8 +76,8 @@ class HeroTest {
 
         @SuppressWarnings("unchecked")
         Composable<Heading> byHand = (Composable<Heading>) (Composable<?>) Element.raw("thymekit/heading", "headingEl")
-            .with("level", "1").with("text", "written as text");
-        assertThat(Hero.of(byHand).build().asMap()).as("a level counts however it was written")
+            .headingLevel("level", 1).with("text", "made by hand, and saying what it is");
+        assertThat(Hero.of(byHand).build().asMap()).as("a heading of anybody's, if it says it is one")
             .containsKey("heading");
 
         @SuppressWarnings("unchecked")

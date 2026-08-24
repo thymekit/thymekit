@@ -26,7 +26,7 @@ public final class MarkdownExpressionObject {
     private final MarkdownRenderer markdownRenderer;
 
     public MarkdownExpressionObject(MarkdownRenderer markdownRenderer) {
-        this.markdownRenderer = Element.required(markdownRenderer, "MarkdownExpressionObject(markdownRenderer)");
+        this.markdownRenderer = Guards.required(markdownRenderer, "MarkdownExpressionObject(markdownRenderer)");
     }
 
     /**
