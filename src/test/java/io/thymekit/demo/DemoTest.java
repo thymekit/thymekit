@@ -120,6 +120,24 @@ class DemoTest {
     }
 
     /**
+     * And the version it states is the version the build declares. It was written here by hand once
+     * and drifted by two releases before anybody read it — a page that miscounts its own subject is a
+     * poor argument for a kit whose whole claim is that a page cannot say what it does not keep.
+     *
+     * <p>Checked against the build file rather than against the resource the page reads, so that the
+     * expansion is checked too: an unexpanded placeholder would satisfy any comparison the page made
+     * with itself.
+     */
+    @Test
+    void theVersionThePageStatesAboutItselfIsTrue() throws Exception {
+        var build = Files.readString(Path.of("build.gradle"));
+        var declared = java.util.regex.Pattern.compile("(?m)^version = '([^']+)'").matcher(build);
+
+        assertThat(declared.find()).as("the build declares a version").isTrue();
+        assertThat(render()).contains(declared.group(1));
+    }
+
+    /**
      * The number the page states about itself is the number of elements the jar ships. A showcase that
      * miscounted its own subject would be a poor argument for a kit that refuses to let a page say
      * anything it cannot keep.

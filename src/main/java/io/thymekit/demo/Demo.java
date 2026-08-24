@@ -46,6 +46,21 @@ public final class Demo {
      */
     private static final int ELEMENTS = 7;
 
+    /**
+     * The version this page states about itself, taken from the build rather than written here. The
+     * count of elements above is checked against the templates by a spec; this one had nothing holding
+     * it and had drifted by two releases before anybody read it.
+     */
+    private static String version() {
+        var properties = new java.util.Properties();
+        try (var in = Demo.class.getResourceAsStream("/thymekit/version.properties")) {
+            properties.load(java.util.Objects.requireNonNull(in, "thymekit/version.properties"));
+        } catch (java.io.IOException unreadable) {
+            throw new java.io.UncheckedIOException("cannot read the version of the kit", unreadable);
+        }
+        return properties.getProperty("version");
+    }
+
     private Demo() {}
 
     /**
@@ -108,7 +123,7 @@ public final class Demo {
                 .eyebrow(Caption.eyebrow("showcase"))
                 .subtitle(Caption.subtitle("the elements on this page are composed in Java and rendered by the kit itself"))
                 .meta(Caption.meta(ELEMENTS + " elements, a canvas and a head"))
-                .badge(Element.Descriptor.of(PARTS, "statusBadgeEl").with("text", "0.1.0"))
+                .badge(Element.Descriptor.of(PARTS, "statusBadgeEl").with("text", version()))
                 .actions(Element.Descriptor.of(PARTS, "actionsEl")
                     .with("text", "the source, and every number on this page")
                     .with("href", "https://github.com/thymekit/thymekit")))
