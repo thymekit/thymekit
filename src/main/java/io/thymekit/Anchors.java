@@ -44,7 +44,8 @@ public final class Anchors {
             if (anchor != null) {
                 String first = byAnchor.putIfAbsent(anchor, Heading.textIn(descriptor));
                 if (first != null) {
-                    throw new IllegalStateException("two things on the page answer to the anchor \""
+                    throw new UnsoundPageException("Anchors.requireDistinct",
+                        "two things on the page answer to the anchor \""
                         + anchor + "\": \"" + first + "\" and \"" + Heading.textIn(descriptor)
                         + "\" — a name a page uses twice is a name it cannot use");
                 }

@@ -51,12 +51,13 @@ class CaptionTest {
     void aCaptionWithNothingToSayIsRefused() {
         for (String nothing : List.of("", " ", "\t\n  ")) {
             assertThatThrownBy(() -> Caption.meta(nothing))
-                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("text");
+                .isInstanceOf(MisuseException.class)
+                    .hasMessage("Caption(text): is blank — a page shows what it was given, and this is nothing");
         }
         assertThatThrownBy(() -> Caption.label(null))
-            .isInstanceOf(NullPointerException.class).hasMessageContaining("text");
-        assertThatThrownBy(() -> Caption.subtitle(null)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> Caption.eyebrow(null)).isInstanceOf(NullPointerException.class);
+            .isInstanceOf(MisuseException.class).hasMessage("Caption(text): was not given");
+        assertThatThrownBy(() -> Caption.subtitle(null)).isInstanceOf(MisuseException.class);
+        assertThatThrownBy(() -> Caption.eyebrow(null)).isInstanceOf(MisuseException.class);
     }
 
     /**
@@ -82,7 +83,7 @@ class CaptionTest {
         assertThat(Caption.meta("12 March 2026").time(LocalDate.of(2026, 3, 12)).build().asMap())
             .containsEntry("datetime", "2026-03-12").containsEntry("text", "12 March 2026");
         assertThatThrownBy(() -> Caption.meta("x").time((LocalDate) null))
-            .isInstanceOf(NullPointerException.class).hasMessageContaining("day");
+            .isInstanceOf(MisuseException.class).hasMessage("Caption.time(day): was not given");
     }
 
     /** A moment is kept as precisely as it was given, and the last thing said about the time wins. */
@@ -96,7 +97,7 @@ class CaptionTest {
                 .time(Instant.parse("2026-03-12T12:00:00Z")).build().asMap())
             .containsEntry("datetime", "2026-03-12T12:00:00Z");
         assertThatThrownBy(() -> Caption.meta("x").time((Instant) null))
-            .isInstanceOf(NullPointerException.class).hasMessageContaining("moment");
+            .isInstanceOf(MisuseException.class).hasMessage("Caption.time(moment): was not given");
     }
 
     /** A phrase in another language says which one, or a screen reader reads it as broken page language. */
@@ -109,9 +110,9 @@ class CaptionTest {
 
         for (String notATag : List.of("", " ", "по-русски", "la la", "la_LA")) {
             assertThatThrownBy(() -> Caption.subtitle("x").lang(notATag))
-                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("language tag");
+                .isInstanceOf(MisuseException.class).hasMessageContaining("language tag");
         }
-        assertThatThrownBy(() -> Caption.subtitle("x").lang(null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> Caption.subtitle("x").lang(null)).isInstanceOf(MisuseException.class);
     }
 
     /** A caption is a value: two written the same way are the same caption. */
@@ -133,25 +134,26 @@ class CaptionTest {
      */
     @Test
     void theGuardAHostUsesIsHandedOut() {
-        assertThat(Caption.inRole(Caption.eyebrow("Catalogue"), Caption.EYEBROW, "Hero.eyebrow accepts a caption")
+        assertThat(Caption.inRole(Caption.eyebrow("Catalogue"), Caption.EYEBROW, "Hero.eyebrow(eyebrow)")
             .asMap()).as("a maker is settled by the guard").containsEntry("text", "Catalogue");
 
         Element<Caption> settled = Caption.subtitle("RA-101").build();
-        assertThat(Caption.inRole(settled, Caption.SUBTITLE, "Hero.subtitle accepts a caption")).isSameAs(settled);
+        assertThat(Caption.inRole(settled, Caption.SUBTITLE, "Hero.subtitle(subtitle)")).isSameAs(settled);
 
-        assertThatThrownBy(() -> Caption.inRole(Caption.meta("x"), Caption.EYEBROW, "Hero.eyebrow accepts a caption"))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Hero.eyebrow").hasMessageContaining("eyebrow").hasMessageContaining("meta");
+        assertThatThrownBy(() -> Caption.inRole(Caption.meta("x"), Caption.EYEBROW, "Hero.eyebrow(eyebrow)"))
+            .isInstanceOf(MisuseException.class).hasMessageStartingWith("Hero.eyebrow(eyebrow):")
+            .hasMessageContaining("wanted a caption in role \"eyebrow\"").hasMessageContaining("meta");
 
         @SuppressWarnings("unchecked")
         Element<Caption> notACaption = (Element<Caption>) (Element<?>) Element.raw("t", "myCardEl").build();
-        assertThatThrownBy(() -> Caption.inRole(notACaption, Caption.LABEL, "Frame.label accepts a caption"))
-            .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("myCardEl");
+        assertThatThrownBy(() -> Caption.inRole(notACaption, Caption.LABEL, "Frame.label(caption)"))
+            .isInstanceOf(MisuseException.class).hasMessageStartingWith("Frame.label(caption):")
+            .hasMessageContaining("captionEl").hasMessageContaining("myCardEl");
 
-        assertThatThrownBy(() -> Caption.inRole(null, Caption.LABEL, "Frame.label"))
-            .isInstanceOf(NullPointerException.class).hasMessageContaining("caption");
-        assertThatThrownBy(() -> Caption.inRole(() -> null, Caption.LABEL, "Frame.label"))
-            .isInstanceOf(NullPointerException.class).hasMessageContaining("built nothing");
+        assertThatThrownBy(() -> Caption.inRole(null, Caption.LABEL, "Frame.label(caption)"))
+            .isInstanceOf(MisuseException.class).hasMessage("Frame.label(caption): was not given");
+        assertThatThrownBy(() -> Caption.inRole(() -> null, Caption.LABEL, "Frame.label(caption)"))
+            .isInstanceOf(MisuseException.class).hasMessage("Frame.label(caption): built nothing");
 
         assertThat(java.util.Arrays.stream(Caption.class.getDeclaredMethods())
                 .filter(m -> m.getName().equals("inRole"))

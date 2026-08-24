@@ -10,9 +10,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
 
@@ -87,7 +85,7 @@ public final class Element<K> implements Composable<K> {
     @SuppressWarnings("unchecked")
     public List<Map<String, Object>> slot(String name) {
         Map<String, List<Map<String, Object>>> slots = (Map<String, List<Map<String, Object>>>) m.get("slots");
-        List<Map<String, Object>> items = slots == null ? null : slots.get(Objects.requireNonNull(name, "name"));
+        List<Map<String, Object>> items = slots == null ? null : slots.get(required(name, "Element.slot(name)"));
         return items == null ? List.of() : items;
     }
 
@@ -99,6 +97,18 @@ public final class Element<K> implements Composable<K> {
     }
 
     /**
+     * A value that had to be given. Replaces {@code Objects.requireNonNull} everywhere in the kit: the
+     * exception it throws is somebody else's, and a consumer cannot tell it from their own code
+     * failing — which is the whole reason this family exists.
+     */
+    public static <T> T required(@Nullable T value, String where) {
+        if (value == null) {
+            throw new MisuseException(where, "was not given");
+        }
+        return value;
+    }
+
+    /**
      * An address that leaves the page — into a canonical link, into Open Graph, into a graph a crawler
      * reads — is absolute or it is broken. Whoever reads it is not looking at the document and has
      * nothing to resolve a path against, and the failure is silent: no preview, or a canonical pointing
@@ -106,10 +116,10 @@ public final class Element<K> implements Composable<K> {
      *
      * <p>Public because two elements need it, and two users make a policy rather than a detail.
      */
-    public static String requireAbsolute(String url, String name) {
-        String value = requireText(url, name).strip();
+    public static String requireAbsolute(String url, String where) {
+        String value = requireText(url, where).strip();
         if (!value.regionMatches(true, 0, "https://", 0, 8) && !value.regionMatches(true, 0, "http://", 0, 7)) {
-            throw new IllegalArgumentException(name + " is not an absolute address: \"" + value
+            throw new MisuseException(where, "is not an absolute address: \"" + value
                 + "\" — this value leaves the page, and whoever reads it has no document to resolve it against");
         }
         return value;
@@ -130,15 +140,15 @@ public final class Element<K> implements Composable<K> {
      * <p>Public because two elements need it, and an href is the last place any of those can be stopped
      * before the page.
      */
-    public static String requireNavigable(String href, String name) {
+    public static String requireNavigable(String href, String where) {
         // no check for empty after this: requireText has already refused a blank, and stripping a text
         // that has something in it cannot leave nothing. The check was here when this guard belonged to
         // the heading and its first line was a bare null check; it survived the move and meant nothing
-        String value = requireText(href, name).strip();
+        String value = requireText(href, where).strip();
         String asFollowed = IGNORED_IN_SCHEME.matcher(value).replaceAll("").toLowerCase(java.util.Locale.ROOT);
         for (String executing : EXECUTING_SCHEMES) {
             if (asFollowed.startsWith(executing)) {
-                throw new IllegalArgumentException(name + " is not a link but a script: \"" + href + "\"");
+                throw new MisuseException(where, "is not a link but a script: \"" + href + "\"");
             }
         }
         return value;
@@ -159,10 +169,10 @@ public final class Element<K> implements Composable<K> {
      * <p>What is given is kept exactly: a space inside a line belongs to whoever wrote the line. Only
      * a text that is nothing at all is refused.
      */
-    public static String requireText(String text, String name) {
-        Objects.requireNonNull(text, name);
+    public static String requireText(String text, String where) {
+        required(text, where);
         if (text.isBlank()) {
-            throw new IllegalArgumentException(name + " is blank: a page shows what it was given, "
+            throw new MisuseException(where, "is blank — a page shows what it was given, "
                 + "and this is nothing");
         }
         return text;
@@ -177,10 +187,10 @@ public final class Element<K> implements Composable<K> {
      * of a concept rather than a detail of either, and an element of yours that offers {@code lang}
      * needs the same check the kit's own make.
      */
-    public static String requireTag(String tag, String name) {
-        Objects.requireNonNull(tag, name);
+    public static String requireTag(String tag, String where) {
+        required(tag, where);
         if (!LANGUAGE_TAG.matcher(tag).matches()) {
-            throw new IllegalArgumentException(name + " is not a language tag: \"" + tag + "\"");
+            throw new MisuseException(where, "is not a language tag: \"" + tag + "\"");
         }
         return tag;
     }
@@ -219,23 +229,26 @@ public final class Element<K> implements Composable<K> {
      * {@link Composable} builds it here, keeps the element and forgets the maker. That is the rule the
      * kit follows everywhere — accept what becomes an element, store only what has become one.
      */
-    public static <K> Element<K> settle(Composable<K> composable, String name) {
-        Objects.requireNonNull(composable, name);
-        return Objects.requireNonNull(composable.build(), () -> name + " built nothing");
+    public static <K> Element<K> settle(Composable<K> composable, String where) {
+        Element<K> built = required(composable, where).build();
+        if (built == null) {
+            throw new MisuseException(where, "built nothing");
+        }
+        return built;
     }
 
     /**
      * Guard for wide points: a script element never belongs in the element flow — the dispatcher calls
      * adapters with an argument, while a script fragment takes none. Declare it via {@code requires}.
      */
-    public static Element<?> requireRenderableElement(Element<?> e, String what) {
-        requireRenderable(e, what);
+    public static Element<?> requireRenderableElement(Element<?> e, String where) {
+        requireRenderable(e, where);
         return e;
     }
 
-    public static void requireRenderable(Element<?> e, String what) {
-        if (Objects.requireNonNull(e, "element").bare()) {
-            throw new IllegalArgumentException(what + ": a script element does not belong in the flow — "
+    public static void requireRenderable(Element<?> e, String where) {
+        if (required(e, "Element.requireRenderable(element)").bare()) {
+            throw new MisuseException(where, "a script element does not belong in the flow — "
                 + "declare it as an element dependency via requires(), the canvas collects assets");
         }
     }
@@ -244,11 +257,11 @@ public final class Element<K> implements Composable<K> {
      * Runtime guard for narrow points, where the marker is erased: checks the adapter address of the
      * given element. Public on purpose — consumer elements guard their own narrow points the same way.
      */
-    public static void requireAdapter(Element<?> e, String fragment, String what) {
-        Objects.requireNonNull(e, "element");
-        Objects.requireNonNull(fragment, "fragment");
+    public static void requireAdapter(Element<?> e, String fragment, String where) {
+        required(e, "Element.requireAdapter(element)");
+        required(fragment, "Element.requireAdapter(fragment)");
         if (!fragment.equals(e.fragment())) {
-            throw new IllegalArgumentException(what + " (got " + e.fragment() + ")");
+            throw new MisuseException(where, "wanted the " + fragment + " adapter, and got " + e.fragment());
         }
     }
 
@@ -285,15 +298,15 @@ public final class Element<K> implements Composable<K> {
          * expression out of it, so a name assembled from data would be evaluated rather than read.
          */
         Descriptor(String template, String fragment) {
-            d.put("template", address(template, "template", TEMPLATE));
-            d.put("fragment", address(fragment, "fragment", FRAGMENT));
+            d.put("template", address(template, "Descriptor(template)", TEMPLATE));
+            d.put("fragment", address(fragment, "Descriptor(fragment)", FRAGMENT));
             d.put("bare", false);
         }
 
-        private static String address(String value, String name, Pattern shape) {
-            Objects.requireNonNull(value, name);
+        private static String address(String value, String where, Pattern shape) {
+            required(value, where);
             if (!shape.matcher(value).matches()) {
-                throw new IllegalArgumentException(name + " is not an adapter address: \"" + value
+                throw new MisuseException(where, "is not an adapter address: \"" + value
                     + "\" — the dispatcher turns it into an expression, so it may only be a path and a name");
             }
             return value;
@@ -316,11 +329,18 @@ public final class Element<K> implements Composable<K> {
          * caller still holds must not be able to change the element after it was built.
          */
         public Descriptor<K> with(String key, Object value) {
-            Objects.requireNonNull(key, "key");
+            required(key, "Descriptor.with(key)");
             if (RESERVED.contains(key)) {
-                throw new IllegalArgumentException("key \"" + key + "\" is reserved by the descriptor");
+                throw new MisuseException("Descriptor.with(key)",
+                    "the key \"" + key + "\" is reserved by the descriptor");
             }
-            d.put(key, snapshot(Objects.requireNonNull(value, () -> "value of key \"" + key + "\"")));
+            // the key is written into the message and not into the place: a place is read by whoever
+            // routes on one, and a call with a name of the caller's inside it is no longer a call
+            if (value == null) {
+                throw new MisuseException("Descriptor.with(value)",
+                    "the value of key \"" + key + "\" was not given");
+            }
+            d.put(key, snapshot(value));
             return this;
         }
 
@@ -355,18 +375,28 @@ public final class Element<K> implements Composable<K> {
          * markup is the one seam through which markup could reach a page that was stored rather than
          * composed.
          *
+         * <p>What may be in it is what the kit can write: text, whole numbers, true or false, maps and
+         * lists. Anything else is refused <b>here</b>, not when a page is rendered, and the refusal
+         * names the path that reaches it.
+         *
          * <p>One element describes itself once. A second call is a mistake either way — accumulating
          * would guess at what was meant, replacing would lose the first quietly — so it is refused.
          */
         public Descriptor<K> describes(Map<String, ?> node) {
-            Objects.requireNonNull(node, "node");
+            required(node, "Descriptor.describes(node)");
             if (d.containsKey("describes")) {
-                throw new IllegalStateException("this element already describes itself: one element, one node");
+                throw new MisuseException("Descriptor.describes",
+                    "this element already describes itself: one element, one node");
             }
             if (node.isEmpty()) {
-                throw new IllegalArgumentException("an empty contribution describes nothing");
+                throw new MisuseException("Descriptor.describes(node)", "an empty contribution describes nothing");
             }
             refuseAddressKeys(node);
+            // The values are checked here rather than when a page is rendered, so a contribution that
+            // cannot be written is refused where it was written — inside the factory that wrote it, with
+            // that factory on the stack. And the check is the writing itself, thrown away: what can be
+            // written can be contributed, and there is one definition of that rather than two drifting.
+            Json.check(node, "Descriptor.describes");
             d.put("describes", snapshot(node));
             return this;
         }
@@ -380,7 +410,8 @@ public final class Element<K> implements Composable<K> {
             if (value instanceof Map<?, ?> node) {
                 for (Map.Entry<?, ?> entry : node.entrySet()) {
                     if ("template".equals(entry.getKey()) || "fragment".equals(entry.getKey())) {
-                        throw new IllegalArgumentException("a contribution may not carry \"" + entry.getKey()
+                        throw new MisuseException("Descriptor.describes(node)",
+                            "a contribution may not carry \"" + entry.getKey()
                             + "\": the walk knows a descriptor by that key and would take this for an element");
                     }
                     refuseAddressKeys(entry.getValue());
@@ -396,11 +427,12 @@ public final class Element<K> implements Composable<K> {
          */
         @SuppressWarnings("unchecked")
         public Descriptor<K> slot(String name, List<? extends Composable<?>> items) {
-            Objects.requireNonNull(name, "name");
-            Objects.requireNonNull(items, "items");
+            required(name, "Descriptor.slot(name)");
+            required(items, "Descriptor.slot(items)");
             Map<String, List<Map<String, Object>>> slots =
                 (Map<String, List<Map<String, Object>>>) d.computeIfAbsent("slots", k -> new LinkedHashMap<String, List<Map<String, Object>>>());
-            slots.put(name, items.stream().map(item -> settle(item, "slot item").asMap()).toList());
+            slots.put(name, items.stream()
+                .map(item -> settle(item, "Descriptor.slot(items) — one of them").asMap()).toList());
             return this;
         }
 
@@ -410,9 +442,10 @@ public final class Element<K> implements Composable<K> {
         public final Descriptor<K> requires(Element<Script>... scripts) {
             List<Map<String, Object>> list =
                 (List<Map<String, Object>>) d.computeIfAbsent("assets", k -> new ArrayList<Map<String, Object>>());
-            for (Element<Script> s : Objects.requireNonNull(scripts, "scripts")) {
-                if (!Objects.requireNonNull(s, "script").bare()) {
-                    throw new IllegalArgumentException("a dependency must be a script element (Element.script)");
+            for (Element<Script> s : required(scripts, "Descriptor.requires(scripts)")) {
+                if (!required(s, "Descriptor.requires(scripts) — one of them").bare()) {
+                    throw new MisuseException("Descriptor.requires(scripts) — one of them",
+                        "a dependency must be a script element (Element.script)");
                 }
                 list.add(s.asMap());
             }

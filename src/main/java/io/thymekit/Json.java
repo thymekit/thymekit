@@ -5,7 +5,6 @@ package io.thymekit;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -26,12 +25,15 @@ import org.jspecify.annotations.Nullable;
  * does not discover the difference on their own data.
  *
  * <p>A refusal names the path that reaches the trouble, not only the fact of it: the person who has to
- * fix a bad key is whoever wrote that key, and {@code itemListElement[0].name} tells them where to
- * look. A {@code null} argument is a different failure — a mistake at the call site — and is named as
- * one.
+ * fix a bad key is whoever wrote that key, and {@code Descriptor.describes.itemListElement[0].name} tells them
+ * where to look. A {@code null} argument is a different failure — a mistake at the call site — and is
+ * named as one.
  *
- * <p>Not public: the only caller is the canvas, and the rule of this project is that what one caller
- * uses stays where it is until a second one appears.
+ * <p>Two duties, named apart at the door because they happen at different moments: a contribution is
+ * <b>checked</b> when an element is built, so that the factory which wrote a bad value is the one on
+ * the stack, and the page is <b>written</b> when the canvas prints it. Neither is public. What an
+ * element author needs of this policy they get through {@code describes}, which applies it for them;
+ * publishing the writer would be publishing a JSON library, which this kit is not.
  */
 final class Json {
 
@@ -46,8 +48,19 @@ final class Json {
      */
     static String write(Object value) {
         StringBuilder out = new StringBuilder();
-        write(Objects.requireNonNull(value, "value"), "", out);
+        write(Element.required(value, "Json.write(value)"), "", out);
         return out.toString();
+    }
+
+    /**
+     * Refuses a value the kit could not write, without writing it anywhere a page will see. The check
+     * <b>is</b> the writing, thrown away: what may be contributed then has one definition rather than
+     * two that drift apart. The name given is what a refusal reads under — a path inside the value is
+     * written beneath it, so the reader is told both which faculty took the value and where in it the
+     * trouble sits.
+     */
+    static void check(Object value, String where) {
+        write(value, where, new StringBuilder());
     }
 
     private static void write(@Nullable Object value, String path, StringBuilder out) {
@@ -112,9 +125,9 @@ final class Json {
         out.append('"');
     }
 
-    private static IllegalArgumentException refuse(String path, String what) {
-        return new IllegalArgumentException("structured data carries " + what + " at "
-            + (path.isEmpty() ? ROOT : path)
+    private static MisuseException refuse(String path, String what) {
+        String where = path.isEmpty() ? ROOT : path;
+        return new MisuseException(where, "structured data carries " + what
             + "; a contribution holds text, whole numbers, true or false, maps and lists");
     }
 }

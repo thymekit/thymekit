@@ -5,14 +5,12 @@ package io.thymekit;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -112,20 +110,22 @@ public final class ElementContract {
 
     /** The elements to walk: one live sample of each, as a page would build them. */
     public static ElementContract of(Composable<?>... elements) {
-        Objects.requireNonNull(elements, "elements");
+        Element.required(elements, "ElementContract.of(elements)");
         List<Element<?>> settled = new ArrayList<>();
         for (Composable<?> element : elements) {
-            settled.add(Element.settle(element, "element"));
+            settled.add(Element.settle(element, "ElementContract.of(elements) — one of them"));
         }
         if (settled.isEmpty()) {
-            throw new IllegalArgumentException("no elements to check: give the contract at least one");
+            throw new MisuseException("ElementContract.of(elements)",
+                "no elements to check: give the contract at least one");
         }
         return new ElementContract(settled, null, List.of(), List.of("templates/", ""), false);
     }
 
     /** Renders each element through the dispatcher, with the engine your application uses. */
     public ElementContract renderedBy(ITemplateEngine engine) {
-        return new ElementContract(elements, Objects.requireNonNull(engine, "engine"), stylesheets, templateRoots, everyKey);
+        return new ElementContract(elements, Element.required(engine, "ElementContract.renderedBy(engine)"),
+            stylesheets, templateRoots, everyKey);
     }
 
     /**
@@ -135,7 +135,8 @@ public final class ElementContract {
      * default and nothing else.
      */
     public ElementContract templatesUnder(String... classpathPrefixes) {
-        List<String> roots = new ArrayList<>(List.of(Objects.requireNonNull(classpathPrefixes, "classpathPrefixes")));
+        List<String> roots = new ArrayList<>(List.of(
+            Element.required(classpathPrefixes, "ElementContract.templatesUnder(classpathPrefixes)")));
         roots.addAll(templateRoots);
         return new ElementContract(elements, engine, stylesheets, List.copyOf(roots), everyKey);
     }
@@ -147,7 +148,7 @@ public final class ElementContract {
      */
     public ElementContract styledBy(String... cssResources) {
         List<String> all = new ArrayList<>(stylesheets);            // said twice means both, never the last one only
-        all.addAll(List.of(Objects.requireNonNull(cssResources, "cssResources")));
+        all.addAll(List.of(Element.required(cssResources, "ElementContract.styledBy(cssResources)")));
         return new ElementContract(elements, engine, List.copyOf(all), templateRoots, everyKey);
     }
 
@@ -190,10 +191,10 @@ public final class ElementContract {
             }
 
             if (engine != null) {
-                String html = renderAndReport(element, address, failures);
+                String html = renderAndReport(element, engine, address, failures);
                 if (html != null) {
                     printedClasses.addAll(classesIn(html));
-                    everyKeyChangesTheOutput(element, address, html, failures);
+                    everyKeyChangesTheOutput(element, engine, address, html, failures);
                 }
             }
         }
@@ -215,7 +216,8 @@ public final class ElementContract {
             });
         }
         if (!failures.isEmpty()) {
-            throw new IllegalStateException("the element contract is broken in " + failures.size()
+            throw new ContractBrokenException("ElementContract.check",
+                "the element contract is broken in " + failures.size()
                 + " place(s):\n  - " + String.join("\n  - ", failures));
         }
     }
@@ -325,10 +327,11 @@ public final class ElementContract {
     }
 
     /** Renders one element through the single dispatcher, exactly as a page would. */
-    private @Nullable String renderAndReport(Element<?> element, String address, List<String> failures) {
+    private static @Nullable String renderAndReport(Element<?> element, ITemplateEngine engine,
+                                                    String address, List<String> failures) {
         String html;
         try {
-            html = render(element.asMap());
+            html = render(engine, element.asMap());
         } catch (RuntimeException notRendered) {
             failures.add(address + " — does not render: " + notRendered.getMessage());
             return null;
@@ -340,10 +343,10 @@ public final class ElementContract {
         return html;
     }
 
-    private String render(Map<String, Object> descriptor) {
+    private static String render(ITemplateEngine engine, Map<String, Object> descriptor) {
         Context context = new Context();
         context.setVariable("e", descriptor);
-        return Objects.requireNonNull(engine).process("thymekit/element", Set.of("render"), context);
+        return engine.process("thymekit/element", Set.of("render"), context);
     }
 
     private static Set<String> classesIn(String html) {
@@ -362,7 +365,8 @@ public final class ElementContract {
      * away breaks the adapter instead, the key is read, and loudly.
      */
     @SuppressWarnings("unchecked")
-    private void everyKeyChangesTheOutput(Element<?> element, String address, String whole, List<String> failures) {
+    private static void everyKeyChangesTheOutput(Element<?> element, ITemplateEngine engine, String address,
+                                                 String whole, List<String> failures) {
         for (String slot : element.slotNames()) {
             if (element.slot(slot).isEmpty()) {
                 continue;               // an empty slot renders nothing either way, and says nothing about the adapter
@@ -371,7 +375,7 @@ public final class ElementContract {
             Map<String, Object> slots = new LinkedHashMap<>((Map<String, Object>) without.get("slots"));
             slots.remove(slot);
             without.put("slots", slots);
-            if (rendersTheSame(whole, without)) {
+            if (rendersTheSame(engine, whole, without)) {
                 failures.add(address + " — fills the slot \"" + slot + "\" and renders exactly the same"
                     + " without it: whatever a consumer puts there is put nowhere");
             }
@@ -381,7 +385,7 @@ public final class ElementContract {
         for (String key : carried) {
             Map<String, Object> without = new LinkedHashMap<>(element.asMap());
             without.remove(key);
-            if (rendersTheSame(whole, without)) {
+            if (rendersTheSame(engine, whole, without)) {
                 failures.add(address + " — carries the key \"" + key + "\" and renders exactly the same"
                     + " without it: the adapter prints it nowhere, or a condition keeps it off the page");
             }
@@ -389,9 +393,9 @@ public final class ElementContract {
     }
 
     /** Whether the page is the same with a piece of the descriptor taken away; a page that will not render without it is not. */
-    private boolean rendersTheSame(String whole, Map<String, Object> without) {
+    private static boolean rendersTheSame(ITemplateEngine engine, String whole, Map<String, Object> without) {
         try {
-            return whole.equals(render(without));
+            return whole.equals(render(engine, without));
         } catch (RuntimeException readAndLoudly) {
             return false;
         }
@@ -438,7 +442,7 @@ public final class ElementContract {
         try (found) {
             return new String(found.readAllBytes(), StandardCharsets.UTF_8);
         } catch (IOException unreadable) {
-            throw new UncheckedIOException("cannot read " + candidate, unreadable);
+            throw new ContractBrokenException("ElementContract.check", "cannot read " + candidate, unreadable);
         }
     }
 }

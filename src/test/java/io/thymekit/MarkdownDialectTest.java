@@ -89,6 +89,6 @@ class MarkdownDialectTest {
     @Test
     void aRendererIsRequired() {
         assertThatThrownBy(() -> new MarkdownDialect(null))
-            .isInstanceOf(NullPointerException.class).hasMessageContaining("markdownRenderer");
+            .isInstanceOf(MisuseException.class).hasMessageContaining("markdownRenderer");
     }
 }

@@ -61,7 +61,7 @@ public final class Breadcrumbs {
         private @Nullable String origin;
 
         private Builder(String label) {
-            this.label = Element.requireText(label, "label");
+            this.label = Element.requireText(label, "Breadcrumbs.named(label)");
         }
 
         /**
@@ -73,11 +73,11 @@ public final class Breadcrumbs {
          * would need the address of the page, which is the one thing this element does not have.
          */
         public Builder site(String origin) {
-            String value = Element.requireAbsolute(origin, "origin");
+            String value = Element.requireAbsolute(origin, "Breadcrumbs.site(origin)");
             // != -1 rather than >= 0: the search starts past the scheme, so a zero is not a boundary
             // this code can reach, and asking about one invites a question that has no answer
             if (value.indexOf('/', value.indexOf("//") + 2) != -1) {
-                throw new IllegalArgumentException("origin carries more than a site: \"" + value
+                throw new MisuseException("Breadcrumbs.site(origin)", "carries more than a site: \"" + value
                     + "\" — scheme and host only, with no path and no trailing slash. A step written from"
                     + " the root is joined to this as it is, so a path here would end up inside it twice"
                     + " and a slash would double");
@@ -86,19 +86,28 @@ public final class Breadcrumbs {
             return this;
         }
 
-        /** A step above this page. */
+        /**
+         * A step above this page.
+         *
+         * <p>Guarded here as well as inside the step it becomes, and not because the check is in doubt:
+         * a crumb is a type of this package, and a refusal that pointed at one would name something the
+         * caller cannot look up. What they can open is the line they wrote, which is this one.
+         */
         public Builder add(String url, String label) {
-            return step(Crumb.link(url, label));
+            Element.requireNavigable(url, "Breadcrumbs.add(url)");
+            Element.requireText(label, "Breadcrumbs.add(label)");
+            return step(Crumb.link(url, label), "Breadcrumbs.add");
         }
 
         /** The page you are on: the last step, and the end of the trail. */
         public Element<Breadcrumbs> current(String label) {
-            return step(Crumb.current(label)).build();
+            Element.requireText(label, "Breadcrumbs.current(label)");
+            return step(Crumb.current(label), "Breadcrumbs.current").build();
         }
 
-        private Builder step(Crumb crumb) {
+        private Builder step(Crumb crumb, String where) {
             if (!steps.isEmpty() && steps.get(steps.size() - 1).url() == null) {
-                throw new IllegalStateException("the trail already ends at the page you are on");
+                throw new MisuseException(where, "the trail already ends at the page you are on");
             }
             steps.add(crumb);
             return this;
@@ -107,8 +116,8 @@ public final class Breadcrumbs {
         @Override
         public Element<Breadcrumbs> build() {
             if (steps.isEmpty()) {
-                throw new IllegalStateException("a trail with no steps is empty, and would print a landmark "
-                    + "with nothing in it");
+                throw new MisuseException("Breadcrumbs.build",
+                    "a trail with no steps is empty, and would print a landmark with nothing in it");
             }
             return Element.Descriptor.<Breadcrumbs>of(TEMPLATE, "breadcrumbsEl")
                 .with("label", label)

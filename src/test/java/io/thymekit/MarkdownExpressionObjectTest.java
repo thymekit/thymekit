@@ -88,7 +88,7 @@ class MarkdownExpressionObjectTest {
     @Test
     void aRendererIsRequired() {
         assertThatThrownBy(() -> new MarkdownExpressionObject(null))
-            .isInstanceOf(NullPointerException.class).hasMessageContaining("markdownRenderer");
+            .isInstanceOf(MisuseException.class).hasMessageContaining("markdownRenderer");
     }
 
     /**

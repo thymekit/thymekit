@@ -6,7 +6,6 @@ package io.thymekit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * The page hero: a heading group ({@code <hgroup>} with eyebrow, H1, subtitle and meta lines), then a
@@ -24,11 +23,11 @@ public final class Hero {
      * text, and a guard that understood only a number would let a second title onto the page.
      */
     public static Builder of(Composable<Heading> h1) {
-        Element<Heading> heading = Element.settle(h1, "heading");
-        Element.requireAdapter(heading, "headingEl", "Hero.of accepts a heading only");
+        Element<Heading> heading = Element.settle(h1, "Hero.of(h1)");
+        Element.requireAdapter(heading, "headingEl", "Hero.of(h1)");
         Integer level = Heading.levelIn(heading.asMap());
         if (level == null || level != 1) {
-            throw new IllegalArgumentException("Hero.of accepts an H1 only (got level " + level + ")");
+            throw new MisuseException("Hero.of(h1)", "accepts an H1 only, and got level " + level);
         }
         return new Builder(heading);
     }
@@ -45,13 +44,13 @@ public final class Hero {
 
         /** Caption in the eyebrow role, above the H1. */
         public Builder eyebrow(Composable<Caption> eyebrow) {
-            b.with("eyebrow", Caption.inRole(eyebrow, Caption.EYEBROW, "Hero.eyebrow accepts a caption").asMap());
+            b.with("eyebrow", Caption.inRole(eyebrow, Caption.EYEBROW, "Hero.eyebrow(eyebrow)").asMap());
             return this;
         }
 
         /** Caption in the subtitle role, below the H1. */
         public Builder subtitle(Composable<Caption> subtitle) {
-            b.with("subtitle", Caption.inRole(subtitle, Caption.SUBTITLE, "Hero.subtitle accepts a caption").asMap());
+            b.with("subtitle", Caption.inRole(subtitle, Caption.SUBTITLE, "Hero.subtitle(subtitle)").asMap());
             return this;
         }
 
@@ -62,13 +61,13 @@ public final class Hero {
          */
         @SafeVarargs
         public final Builder meta(Composable<Caption>... metaLines) {
-            Objects.requireNonNull(metaLines, "meta");
+            Element.required(metaLines, "Hero.meta(metaLines)");
             if (metaLines.length == 0) {
-                throw new IllegalArgumentException("meta without a value: name at least one caption, "
+                throw new MisuseException("Hero.meta(metaLines)", "no caption was named — name at least one, "
                     + "or do not call meta(...) at all");
             }
             for (Composable<Caption> line : metaLines) {
-                metas.add(Caption.inRole(line, Caption.META, "Hero.meta accepts a caption").asMap());
+                metas.add(Caption.inRole(line, Caption.META, "Hero.meta(line)").asMap());
             }
             return this;
         }
@@ -80,8 +79,8 @@ public final class Hero {
          * what goes in it.
          */
         public Builder badge(Composable<?> badge) {
-            Element<?> settled = Element.settle(badge, "badge");
-            Element.requireAdapter(settled, "statusBadgeEl", "Hero.badge accepts a status badge only");
+            Element<?> settled = Element.settle(badge, "Hero.badge(badge)");
+            Element.requireAdapter(settled, "statusBadgeEl", "Hero.badge(badge)");
             b.with("badge", settled.asMap());
             return this;
         }
@@ -91,8 +90,8 @@ public final class Hero {
          * {@code actionsEl} and lives in consumer code.
          */
         public Builder actions(Composable<?> actions) {
-            Element<?> settled = Element.settle(actions, "actions");
-            Element.requireAdapter(settled, "actionsEl", "Hero.actions accepts an action row");
+            Element<?> settled = Element.settle(actions, "Hero.actions(actions)");
+            Element.requireAdapter(settled, "actionsEl", "Hero.actions(actions)");
             b.with("actions", settled.asMap());
             return this;
         }

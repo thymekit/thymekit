@@ -5,8 +5,6 @@ package io.thymekit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
-import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 import java.util.List;
 import java.util.Map;
@@ -172,7 +170,7 @@ class BreadcrumbsTest {
      */
     @Test
     void refusesAnOriginThatCarriesAPath() {
-        assertThatExceptionOfType(IllegalArgumentException.class)
+        assertThatExceptionOfType(MisuseException.class)
             .isThrownBy(() -> Breadcrumbs.named("Breadcrumb").site("https://shop/app"))
             .withMessageContaining("more than a site");
     }
@@ -180,7 +178,7 @@ class BreadcrumbsTest {
     /** An origin is an origin: it has to be absolute, and it is refused where it is written. */
     @Test
     void refusesAnOriginThatIsNotAbsolute() {
-        assertThatExceptionOfType(IllegalArgumentException.class)
+        assertThatExceptionOfType(MisuseException.class)
             .isThrownBy(() -> Breadcrumbs.named("Breadcrumb").site("/shop"))
             .withMessageContaining("absolute");
     }
@@ -188,7 +186,7 @@ class BreadcrumbsTest {
     /** And it must not end in a slash, or every address under it would carry two. */
     @Test
     void refusesAnOriginWithATrailingSlash() {
-        assertThatExceptionOfType(IllegalArgumentException.class)
+        assertThatExceptionOfType(MisuseException.class)
             .isThrownBy(() -> Breadcrumbs.named("Breadcrumb").site("https://shop/"))
             .withMessageContaining("slash");
     }
@@ -198,15 +196,17 @@ class BreadcrumbsTest {
     /** A landmark with no name is what the practices ask us to avoid, so it cannot be built. */
     @Test
     void refusesATrailWithNoName() {
-        assertThatExceptionOfType(IllegalArgumentException.class)
-            .isThrownBy(() -> Breadcrumbs.named(" ")).withMessageContaining("label");
-        assertThatNullPointerException().isThrownBy(() -> Breadcrumbs.named(null)).withMessageContaining("label");
+        assertThatExceptionOfType(MisuseException.class)
+            .isThrownBy(() -> Breadcrumbs.named(" "))
+            .withMessage("Breadcrumbs.named(label): is blank — a page shows what it was given, and this is nothing");
+        assertThatExceptionOfType(MisuseException.class).isThrownBy(() -> Breadcrumbs.named(null))
+            .withMessage("Breadcrumbs.named(label): was not given");
     }
 
     /** A trail with no steps is not a trail, and would print an empty landmark. */
     @Test
     void refusesATrailWithNoSteps() {
-        assertThatIllegalStateException()
+        assertThatExceptionOfType(MisuseException.class)
             .isThrownBy(() -> Breadcrumbs.named("Breadcrumb").build())
             .withMessageContaining("empty");
     }
@@ -221,20 +221,22 @@ class BreadcrumbsTest {
         Breadcrumbs.Builder held = Breadcrumbs.named("Breadcrumb").add("/x", "X");
         held.current("Here");
 
-        assertThatIllegalStateException().isThrownBy(() -> held.add("/y", "Y"))
-            .withMessageContaining("already ends");
-        assertThatIllegalStateException().isThrownBy(() -> held.current("Again"))
-            .withMessageContaining("already ends");
+        assertThatExceptionOfType(MisuseException.class).isThrownBy(() -> held.add("/y", "Y"))
+            .withMessage("Breadcrumbs.add: the trail already ends at the page you are on");
+        assertThatExceptionOfType(MisuseException.class).isThrownBy(() -> held.current("Again"))
+            .as("the place is the call that was made, and current is not add")
+            .withMessage("Breadcrumbs.current: the trail already ends at the page you are on");
     }
 
     /** A step is a step wherever it is written: the same guards as the value it becomes. */
     @Test
     void refusesAStepThatIsNotOne() {
-        assertThatExceptionOfType(IllegalArgumentException.class)
+        assertThatExceptionOfType(MisuseException.class)
             .isThrownBy(() -> Breadcrumbs.named("Breadcrumb").add("/x", " "))
-            .withMessageContaining("label");
-        assertThatExceptionOfType(IllegalArgumentException.class)
+            .as("a step is refused at the call the caller wrote, not inside the value it becomes")
+            .withMessage("Breadcrumbs.add(label): is blank — a page shows what it was given, and this is nothing");
+        assertThatExceptionOfType(MisuseException.class)
             .isThrownBy(() -> Breadcrumbs.named("Breadcrumb").add(" ", "X"))
-            .withMessageContaining("url");
+            .withMessage("Breadcrumbs.add(url): is blank — a page shows what it was given, and this is nothing");
     }
 }

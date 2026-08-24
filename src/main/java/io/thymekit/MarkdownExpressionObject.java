@@ -3,7 +3,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 package io.thymekit;
 
-import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -27,7 +26,7 @@ public final class MarkdownExpressionObject {
     private final MarkdownRenderer markdownRenderer;
 
     public MarkdownExpressionObject(MarkdownRenderer markdownRenderer) {
-        this.markdownRenderer = Objects.requireNonNull(markdownRenderer, "markdownRenderer");
+        this.markdownRenderer = Element.required(markdownRenderer, "MarkdownExpressionObject(markdownRenderer)");
     }
 
     /**

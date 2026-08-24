@@ -45,7 +45,8 @@ class ElementContractTest {
     @Test
     void anAddressThatPointsNowhereIsNamed() {
         assertThatThrownBy(() -> ElementContract.of(Element.raw("fragments/my/absent", "priceEl")).check())
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(ContractBrokenException.class)
+            .hasMessageStartingWith("ElementContract.check:")
             .hasMessageContaining("no template on the classpath")
             .hasMessageContaining("looked under templates/, the address itself");
     }
@@ -54,7 +55,7 @@ class ElementContractTest {
     @Test
     void aTemplateThatDeclaresNoSuchFragmentIsNamed() {
         assertThatThrownBy(() -> ElementContract.of(Element.raw("test/pieces", "absentEl")).check())
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(ContractBrokenException.class)
             .hasMessageContaining("declares no fragment absentEl").hasMessageContaining("one argument");
     }
 
@@ -62,14 +63,14 @@ class ElementContractTest {
     @Test
     void aFragmentNamedOnlyInACommentIsNotAFragment() {
         assertThatThrownBy(() -> ElementContract.of(Element.raw("test/pieces", "ghostEl")).check())
-            .isInstanceOf(IllegalStateException.class).hasMessageContaining("declares no fragment ghostEl");
+            .isInstanceOf(ContractBrokenException.class).hasMessageContaining("declares no fragment ghostEl");
     }
 
     /** An adapter is named for what it renders and ends in El; a second contract gets a version suffix. */
     @Test
     void anAdapterIsNamedLikeAnAdapter() {
         assertThatThrownBy(() -> ElementContract.of(Element.raw("test/pieces", "notAnAdapter")).check())
-            .isInstanceOf(IllegalStateException.class).hasMessageContaining("named like myCardEl");
+            .isInstanceOf(ContractBrokenException.class).hasMessageContaining("named like myCardEl");
         assertThatCode(() -> ElementContract.of(Element.raw("test/pieces", "echoEl").with("text", "x")).check())
             .doesNotThrowAnyException();
     }
@@ -78,11 +79,11 @@ class ElementContractTest {
     @Test
     void aScriptIsCheckedAsADependencyAndRefusedAsAnElement() {
         assertThatThrownBy(() -> ElementContract.of(Element.script("test/pieces", "echoEl")).check())
-            .isInstanceOf(IllegalStateException.class).hasMessageContaining("does not belong among elements");
+            .isInstanceOf(ContractBrokenException.class).hasMessageContaining("does not belong among elements");
 
         assertThatThrownBy(() -> ElementContract.of(Element.raw("test/pieces", "echoEl").with("text", "x")
                 .requires(Element.script("fragments/my/absent", "priceJs"))).check())
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(ContractBrokenException.class)
             .hasMessageContaining("its script fragments/my/absent :: priceJs")
             .hasMessageContaining("no template on the classpath");
     }
@@ -94,7 +95,7 @@ class ElementContractTest {
     void aKeyTheAdapterDoesNotReadIsNamed() {
         assertThatThrownBy(() -> ElementContract.of(
                 Element.raw("test/pieces", "echoEl").with("text", "x").with("colour", "gold")).check())
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(ContractBrokenException.class)
             .hasMessageContaining("carries the key \"colour\" that its adapter does not read");
     }
 
@@ -103,7 +104,7 @@ class ElementContractTest {
     void aSlotTheAdapterDoesNotRenderIsNamed() {
         assertThatThrownBy(() -> ElementContract.of(Element.raw("test/pieces", "echoEl").with("text", "x")
                 .slot("items", List.of(Caption.label("inside")))).check())
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(ContractBrokenException.class)
             .hasMessageContaining("fills the slot \"items\" that its adapter does not render");
     }
 
@@ -125,7 +126,7 @@ class ElementContractTest {
         assertThatThrownBy(() -> ElementContract.of(
                 Element.raw("test/broken", "maskedEl").with("text", "x").with("colour", "gold")).check())
             .as("the declaration read is the one nearest the fragment, and prose is not a fragment")
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(ContractBrokenException.class)
             .hasMessageContaining("carries the key \"colour\"");
         assertThatCode(() -> ElementContract.of(
                 Element.raw("test/broken", "maskedEl").with("text", "x")).check())
@@ -140,13 +141,13 @@ class ElementContractTest {
     void whatNothingReachesIsNamedWhenTheSamplesClaimToCoverIt() {
         assertThatThrownBy(() -> ElementContract.of(Element.raw("test/pieces", "deadKeyEl").with("text", "x"))
                 .coveringEveryKey().check())
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(ContractBrokenException.class)
             .hasMessageContaining("reads \"colour\"").hasMessageContaining("nothing given here puts it in");
 
         assertThatThrownBy(() -> ElementContract.of(Element.raw("test/pieces", "slottedEl").with("title", "x"))
                 .coveringEveryKey().check())
             .as("a slot nothing fills is said as a slot, not as a key with a strange name")
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(ContractBrokenException.class)
             .hasMessageContaining("renders the slot \"items\"").hasMessageContaining("nothing given here fills it");
     }
 
@@ -157,13 +158,13 @@ class ElementContractTest {
     void anAdapterThatShowsNothingIsNamedOnce() {
         assertThatThrownBy(() -> ElementContract.of(Element.raw("test/broken", "emptyEl").with("text", "x"))
                 .renderedBy(ENGINE).check())
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(ContractBrokenException.class)
             .hasMessageContaining("broken in 1 place(s)").hasMessageContaining("renders nothing");
 
         assertThatThrownBy(() -> ElementContract.of(Element.raw("test/broken", "explodingEl").with("text", "x"))
                 .renderedBy(ENGINE).check())
             .as("and one that never rendered is worth one line, not a list about its keys")
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(ContractBrokenException.class)
             .hasMessageContaining("broken in 1 place(s)").hasMessageContaining("does not render");
     }
 
@@ -175,7 +176,7 @@ class ElementContractTest {
             .with("addAction", Caption.label("Add").build().asMap()).build();
 
         assertThatThrownBy(() -> ElementContract.of(dead).renderedBy(ENGINE).check())
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(ContractBrokenException.class)
             .hasMessageContaining("addAction").hasMessageContaining("renders exactly the same without it");
     }
 
@@ -189,7 +190,7 @@ class ElementContractTest {
         assertThatThrownBy(() -> ElementContract.of(Element.raw("test/pieces", "slotIgnoredEl")
                 .with("title", "x").slot("items", List.of(Caption.label("inside"))))
                 .renderedBy(ENGINE).check())
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(ContractBrokenException.class)
             .hasMessageContaining("fills the slot \"items\"").hasMessageContaining("renders exactly the same");
     }
 
@@ -228,7 +229,7 @@ class ElementContractTest {
         assertThatThrownBy(() -> ElementContract.of(Element.raw("test/pieces", "wordsOnlyEl").with("text", "words"))
                 .renderedBy(ENGINE).check())
             .as("words with no tag around them are not something a browser shows as an element")
-            .isInstanceOf(IllegalStateException.class).hasMessageContaining("renders nothing");
+            .isInstanceOf(ContractBrokenException.class).hasMessageContaining("renders nothing");
     }
 
     /** Every class an element prints has a rule in the stylesheets named, and a missing one is said so. */
@@ -236,12 +237,12 @@ class ElementContractTest {
     void aClassWithNoRuleIsNamed() {
         assertThatThrownBy(() -> ElementContract.of(Element.raw("test/pieces", "strangerEl").with("text", "x"))
                 .renderedBy(ENGINE).styledBy("static/thymekit/ui.css").check())
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(ContractBrokenException.class)
             .hasMessageContaining("not-a-kit-class").hasMessageContaining("styled by none");
 
         assertThatThrownBy(() -> ElementContract.of(Caption.label("x"))
                 .renderedBy(ENGINE).styledBy("static/nowhere.css").check())
-            .isInstanceOf(IllegalStateException.class).hasMessageContaining("no stylesheet on the classpath");
+            .isInstanceOf(ContractBrokenException.class).hasMessageContaining("no stylesheet on the classpath");
     }
 
     // ——— the walk itself ——————————————————————————————————————————————————————————————————
@@ -255,19 +256,19 @@ class ElementContractTest {
         assertThatCode(() -> ElementContract.of(price).templatesUnder("views/").check())
             .doesNotThrowAnyException();
         assertThatThrownBy(() -> ElementContract.of(price).check())
-            .isInstanceOf(IllegalStateException.class).hasMessageContaining("no template on the classpath");
+            .isInstanceOf(ContractBrokenException.class).hasMessageContaining("no template on the classpath");
     }
 
     /** Everything wrong at once, because a walk that stopped at the first would be walked many times. */
     @Test
     void everythingWrongIsSaidAtOnce() {
         assertThatThrownBy(() -> ElementContract.of(Element.raw("fragments/my/absent", "price")).check())
-            .isInstanceOf(IllegalStateException.class).hasMessageContaining("broken in 2 place(s)");
+            .isInstanceOf(ContractBrokenException.class).hasMessageContaining("broken in 2 place(s)");
 
         assertThatThrownBy(ElementContract::of)
-            .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("at least one");
+            .isInstanceOf(MisuseException.class).hasMessageContaining("at least one");
         assertThatThrownBy(() -> ElementContract.of((Composable<?>[]) null))
-            .isInstanceOf(NullPointerException.class);
+            .isInstanceOf(MisuseException.class);
         assertThat(ElementContract.of(Caption.label("x"))).as("structure alone is a legal walk").isNotNull();
     }
 
@@ -372,9 +373,8 @@ class ElementContractTest {
         };
 
         assertThatThrownBy(() -> ElementContract.textOf(unreadable, "templates/thymekit/heading.html"))
-            .isInstanceOf(java.io.UncheckedIOException.class)
-            .hasMessageContaining("cannot read")
-            .hasMessageContaining("heading.html");
+            .isInstanceOf(ContractBrokenException.class)
+            .hasMessage("ElementContract.check: cannot read templates/thymekit/heading.html");
     }
 
     /** The kit's own stylesheets, from the manifest rather than from a list somebody keeps. */

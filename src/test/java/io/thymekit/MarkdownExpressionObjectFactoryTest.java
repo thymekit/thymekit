@@ -73,7 +73,7 @@ class MarkdownExpressionObjectFactoryTest {
     @Test
     void aRendererIsRequired() {
         assertThatThrownBy(() -> new MarkdownExpressionObjectFactory(null))
-            .isInstanceOf(NullPointerException.class).hasMessageContaining("markdownRenderer");
+            .isInstanceOf(MisuseException.class).hasMessageContaining("markdownRenderer");
     }
 
     /**

@@ -36,7 +36,8 @@ class OutlineTest {
 
         assertThatThrownBy(() -> Outline.requireSound(
                 List.of(Heading.h1("The page").build(), Heading.h1("And another").build())))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(UnsoundPageException.class)
+            .hasMessageStartingWith("Outline.requireSound:")
             .hasMessageContaining("more than one H1").hasMessageContaining("And another");
     }
 
@@ -45,7 +46,7 @@ class OutlineTest {
     void nestingHidesNothing() {
         assertThatThrownBy(() -> Outline.requireSound(
                 List.of(Heading.h1("The page").build(), row(row(Heading.h1("Buried").build())))))
-            .isInstanceOf(IllegalStateException.class).hasMessageContaining("Buried");
+            .isInstanceOf(UnsoundPageException.class).hasMessageContaining("Buried");
     }
 
     /** The levels a page uses run without a gap, whatever order they appear in. */
@@ -60,11 +61,11 @@ class OutlineTest {
 
         assertThatThrownBy(() -> Outline.requireSound(
                 List.of(Heading.h1("Page").build(), Heading.h3("Deep").build())))
-            .isInstanceOf(IllegalStateException.class).hasMessageContaining("h2").hasMessageContaining("[1, 3]");
+            .isInstanceOf(UnsoundPageException.class).hasMessageContaining("h2").hasMessageContaining("[1, 3]");
         assertThatThrownBy(() -> Outline.requireSound(
                 List.of(row(Heading.h4("Deep").build()), Heading.h1("Page").build(), Heading.h2("Section").build())))
             .as("order in the flow is not the guard's business")
-            .isInstanceOf(IllegalStateException.class).hasMessageContaining("h3");
+            .isInstanceOf(UnsoundPageException.class).hasMessageContaining("h3");
     }
 
     /** A page with no headings at all is a page, and one level alone is contiguous. */
@@ -83,7 +84,7 @@ class OutlineTest {
         for (Object impossible : List.of(7, "7", 0L)) {
             assertThatThrownBy(() -> Outline.requireSound(List.of(Element.raw("thymekit/heading", "headingEl")
                     .with("level", impossible).with("text", "x").build())))
-                .isInstanceOf(IllegalStateException.class).hasMessageContaining("outside h1..h6");
+                .isInstanceOf(UnsoundPageException.class).hasMessageContaining("outside h1..h6");
         }
         assertThatCode(() -> Outline.requireSound(List.of(
                 Heading.h1("a").build(), Heading.h2("b").build(), Heading.h3("c").build(),
@@ -100,7 +101,7 @@ class OutlineTest {
     void aLevelCountsHoweverItWasWritten() {
         assertThatThrownBy(() -> Outline.requireSound(List.of(Heading.h1("Page").build(),
                 Element.raw("thymekit/heading", "headingEl").with("level", "1").with("text", "sneaky").build())))
-            .isInstanceOf(IllegalStateException.class).hasMessageContaining("sneaky");
+            .isInstanceOf(UnsoundPageException.class).hasMessageContaining("sneaky");
         assertThatCode(() -> Outline.requireSound(List.of(Heading.h1("Page").build(),
                 Element.raw("thymekit/heading", "headingEl").with("level", " 2 ").with("text", "spaced").build())))
             .as("text with spaces still reads as a level").doesNotThrowAnyException();
@@ -114,6 +115,20 @@ class OutlineTest {
      * An illustration is a sample framed for display, not the structure of the page: a showcase shows a
      * heading of every level side by side, and the outline of the page it stands on is untouched by it.
      */
+    /**
+     * And the same limit from the other side: a heading of somebody else's does not count towards the
+     * outline, so a page of theirs may skip from two to four and pass. The kit refuses that on its own
+     * headings and cannot see theirs — which is the hole this pair leaves, kept here as a red-on-purpose
+     * expectation for the day an element can say what its keys mean.
+     */
+    @Test
+    void aHeadingOfSomebodyElsesIsNotCountedYet() {
+        assertThatCode(() -> Outline.requireSound(List.of(
+                Element.raw("fragments/my/chapter", "chapterEl").with("level", 2).build(),
+                Element.raw("fragments/my/chapter", "chapterEl").with("level", 4).build())))
+            .doesNotThrowAnyException();
+    }
+
     @Test
     void anIllustrationIsNotStructure() {
         Element<Element.Raw> sample = Element.raw("t", "frameEl").illustration()

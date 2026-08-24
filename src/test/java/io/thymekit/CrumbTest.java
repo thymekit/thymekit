@@ -5,7 +5,6 @@ package io.thymekit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 import org.junit.jupiter.api.Test;
 
@@ -62,24 +61,26 @@ class CrumbTest {
     /** A step with nothing written on it would print an empty gap between two separators. */
     @Test
     void refusesALinkWithNoName() {
-        assertThatExceptionOfType(IllegalArgumentException.class)
+        assertThatExceptionOfType(MisuseException.class)
             .isThrownBy(() -> Crumb.link("/x", "  "))
-            .withMessageContaining("label");
+            .withMessage("Crumb(label): is blank — a page shows what it was given, and this is nothing");
     }
 
     /** The same for the page you are on, and for the same reason. */
     @Test
     void refusesACurrentPageWithNoName() {
-        assertThatExceptionOfType(IllegalArgumentException.class)
+        assertThatExceptionOfType(MisuseException.class)
             .isThrownBy(() -> Crumb.current(""))
-            .withMessageContaining("label");
+            .withMessage("Crumb(label): is blank — a page shows what it was given, and this is nothing");
     }
 
     /** A name that was never given is refused where it was not given. */
     @Test
     void refusesANameThatIsNotThere() {
-        assertThatNullPointerException().isThrownBy(() -> Crumb.current(null)).withMessageContaining("label");
-        assertThatNullPointerException().isThrownBy(() -> Crumb.link("/x", null)).withMessageContaining("label");
+        assertThatExceptionOfType(MisuseException.class).isThrownBy(() -> Crumb.current(null))
+            .withMessage("Crumb(label): was not given");
+        assertThatExceptionOfType(MisuseException.class).isThrownBy(() -> Crumb.link("/x", null))
+            .withMessage("Crumb(label): was not given");
     }
 
     /**
@@ -88,10 +89,11 @@ class CrumbTest {
      */
     @Test
     void refusesALinkWithNoAddress() {
-        assertThatExceptionOfType(IllegalArgumentException.class)
+        assertThatExceptionOfType(MisuseException.class)
             .isThrownBy(() -> Crumb.link(" ", "X"))
-            .withMessageContaining("url");
-        assertThatNullPointerException().isThrownBy(() -> Crumb.link(null, "X")).withMessageContaining("url");
+            .withMessage("Crumb.link(url): is blank — a page shows what it was given, and this is nothing");
+        assertThatExceptionOfType(MisuseException.class).isThrownBy(() -> Crumb.link(null, "X"))
+            .withMessage("Crumb.link(url): was not given");
     }
 
     /**
@@ -101,7 +103,7 @@ class CrumbTest {
      */
     @Test
     void refusesAnAddressThatExecutesInsteadOfNavigating() {
-        assertThatExceptionOfType(IllegalArgumentException.class)
+        assertThatExceptionOfType(MisuseException.class)
             .isThrownBy(() -> Crumb.link("java\tscript:alert(1)", "X"))
             .withMessageContaining("script");
     }
@@ -112,12 +114,12 @@ class CrumbTest {
      */
     @Test
     void theGuardsAreInTheValueAndNotOnlyInTheFactories() {
-        assertThatExceptionOfType(IllegalArgumentException.class)
+        assertThatExceptionOfType(MisuseException.class)
             .isThrownBy(() -> new Crumb("/x", " "))
-            .withMessageContaining("label");
-        assertThatExceptionOfType(IllegalArgumentException.class)
+            .withMessage("Crumb(label): is blank — a page shows what it was given, and this is nothing");
+        assertThatExceptionOfType(MisuseException.class)
             .isThrownBy(() -> new Crumb("", "X"))
-            .withMessageContaining("url");
+            .withMessage("Crumb(url): is blank — a page shows what it was given, and this is nothing");
     }
 
     /** And the constructor still allows the one shape that has no address, because that is a crumb too. */

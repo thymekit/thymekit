@@ -1,5 +1,52 @@
 # Changelog
 
+## Unreleased
+
+**Breaking.** The kit throws its own failures and no longer borrows anyone's.
+
+- `catch (IllegalArgumentException)`, `catch (NullPointerException)` and `catch (IllegalStateException)`
+  no longer catch a refusal of this library. Catch `ThymekitException`, or one of the three it covers.
+- the walk over a triple no longer throws `UncheckedIOException` for a template it cannot read; it
+  throws `ContractBrokenException` with the original failure as the cause.
+- `Tree.walk(node, visit)` refuses a null tree and a null visitor. It used to walk a null to nothing,
+  which made a check written over it pass while checking nothing. A hole *inside* a tree is still
+  walked past: a page may carry a list with a gap in it.
+- `Descriptor.describes(node)` checks the values of a contribution where it is written rather than
+  when a page is rendered. A contribution carrying something the kit cannot write — a date, a double —
+  used to build quietly and fail later, on a page that could not say whose contribution it was.
+- the last argument of `Element.requireAdapter(element, fragment, where)` and of
+  `Caption.inRole(caption, role, where)` is a place and no longer a sentence: the kit writes the
+  sentence itself, and says which adapter was wanted as well as which one came.
+
+**New.**
+
+- `ThymekitException` and the three kinds under it — `MisuseException` for a call written wrong,
+  `UnsoundPageException` for a page that does not add up, `ContractBrokenException` for the walk over a
+  triple. What separates them is not what went wrong but what a consumer should do about it: the first
+  is an alert, the second can arrive from data and is theirs to decide, the third happens in tests.
+- every refusal names the place it was made at, in `where()` and in front of the message, because a
+  handler that logs only the message is the common case. The place is a call — `Heading.href(href)`,
+  `Rel.of(values) — one of them` — so it says which line to open.
+- `Element.required(value, where)` — the guard that replaces `Objects.requireNonNull` throughout, and
+  is there for an element of yours as much as for ours.
+
+**Fixed.**
+
+- a collection of link relations was guarded for being absent but not for holding a null, so a null
+  inside it reached the caller as the machine's own failure rather than as a refusal.
+- `Element.settle` built its message on every successful call, and folded the place into it: the one
+  time it fired it said `heading built nothing: was not given`.
+- a step of a trail was refused by the value it becomes, so the refusal named a type of this package
+  that a caller cannot look up. `Breadcrumbs.add` and `Breadcrumbs.current` refuse it themselves now,
+  and the second no longer reports itself as the first.
+- the walk over a triple checked its template engine for null under a caller that had already asked.
+
+**Inside.** Five more rules, thirty now: the kit throws only its own; every one of those types is named
+in the readme; every place names a call rather than a noun or a sentence; nothing is imported that a
+file has stopped using; and this entry says a number of rules that is the number of rules. The first
+two make one sentence true — what the kit does not name, it did not foresee — which is what lets a
+consumer treat an uncaught failure from here as a defect of ours.
+
 ## 0.3.0 — 2026-08-24
 
 **Breaking.**

@@ -5,8 +5,6 @@ package io.thymekit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
-import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -78,7 +76,7 @@ class ElementDescribesTest {
      */
     @Test
     void theKeyIsReserved() {
-        assertThatExceptionOfType(IllegalArgumentException.class)
+        assertThatExceptionOfType(MisuseException.class)
             .isThrownBy(() -> Element.Descriptor.of("test/thing", "thingEl").with("describes", "{}"))
             .withMessageContaining("reserved");
     }
@@ -95,7 +93,7 @@ class ElementDescribesTest {
         var pretender = node("Thing");
         pretender.put("fragment", "thingEl");
 
-        assertThatExceptionOfType(IllegalArgumentException.class)
+        assertThatExceptionOfType(MisuseException.class)
             .isThrownBy(() -> describing("one", pretender))
             .withMessageContaining("fragment");
     }
@@ -106,7 +104,7 @@ class ElementDescribesTest {
         var pretender = node("Thing");
         pretender.put("template", "test/thing");
 
-        assertThatExceptionOfType(IllegalArgumentException.class)
+        assertThatExceptionOfType(MisuseException.class)
             .isThrownBy(() -> describing("one", pretender))
             .withMessageContaining("template");
     }
@@ -120,7 +118,7 @@ class ElementDescribesTest {
         var deep = node("BreadcrumbList");
         deep.put("itemListElement", List.of(Map.of("fragment", "thingEl")));
 
-        assertThatExceptionOfType(IllegalArgumentException.class)
+        assertThatExceptionOfType(MisuseException.class)
             .isThrownBy(() -> describing("one", deep))
             .withMessageContaining("fragment");
     }
@@ -131,15 +129,33 @@ class ElementDescribesTest {
         var deep = node("BreadcrumbList");
         deep.put("about", Map.of("template", "test/thing"));
 
-        assertThatExceptionOfType(IllegalArgumentException.class)
+        assertThatExceptionOfType(MisuseException.class)
             .isThrownBy(() -> describing("one", deep))
             .withMessageContaining("template");
+    }
+
+    /**
+     * A value the kit cannot write is refused here, in the factory that wrote it, rather than later
+     * when a page is rendered. The stack then points at whoever put it there, and the place names the
+     * path that reaches it — a page rendering several contributions could not have said whose it was.
+     */
+    @Test
+    void refusesAValueItCouldNotWrite() {
+        var withADate = node("BreadcrumbList");
+        withADate.put("itemListElement", List.of(Map.of("published", java.time.LocalDate.EPOCH)));
+
+        assertThatExceptionOfType(MisuseException.class)
+            .isThrownBy(() -> describing("one", withADate))
+            .satisfies(refusal -> {
+                assertThat(refusal.where()).isEqualTo("Descriptor.describes.itemListElement[0].published");
+                assertThat(refusal.getMessage()).contains("LocalDate");
+            });
     }
 
     /** An empty contribution says nothing and would print an empty node into the page. */
     @Test
     void refusesAnEmptyContribution() {
-        assertThatExceptionOfType(IllegalArgumentException.class)
+        assertThatExceptionOfType(MisuseException.class)
             .isThrownBy(() -> describing("one", Map.of()))
             .withMessageContaining("empty");
     }
@@ -147,7 +163,7 @@ class ElementDescribesTest {
     /** Absence is not a contribution either. */
     @Test
     void refusesNothing() {
-        assertThatNullPointerException().isThrownBy(() -> describing("one", null));
+        assertThatExceptionOfType(MisuseException.class).isThrownBy(() -> describing("one", null));
     }
 
     /**
@@ -156,7 +172,7 @@ class ElementDescribesTest {
      */
     @Test
     void refusesASecondContribution() {
-        assertThatIllegalStateException()
+        assertThatExceptionOfType(MisuseException.class)
             .isThrownBy(() -> Element.Descriptor.of("test/thing", "thingEl")
                 .describes(node("One")).describes(node("Two")))
             .withMessageContaining("already");

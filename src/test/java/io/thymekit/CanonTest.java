@@ -720,6 +720,232 @@ class CanonTest {
         assertThat(printing).as("adapters printing a block of structured data").containsExactly("head.html");
     }
 
+    /**
+     * The kit throws only its own.
+     *
+     * <p>A consumer of this library has a rule of their own: a five hundred is a programming error and
+     * something to be woken up for. That rule only works if everything the kit refuses <b>on purpose</b>
+     * can be recognised and handled — then what is left uncaught really does mean nobody foresaw it.
+     * Today a refusal of ours is an {@code IllegalArgumentException} like any other, and the only way
+     * to tell it from their own code failing is to read the message.
+     *
+     * <p>So every refusal names a type of this kit's, and this watches the three ways a foreign one can
+     * leave: thrown directly, thrown by {@code Objects.requireNonNull}, and thrown by an
+     * {@code orElseThrow()} that was given nothing to throw. The third was not in the plan for this
+     * work — it was found by writing the rule before the code, which is the argument for that order.
+     *
+     * <p>It is red while the work is done and green when it is finished, so the list it prints is the
+     * list of what remains. A rule that starts red has shown it can fail; the check that it still can
+     * once the code is clean is owed at the end, because a scan that stops matching goes green too.
+     */
+    @Test
+    void theKitThrowsOnlyItsOwn() throws java.io.IOException {
+        var ours = java.util.Set.of("ThymekitException", "MisuseException", "UnsoundPageException",
+            "ContractBrokenException");
+        // built, not only thrown: a refusal assembled by a helper and thrown elsewhere leaves just the
+        // same, and one of them was doing exactly that when this pattern still said "throw new"
+        var foreign = java.util.regex.Pattern.compile("new (\\w*(?:Exception|Error))\\(");
+        var borrowed = java.util.regex.Pattern.compile("\\brequireNonNull\\(|orElseThrow\\(\\s*\\)");
+        java.util.List<String> left = new java.util.ArrayList<>();
+        try (var files = java.nio.file.Files.walk(java.nio.file.Path.of("src/main/java/io/thymekit"))) {
+            for (var file : files.filter(java.nio.file.Files::isRegularFile).sorted().toList()) {
+                var lines = java.nio.file.Files.readAllLines(file);
+                for (int i = 0; i < lines.size(); i++) {
+                    var thrown = foreign.matcher(lines.get(i));
+                    while (thrown.find()) {
+                        if (!ours.contains(thrown.group(1))) {
+                            left.add(file.getFileName() + ":" + (i + 1) + " throws " + thrown.group(1));
+                        }
+                    }
+                    if (borrowed.matcher(lines.get(i)).find()) {
+                        left.add(file.getFileName() + ":" + (i + 1) + " throws somebody else's by borrowing it");
+                    }
+                }
+            }
+        }
+        assertThat(left).as("refusals that a consumer cannot tell from their own code failing").isEmpty();
+    }
+
+    /**
+     * And every one of them is named in the readme, where a consumer looks for what to catch.
+     *
+     * <p>The rule beside this one says the kit throws only its own; this one says a consumer can find
+     * out what those are without reading the source. Together they make one sentence true — what the
+     * kit does not name, it did not foresee — and a type added later without a row would quietly
+     * shorten it.
+     */
+    @Test
+    void everyFailureTheKitThrowsIsNamedInTheReadme() throws java.io.IOException {
+        String readme = java.nio.file.Files.readString(java.nio.file.Path.of("README.md"));
+        java.util.List<String> unnamed = new java.util.ArrayList<>();
+        try (var files = java.nio.file.Files.walk(java.nio.file.Path.of("src/main/java/io/thymekit"))) {
+            for (var file : files.filter(java.nio.file.Files::isRegularFile).sorted().toList()) {
+                String source = java.nio.file.Files.readString(file);
+                var declared = java.util.regex.Pattern.compile("class (\\w+) extends ThymekitException")
+                    .matcher(source);
+                while (declared.find()) {
+                    if (!readme.contains("`" + declared.group(1) + "`")) {
+                        unnamed.add(declared.group(1));
+                    }
+                }
+            }
+        }
+        assertThat(unnamed).as("failures a consumer would have to read the source to learn about").isEmpty();
+    }
+
+    /**
+     * A refusal points at a call, and never at a noun. The place is a field so that a handler can route
+     * on it and a person reading one line of a log knows which line of their own code to open;
+     * "element", "caption", "slot item", "origin" answer neither question — they name what was wrong,
+     * which the message says anyway. Twenty-eight places in this kit were written that way, and two
+     * guards took a whole sentence as their place, which put a sentence into a field meant for routing.
+     *
+     * <p>A call is {@code Type.member}, with the argument at fault named when the call has one, and
+     * {@code — one of them} when the trouble is inside a collection that was handed over. A constructor
+     * is {@code Type(argument)}.
+     *
+     * <p>A refusal built with a variable is judged by the variable's name instead: it must be
+     * {@code where}, which is what the kit calls a place handed down from a caller. That is not
+     * pedantry about names — it caught a refusal whose place was the path of a file on the classpath,
+     * which no rule reading literals could ever have seen.
+     *
+     * <p>A place assembled by concatenation is refused outright rather than judged. Two were written
+     * that way and both put a name of the caller's inside the call — {@code Descriptor.with(title)} —
+     * which reads like a parameter, cannot be routed on, and is not a call at all. What was wrong with
+     * them belongs in the message, where a value is free to be anything.
+     *
+     * <p>Prose is skipped: the example in Tree's javadoc shows a consumer's own place, which follows
+     * their names and not ours.
+     */
+    /**
+     * The guards this rule knows to look at. A list, and therefore a thing that can fall behind — so the
+     * rule below reads the source for methods that take a place and refuses to pass while one of them is
+     * missing from here. Two blind spots were found by hand before that was written; there is no third.
+     */
+    private static final java.util.List<String> GUARDS = java.util.List.of("required", "settle", "check",
+        "requireText", "requireTag", "requireAbsolute", "requireNavigable", "requireRenderable",
+        "requireRenderableElement", "requireAdapter", "inRole", "address", "step", "require");
+
+    @Test
+    void everyPlaceARefusalPointsAtIsACall() throws java.io.IOException {
+        var shape = java.util.regex.Pattern.compile(
+            "[A-Z][A-Za-z0-9]*(?:\\.[a-z][A-Za-z0-9]*)?(?:\\([a-zA-Z0-9]*\\))?(?: — one of them)?");
+        var built = java.util.regex.Pattern.compile(
+            "new (?:Misuse|UnsoundPage|ContractBroken)Exception\\(\\s*"
+            + "(?:\"([^\"]*)\"|([A-Za-z_][A-Za-z0-9_]*))\\s*[,)]");
+        var guarded = java.util.regex.Pattern.compile(
+            "\\b(?:" + String.join("|", GUARDS) + ")\\("
+            + "[^;]*?,\\s*\"([^\"]*)\"\\s*\\)");
+        java.util.List<String> nouns = new java.util.ArrayList<>();
+        try (var files = java.nio.file.Files.walk(java.nio.file.Path.of("src/main/java/io/thymekit"))) {
+            for (var file : files.filter(java.nio.file.Files::isRegularFile).sorted().toList()) {
+                java.util.List<String> lines = java.nio.file.Files.readAllLines(file);
+                for (int i = 0; i < lines.size(); i++) {
+                    String line = lines.get(i);
+                    if (line.stripLeading().startsWith("*") || line.stripLeading().startsWith("//")) {
+                        continue;
+                    }
+                    var assembled = java.util.regex.Pattern
+                        .compile("new (?:Misuse|UnsoundPage|ContractBroken)Exception\\(\\s*\"[^\"]*\"\\s*\\+")
+                        .matcher(line);
+                    if (assembled.find()) {
+                        nouns.add(file.getFileName() + ":" + (i + 1) + " builds its place out of a value");
+                    }
+                    var refusal = built.matcher(line);
+                    while (refusal.find()) {
+                        String literal = refusal.group(1);
+                        String variable = refusal.group(2);
+                        boolean says = literal != null ? shape.matcher(literal).matches() : "where".equals(variable);
+                        if (!says) {
+                            nouns.add(file.getFileName() + ":" + (i + 1) + " refuses at "
+                                + (literal != null ? "\"" + literal + "\"" : variable));
+                        }
+                    }
+                    var given = guarded.matcher(line);
+                    while (given.find()) {
+                        if (!shape.matcher(given.group(1)).matches()) {
+                            nouns.add(file.getFileName() + ":" + (i + 1) + " refuses at \"" + given.group(1) + "\"");
+                        }
+                    }
+                }
+            }
+        }
+        assertThat(nouns).as("places that name a thing instead of the call that refused").isEmpty();
+
+        // and the list above is held to the source: a guard that takes a place and is not named there
+        // would be a hole in this rule of exactly the kind that was found by hand twice
+        java.util.List<String> unwatched = new java.util.ArrayList<>();
+        var takesAPlace = java.util.regex.Pattern.compile("\\b(\\w+)\\([^;()]*String where[,)]");
+        try (var files = java.nio.file.Files.walk(java.nio.file.Path.of("src/main/java/io/thymekit"))) {
+            for (var file : files.filter(java.nio.file.Files::isRegularFile).sorted().toList()) {
+                if (file.getFileName().toString().endsWith("Exception.java")) {
+                    continue;               // the family takes a place because it is where one ends up
+                }
+                var guard = takesAPlace.matcher(java.nio.file.Files.readString(file));
+                while (guard.find()) {
+                    if (!GUARDS.contains(guard.group(1))) {
+                        unwatched.add(file.getFileName() + ": " + guard.group(1));
+                    }
+                }
+            }
+        }
+        assertThat(unwatched).as("guards that take a place and are not watched by the rule above").isEmpty();
+    }
+
+    /**
+     * And nothing is imported that the file does not use. An import is a claim about what a file needs,
+     * and a stale one says the file still leans on something it stopped leaning on — this kit left
+     * eight behind in a single afternoon, on the day it replaced somebody else's guard with its own.
+     * There is no linter in this build to catch it, and a compiler never will: a dead import is legal.
+     */
+    @Test
+    void nothingIsImportedThatIsNotUsed() throws java.io.IOException {
+        var declared = java.util.regex.Pattern.compile("^import (?:static )?[\\w.]*?(\\w+);");
+        java.util.List<String> stale = new java.util.ArrayList<>();
+        try (var files = java.nio.file.Files.walk(java.nio.file.Path.of("src/main/java/io/thymekit"))) {
+            for (var file : files.filter(java.nio.file.Files::isRegularFile).sorted().toList()) {
+                java.util.List<String> lines = java.nio.file.Files.readAllLines(file);
+                String body = lines.stream().filter(line -> !line.startsWith("import ")).reduce("", String::concat);
+                for (int i = 0; i < lines.size(); i++) {
+                    var name = declared.matcher(lines.get(i));
+                    if (name.find() && !java.util.regex.Pattern.compile("\\b" + name.group(1) + "\\b")
+                            .matcher(body).find()) {
+                        stale.add(file.getFileName() + ":" + (i + 1) + " imports " + name.group(1));
+                    }
+                }
+            }
+        }
+        assertThat(stale).as("imports the file has stopped needing").isEmpty();
+    }
+
+    /**
+     * And the entry a release is written from counts them too. The readme says how many rules the canon
+     * keeps and a rule holds it to that; the changelog says how many were added and what they are, and
+     * nothing held that — so it went out of this very branch claiming twenty-seven while the canon kept
+     * twenty-nine. Only the topmost entry is judged: the ones below it are history, and history is
+     * right to say what was true when it was written.
+     */
+    @Test
+    void theChangelogEntryBeingWrittenCountsTheRulesCorrectly() throws java.io.IOException {
+        var spelled = java.util.List.of("zero", "one", "two", "three", "four", "five", "six", "seven",
+            "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen",
+            "seventeen", "eighteen", "nineteen");
+        var tens = java.util.Map.of("twenty", 20, "thirty", 30, "forty", 40, "fifty", 50);
+        String changelog = java.nio.file.Files.readString(java.nio.file.Path.of("CHANGELOG.md"));
+        String newest = changelog.split("(?m)^## ")[1];
+        var said = java.util.regex.Pattern.compile("rules, ([a-z]+)(?:-([a-z]+))? now").matcher(newest);
+        if (!said.find()) {
+            return;                 // an entry that claims no count cannot be wrong about one
+        }
+        int rules = (int) java.util.regex.Pattern.compile("(?m)^\\s+@Test$")
+            .matcher(java.nio.file.Files.readString(
+                java.nio.file.Path.of("src/test/java/io/thymekit/CanonTest.java"))).results().count();
+        int counted = tens.getOrDefault(said.group(1), -1)
+            + (said.group(2) != null ? spelled.indexOf(said.group(2)) : 0);
+        assertThat(counted).as("the entry says \"%s now\" and the canon keeps %d", said.group(0), rules)
+            .isEqualTo(rules);
+    }
+
     /** The model belongs to the canvas: one place writes it, so a document knows what to expect. */
     @Test
     void onlyTheCanvasWritesTheModel() {

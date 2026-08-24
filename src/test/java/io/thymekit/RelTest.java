@@ -49,10 +49,10 @@ class RelTest {
     /** Asking for values without naming one is a mistake, and so is a hole among them. */
     @Test
     void askingForNothingIsRefused() {
-        assertThatThrownBy(() -> Rel.of()).isInstanceOf(IllegalArgumentException.class)
+        assertThatThrownBy(() -> Rel.of()).isInstanceOf(MisuseException.class)
             .hasMessageContaining("name at least one");
-        assertThatThrownBy(() -> Rel.of((Rel[]) null)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> Rel.of(Rel.UGC, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> Rel.of((Rel[]) null)).isInstanceOf(MisuseException.class);
+        assertThatThrownBy(() -> Rel.of(Rel.UGC, null)).isInstanceOf(MisuseException.class);
     }
 
     /**
@@ -72,9 +72,9 @@ class RelTest {
     void theAttributeValueIsTheTokensInOrder() {
         assertThat(Rel.tokens(Rel.of(Rel.NOFOLLOW, Rel.NOOPENER))).isEqualTo("nofollow noopener");
         assertThat(Rel.tokens(List.of())).isEmpty();
-        assertThatThrownBy(() -> Rel.tokens(null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> Rel.tokens(null)).isInstanceOf(MisuseException.class);
         assertThatThrownBy(() -> Rel.tokens(java.util.Arrays.asList(Rel.UGC, null)))
-            .isInstanceOf(NullPointerException.class);
+            .isInstanceOf(MisuseException.class);
     }
 
     /**
@@ -88,14 +88,43 @@ class RelTest {
         assertThat(Rel.forNewTab(List.of(Rel.NOFOLLOW))).containsExactly(Rel.NOFOLLOW, Rel.NOOPENER);
         assertThat(Rel.forNewTab(List.of())).containsExactly(Rel.NOOPENER);
         assertThat(Rel.forNewTab(List.of(Rel.NOOPENER, Rel.UGC))).containsExactly(Rel.NOOPENER, Rel.UGC);
-        assertThatThrownBy(() -> Rel.forNewTab(null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> Rel.forNewTab(null)).isInstanceOf(MisuseException.class);
         assertThatThrownBy(() -> Rel.forNewTab(java.util.Arrays.asList(Rel.UGC, null)))
-            .isInstanceOf(NullPointerException.class);
+            .isInstanceOf(MisuseException.class);
 
         List<Rel> given = new java.util.ArrayList<>(List.of(Rel.UGC));
         Rel.forNewTab(given);
         assertThat(given).as("what the caller handed over is theirs, and stays as they left it")
             .containsExactly(Rel.UGC);
+    }
+
+    /**
+     * A refusal says where it was made, and two places are not one: the collection was not handed over,
+     * or something inside it was not there. Whoever routes on {@code where()} can tell those apart, and
+     * so can a person reading one line of a log — which is the whole reason the place is a field and not
+     * a sentence.
+     */
+    @Test
+    void aRefusalNamesTheCallThatMadeIt() {
+        assertThat(placeOf(() -> Rel.of())).isEqualTo("Rel.of(values)");
+        assertThat(placeOf(() -> Rel.of((Rel[]) null))).isEqualTo("Rel.of(values)");
+        assertThat(placeOf(() -> Rel.of(Rel.UGC, null))).isEqualTo("Rel.of(values) — one of them");
+        assertThat(placeOf(() -> Rel.forNewTab(null))).isEqualTo("Rel.forNewTab(values)");
+        assertThat(placeOf(() -> Rel.forNewTab(java.util.Arrays.asList(Rel.UGC, null))))
+            .isEqualTo("Rel.forNewTab(values) — one of them");
+        assertThat(placeOf(() -> Rel.tokens(null))).isEqualTo("Rel.tokens(values)");
+        assertThat(placeOf(() -> Rel.tokens(java.util.Arrays.asList(Rel.UGC, null))))
+            .isEqualTo("Rel.tokens(values) — one of them");
+    }
+
+    /** The place of the refusal a call makes, and an assertion failure if it makes none. */
+    private static String placeOf(Runnable call) {
+        try {
+            call.run();
+        } catch (MisuseException refusal) {
+            return refusal.where();
+        }
+        throw new AssertionError("nothing was refused");
     }
 
     /**

@@ -33,7 +33,8 @@ class AnchorsTest {
         assertThatThrownBy(() -> Anchors.requireDistinct(List.of(
                 Heading.h2("Composition").id("composition").build(),
                 Heading.h2("How it is made").id("composition").build())))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(UnsoundPageException.class)
+            .hasMessageStartingWith("Anchors.requireDistinct:")
             .hasMessageContaining("composition")
             .hasMessageContaining("How it is made");
     }
@@ -55,7 +56,7 @@ class AnchorsTest {
         assertThatThrownBy(() -> Anchors.requireDistinct(List.of(
                 Section.of(Heading.h2("Composition").id("composition")).build(),
                 row(row(Heading.h3("Also composition").id("composition").build())))))
-            .isInstanceOf(IllegalStateException.class).hasMessageContaining("composition");
+            .isInstanceOf(UnsoundPageException.class).hasMessageContaining("composition");
     }
 
     /**
@@ -72,7 +73,7 @@ class AnchorsTest {
 
         assertThatThrownBy(() -> Anchors.requireDistinct(List.of(
                 Heading.h2("Composition").id("composition").build(), sample)))
-            .isInstanceOf(IllegalStateException.class).hasMessageContaining("composition");
+            .isInstanceOf(UnsoundPageException.class).hasMessageContaining("composition");
     }
 
     /** The same heading twice is two nodes in the document, whatever it was in java. */
@@ -81,7 +82,7 @@ class AnchorsTest {
         Element<Heading> once = Heading.h2("Composition").id("composition").build();
 
         assertThatThrownBy(() -> Anchors.requireDistinct(List.of(once, once)))
-            .isInstanceOf(IllegalStateException.class).hasMessageContaining("composition");
+            .isInstanceOf(UnsoundPageException.class).hasMessageContaining("composition");
     }
 
     /**
@@ -95,6 +96,24 @@ class AnchorsTest {
                 Heading.h2("Composition").id("composition").build(),
                 Element.raw("fragments/my/card", "myCardEl").with("id", "composition").build(),
                 Element.raw("fragments/my/card", "myCardEl").with("id", "composition").build())))
+            .doesNotThrowAnyException();
+    }
+
+    /**
+     * And a limit, written down so it is a fact and not an oversight: an element of somebody else's
+     * that carries a real anchor — a chapter of theirs, addressed by a link — is not counted either,
+     * because the reader this asks answers for one adapter only. Two of them may quietly share a name,
+     * and the kit's own two headings may not: the guarantee is weaker for their elements than for ours.
+     *
+     * <p>Nothing here distinguishes this from the case above; that is exactly the trouble. The day an
+     * element can declare what a key of it means, this expectation is wrong and turns red, which is
+     * what it is for.
+     */
+    @Test
+    void anAnchorOfSomebodyElsesIsNotCountedYet() {
+        assertThatCode(() -> Anchors.requireDistinct(List.of(
+                Element.raw("fragments/my/chapter", "chapterEl").with("level", 2).with("id", "part").build(),
+                Element.raw("fragments/my/chapter", "chapterEl").with("level", 2).with("id", "part").build())))
             .doesNotThrowAnyException();
     }
 }

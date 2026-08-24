@@ -204,10 +204,10 @@ class MarkdownRendererTest {
     /** The ceiling is a level html has. */
     @Test
     void theCeilingIsALevelHtmlHas() {
-        assertThatThrownBy(() -> new MarkdownRenderer(0)).isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("1..6");
-        assertThatThrownBy(() -> new MarkdownRenderer(7)).isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("1..6");
+        assertThatThrownBy(() -> new MarkdownRenderer(0)).isInstanceOf(MisuseException.class)
+            .hasMessage("MarkdownRenderer(maxHeadingLevel): is 0 — the allowed range is 1..6");
+        assertThatThrownBy(() -> new MarkdownRenderer(7)).isInstanceOf(MisuseException.class)
+            .hasMessage("MarkdownRenderer(maxHeadingLevel): is 7 — the allowed range is 1..6");
         assertThat(new MarkdownRenderer(6).toHtmlSafe("# a")).contains("<h6>a</h6>");
     }
 
