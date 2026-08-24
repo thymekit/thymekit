@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.4.0 — 2026-08-24
 
 **Breaking.** The kit throws its own failures and no longer borrows anyone's.
 
