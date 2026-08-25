@@ -32,6 +32,11 @@ carries it.
 - the reserved key that carries what an element said is `roles`, not `means`: the word a stored page
   shows is now a word the documentation uses.
 
+**Breaking.** A trail belongs to one site. `Breadcrumbs.site(...)` said twice with two answers is
+refused: the second quietly won, and the graph a crawler read named a host the page never mentioned —
+which looks like nothing at all on the rendered page. Said twice with one answer it costs nothing and
+is allowed, so a builder held in a variable is no harder to write than one written in a chain.
+
 **Breaking.** A key of a descriptor holds data, and an element put under one is refused where it is
 written. It never rendered: the dispatcher asks a descriptor for its address and an element is not
 one, so that part of a page was simply absent, and nothing said why. An element goes in a slot, or in

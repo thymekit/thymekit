@@ -4,6 +4,7 @@
 package io.thymekit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import java.util.List;
@@ -238,5 +239,40 @@ class BreadcrumbsTest {
         assertThatExceptionOfType(MisuseException.class)
             .isThrownBy(() -> Breadcrumbs.named("Breadcrumb").add(" ", "X"))
             .withMessage("Breadcrumbs.add(url): is blank — a page shows what it was given, and this is nothing");
+    }
+
+    /**
+     * A trail belongs to one site. Saying so twice with two answers is a mistake nobody would ever
+     * catch reading the page — the second quietly wins, the graph a crawler reads names a host the
+     * page never mentions, and everything looks exactly as it should.
+     *
+     * <p>Saying the same thing twice is not a mistake and is left alone: it costs nothing and refusing
+     * it would make a builder held in a variable harder to write than one written in a chain.
+     */
+    @Test
+    void aTrailBelongsToOneSite() {
+        assertThatExceptionOfType(MisuseException.class)
+            .isThrownBy(() -> Breadcrumbs.named("Where you are")
+                .site("https://shop").site("https://other"))
+            .withMessage("Breadcrumbs.site(origin): this trail already belongs to \"https://shop\":"
+                + " one trail, one site");
+
+        assertThatCode(() -> Breadcrumbs.named("Where you are").site("https://shop").site("https://shop"))
+            .as("the same site said twice says the same thing").doesNotThrowAnyException();
+    }
+
+    /**
+     * And where it is said does not matter. The graph is built when the trail is, so an origin named
+     * before the steps and one named after them describe the same trail — which is the rule this kit
+     * holds every option to: the order of the calls cannot change the result.
+     */
+    @Test
+    void whereTheSiteIsSaidDoesNotMatter() {
+        var before = Breadcrumbs.named("Where you are").site("https://shop")
+            .add("/catalogue", "Catalogue").current("Aloe");
+        var after = Breadcrumbs.named("Where you are")
+            .add("/catalogue", "Catalogue").site("https://shop").current("Aloe");
+
+        assertThat(after).isEqualTo(before);
     }
 }

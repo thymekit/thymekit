@@ -71,6 +71,14 @@ public final class Breadcrumbs {
          * <p>Only a step that starts at the root is joined to it. One that is already absolute is left
          * alone, and one written relative to the current directory is left alone too — resolving that
          * would need the address of the page, which is the one thing this element does not have.
+         *
+         * <p>One trail, one site. Said twice with two answers it is refused, because the second would
+         * quietly win and the graph a crawler reads would name a host the page never mentions — a
+         * mistake that looks like nothing at all on the rendered page. Said twice with one answer it
+         * costs nothing, and refusing that would make a builder held in a variable harder to write
+         * than one written in a chain.
+         *
+         * <p>Where it is said does not matter: the graph is built when the trail is.
          */
         public Builder site(String origin) {
             String value = Guards.absolute(origin, "Breadcrumbs.site(origin)");
@@ -81,6 +89,10 @@ public final class Breadcrumbs {
                     + "\" — scheme and host only, with no path and no trailing slash. A step written from"
                     + " the root is joined to this as it is, so a path here would end up inside it twice"
                     + " and a slash would double");
+            }
+            if (this.origin != null && !this.origin.equals(value)) {
+                throw new MisuseException("Breadcrumbs.site(origin)", "this trail already belongs to \""
+                    + this.origin + "\": one trail, one site");
             }
             this.origin = value;
             return this;
