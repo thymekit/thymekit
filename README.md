@@ -963,7 +963,7 @@ guards the elements are built from, published because your elements are built fr
 | — | `Guards` — what a value must be before a page carries it: `Guards.required/text/tag/absolute/navigable/anchor(value, where)`, the six the kit's own elements make, and `Guards.isNothing(text)`, which is what all six mean by empty | — | — |
 | — | `Roles` — what a page asks of an element: `Roles.headingLevelIn/anchorIn/nameOf(...)`, answered by whatever said so, whosever element it is | — | — |
 | — | `Composable<K>` — whatever becomes an element; `ElementContract` — the walk over a triple, for your elements as much as ours | — | — |
-| — | `Rel` — what a link says about itself, with the policy that goes with it: `Rel.of(...)` guards and orders, `Rel.forNewTab(...)` cannot lose `noopener`, `Rel.tokens(...)` writes the attribute | — | — |
+| — | `Rel` — what a link says about itself, with the policy that goes with it: `Rel.of(...)` guards and orders, `Rel.forNewTab(Set)` cannot lose `noopener`, `Rel.tokens(Set)` writes the attribute. Both take a set, so a token said twice is not a thing they can be asked to write | — | — |
 | Head | filled by the canvas — title, description, canonical, image, `robots`; renders as the `head` element | `head :: headEl` | — (it prints tags, not looks) |
 
 ### Text machines read too

@@ -32,6 +32,11 @@ carries it.
 - the reserved key that carries what an element said is `roles`, not `means`: the word a stored page
   shows is now a word the documentation uses.
 
+**Breaking.** `Rel.forNewTab` and `Rel.tokens` take a `Set<Rel>` rather than any collection. A link
+saying `nofollow` twice is not wrong to a browser, which is exactly why nobody would ever notice it —
+and what cannot be written needs no guard. `Rel.of(...)` hands back a set, which is what both of them
+are given everywhere in the kit.
+
 **Fixed.** A contribution that held itself walked until the stack ended. A map may hold itself,
 nothing stops a caller building one, and the writer meets a contribution before it is copied — so a
 `StackOverflowError` was reachable from `describes`, which is the failure that kills a thread, names

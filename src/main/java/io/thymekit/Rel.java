@@ -4,7 +4,6 @@
 package io.thymekit;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -89,8 +88,11 @@ public enum Rel {
      *
      * <p>Asked at build time rather than as the options are said, so the order of the calls cannot
      * change the result, and asking twice says the same thing as asking once.
+     *
+     * <p>A set, and not any collection: a link saying {@code nofollow} twice is not wrong to a browser,
+     * which is exactly why nobody would ever notice it. What cannot be written needs no guard.
      */
-    public static Set<Rel> forNewTab(Collection<Rel> values) {
+    public static Set<Rel> forNewTab(Set<Rel> values) {
         Guards.required(values, "Rel.forNewTab(values)");
         Set<Rel> withSafety = guarded(values, "Rel.forNewTab(values) — one of them");
         withSafety.add(NOOPENER);
@@ -98,11 +100,16 @@ public enum Rel {
     }
 
     /**
-     * The attribute value: the tokens in the order given, one space between them. Nothing to say gives
-     * nothing at all, so an element can ask without checking first — and then print the attribute only
-     * when what comes back is not empty.
+     * The attribute value: the tokens in the order the set iterates, one space between them. Nothing to
+     * say gives nothing at all, so an element can ask without checking first — and then print the
+     * attribute only when what comes back is not empty.
+     *
+     * <p>The order is the set's, which is worth saying plainly rather than promising the author's: hand
+     * over the one {@code Set.of} builds and the tokens come out in whatever order it keeps them. No
+     * part of a page depends on that order, and a promise that was true only for some sets would be a
+     * promise this could not keep.
      */
-    public static String tokens(Collection<Rel> values) {
+    public static String tokens(Set<Rel> values) {
         Guards.required(values, "Rel.tokens(values)");
         return values.stream()
             .map(value -> Guards.required(value, "Rel.tokens(values) — one of them").token())
@@ -115,7 +122,7 @@ public enum Rel {
      * dereferenced later, and what reaches the caller then is the machine's failure rather than a
      * refusal of ours. Both entrances need that, and one spelling of it is how the two stay agreed.
      */
-    private static Set<Rel> guarded(Collection<Rel> values, String each) {
+    private static Set<Rel> guarded(Iterable<Rel> values, String each) {
         Set<Rel> unique = new LinkedHashSet<>();
         for (Rel value : values) {
             unique.add(Guards.required(value, each));

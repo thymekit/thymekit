@@ -8,7 +8,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -63,7 +62,7 @@ class RelTest {
     void whatComesBackCannotBeChangedAfterwards() {
         Set<Rel> values = Rel.of(Rel.NOFOLLOW);
         assertThatThrownBy(() -> values.add(Rel.UGC)).isInstanceOf(UnsupportedOperationException.class);
-        assertThatThrownBy(() -> Rel.forNewTab(List.of(Rel.UGC)).add(Rel.NOFOLLOW))
+        assertThatThrownBy(() -> Rel.forNewTab(Set.of(Rel.UGC)).add(Rel.NOFOLLOW))
             .isInstanceOf(UnsupportedOperationException.class);
     }
 
@@ -71,9 +70,9 @@ class RelTest {
     @Test
     void theAttributeValueIsTheTokensInOrder() {
         assertThat(Rel.tokens(Rel.of(Rel.NOFOLLOW, Rel.NOOPENER))).isEqualTo("nofollow noopener");
-        assertThat(Rel.tokens(List.of())).isEmpty();
+        assertThat(Rel.tokens(Set.of())).isEmpty();
         assertThatThrownBy(() -> Rel.tokens(null)).isInstanceOf(MisuseException.class);
-        assertThatThrownBy(() -> Rel.tokens(java.util.Arrays.asList(Rel.UGC, null)))
+        assertThatThrownBy(() -> Rel.tokens(withAHoleInIt()))
             .isInstanceOf(MisuseException.class);
     }
 
@@ -85,14 +84,15 @@ class RelTest {
      */
     @Test
     void aNewTabCarriesNoopenerForWhoeverOpensIt() {
-        assertThat(Rel.forNewTab(List.of(Rel.NOFOLLOW))).containsExactly(Rel.NOFOLLOW, Rel.NOOPENER);
-        assertThat(Rel.forNewTab(List.of())).containsExactly(Rel.NOOPENER);
-        assertThat(Rel.forNewTab(List.of(Rel.NOOPENER, Rel.UGC))).containsExactly(Rel.NOOPENER, Rel.UGC);
+        assertThat(Rel.forNewTab(Set.of(Rel.NOFOLLOW))).containsExactly(Rel.NOFOLLOW, Rel.NOOPENER);
+        assertThat(Rel.forNewTab(Set.of())).containsExactly(Rel.NOOPENER);
+        assertThat(Rel.forNewTab(new java.util.LinkedHashSet<>(List.of(Rel.NOOPENER, Rel.UGC))))
+            .as("what already carried it keeps the place it had").containsExactly(Rel.NOOPENER, Rel.UGC);
         assertThatThrownBy(() -> Rel.forNewTab(null)).isInstanceOf(MisuseException.class);
-        assertThatThrownBy(() -> Rel.forNewTab(java.util.Arrays.asList(Rel.UGC, null)))
+        assertThatThrownBy(() -> Rel.forNewTab(withAHoleInIt()))
             .isInstanceOf(MisuseException.class);
 
-        List<Rel> given = new java.util.ArrayList<>(List.of(Rel.UGC));
+        Set<Rel> given = new java.util.LinkedHashSet<>(List.of(Rel.UGC));
         Rel.forNewTab(given);
         assertThat(given).as("what the caller handed over is theirs, and stays as they left it")
             .containsExactly(Rel.UGC);
@@ -110,10 +110,10 @@ class RelTest {
         assertThat(placeOf(() -> Rel.of((Rel[]) null))).isEqualTo("Rel.of(values)");
         assertThat(placeOf(() -> Rel.of(Rel.UGC, null))).isEqualTo("Rel.of(values) — one of them");
         assertThat(placeOf(() -> Rel.forNewTab(null))).isEqualTo("Rel.forNewTab(values)");
-        assertThat(placeOf(() -> Rel.forNewTab(java.util.Arrays.asList(Rel.UGC, null))))
+        assertThat(placeOf(() -> Rel.forNewTab(withAHoleInIt())))
             .isEqualTo("Rel.forNewTab(values) — one of them");
         assertThat(placeOf(() -> Rel.tokens(null))).isEqualTo("Rel.tokens(values)");
-        assertThat(placeOf(() -> Rel.tokens(java.util.Arrays.asList(Rel.UGC, null))))
+        assertThat(placeOf(() -> Rel.tokens(withAHoleInIt())))
             .isEqualTo("Rel.tokens(values) — one of them");
     }
 
@@ -135,8 +135,8 @@ class RelTest {
     @Test
     void thePolicyIsAsPublicAsTheVocabulary() {
         assertThat(publicApi("of", Rel[].class)).as("Rel.of(Rel...) — the guards and the order").isNotNull();
-        assertThat(publicApi("tokens", Collection.class)).as("Rel.tokens(...) — the attribute value").isNotNull();
-        assertThat(publicApi("forNewTab", Collection.class)).as("Rel.forNewTab(...) — the safety").isNotNull();
+        assertThat(publicApi("tokens", Set.class)).as("Rel.tokens(...) — the attribute value").isNotNull();
+        assertThat(publicApi("forNewTab", Set.class)).as("Rel.forNewTab(...) — the safety").isNotNull();
     }
 
     /** Public means public: the spec lives in the same package, so only reflection can tell the two apart. */
@@ -147,5 +147,48 @@ class RelTest {
         } catch (NoSuchMethodException absent) {
             return null;
         }
+    }
+
+    /**
+     * A token said twice is not a thing this vocabulary can be asked to write.
+     *
+     * <p>{@code rel="nofollow nofollow"} is not wrong to a browser, which is precisely why nobody would
+     * notice it: it is the kind of sloppiness that leaves a page looking machine-generated and stays
+     * for years. The guard against it is not a check but the signature — what comes in is a set, so
+     * there is nothing to say twice, and the two calls the kit itself makes hand over exactly that.
+     *
+     * <p>Asked of the signature rather than of a call, because the mistake this refuses is one that no
+     * longer compiles, and a spec cannot write code that does not compile.
+     */
+    @Test
+    void aTokenCannotBeSaidTwice() throws NoSuchMethodException {
+        assertThat(Rel.class.getDeclaredMethod("tokens", Set.class)).isNotNull();
+        assertThat(Rel.class.getDeclaredMethod("forNewTab", Set.class)).isNotNull();
+        assertThat(java.util.Arrays.stream(Rel.class.getDeclaredMethods())
+                .filter(m -> m.getName().equals("tokens") || m.getName().equals("forNewTab"))
+                .allMatch(m -> m.getParameterTypes()[0] == Set.class))
+            .as("neither of them takes a collection that could hold one thing twice").isTrue();
+    }
+
+    /**
+     * And the order is the order of the set it was handed, which is worth saying plainly: a set that
+     * keeps none — the one {@code Set.of} hands back — gives an attribute whose tokens come out in
+     * whatever order that set iterates. Nothing about a page depends on it, and a claim that the
+     * author's order is kept would be false half the time.
+     */
+    @Test
+    void theOrderIsTheOrderOfTheSetItWasGiven() {
+        assertThat(Rel.tokens(new java.util.LinkedHashSet<>(List.of(Rel.UGC, Rel.NOFOLLOW))))
+            .isEqualTo("ugc nofollow");
+        assertThat(Rel.tokens(new java.util.LinkedHashSet<>(List.of(Rel.NOFOLLOW, Rel.UGC))))
+            .isEqualTo("nofollow ugc");
+    }
+
+    /** A set that a hole can get into: what Set.of hands back refuses one, and most sets do not. */
+    private static Set<Rel> withAHoleInIt() {
+        Set<Rel> holed = new java.util.LinkedHashSet<>();
+        holed.add(Rel.UGC);
+        holed.add(null);
+        return holed;
     }
 }
