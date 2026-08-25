@@ -129,4 +129,22 @@ class MdTest {
         assertThat(Md.of(null).build()).as("two absences are the same absence")
             .isEqualTo(Md.of("").build());
     }
+
+    /**
+     * A field somebody emptied in a rich editor comes back holding a non-breaking space, and that is
+     * the case the empty state exists for. It used to be the one case that missed it: the block
+     * counted the space as text, rendered it, and the markdown renderer — which knew perfectly well
+     * that a line of one is empty — turned it into nothing. The page showed an empty box where the
+     * hint should have been.
+     */
+    @Test
+    void aFieldSomebodyEmptiedShowsTheEmptyState() {
+        var emptied = Md.of("\u00A0").emptyHint("No description yet").build().asMap();
+
+        assertThat(emptied).as("the block carries nothing of theirs to show")
+            .doesNotContainKey("markdown").containsEntry("emptyHint", "No description yet");
+        assertThat(Md.of("\u00A0").emptyHint("No description yet").build())
+            .as("and it is the same block as one made of no text at all")
+            .isEqualTo(Md.of(null).emptyHint("No description yet").build());
+    }
 }

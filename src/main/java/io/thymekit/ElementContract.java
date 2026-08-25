@@ -337,7 +337,7 @@ public final class ElementContract {
             failures.add(address + " — does not render: " + notRendered.getMessage());
             return null;
         }
-        if (html.isBlank() || !html.contains("<")) {
+        if (Guards.isNothing(html) || !html.contains("<")) {
             failures.add(address + " — renders nothing a browser would show");
             return null;
         }

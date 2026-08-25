@@ -57,9 +57,6 @@ import org.springframework.cache.annotation.Cacheable;
  */
 public class MarkdownRenderer {
 
-    /** A line with nothing on it but space, in the wide sense that includes the non-breaking kind. */
-    private static final Pattern WHITESPACE_ONLY_LINE = Pattern.compile("^[\\s\\u00A0]+$");
-
     /** The opening or closing line of a fenced code block, indented by up to three spaces. */
     private static final Pattern FENCE = Pattern.compile("^ {0,3}(`{3,}|~{3,})(.*)$");
 
@@ -146,7 +143,7 @@ public class MarkdownRenderer {
 
     /** The pipeline itself; both public methods are cached entry points into it. */
     private String render(@Nullable String source, @Nullable String linkRel) {
-        if (source == null || source.isBlank()) {
+        if (Guards.isNothing(source)) {
             return "";
         }
         String normalized = blankTheLinesAnEditorLeft(source);
@@ -196,11 +193,11 @@ public class MarkdownRenderer {
                     fenceChar = marker.charAt(0);
                     fenceLength = marker.length();
                 } else if (marker.charAt(0) == fenceChar && marker.length() >= fenceLength
-                    && fence.group(2).isBlank()) {          // a closing fence carries no info string
-                    fenceChar = 0;
+                    && fence.group(2).trim().isEmpty()) {   // a closing fence carries no info string, and
+                    fenceChar = 0;                     // commonmark counts spaces and tabs there
                 }
             }
-            boolean theirs = fenceChar != 0 || !WHITESPACE_ONLY_LINE.matcher(bare).matches();
+            boolean theirs = fenceChar != 0 || !Guards.isNothing(bare);
             normalized.append(theirs ? line : "");
 
             if (newline < 0) {
@@ -246,11 +243,11 @@ public class MarkdownRenderer {
      */
     private void demoteHeadings(Node document) {
         List<Heading> headings = new ArrayList<>();
-        Node n = document.getFirstChild();
+        // seeded with the document rather than its first child: a source of nothing at all is refused
+        // at the door above, so a document here always has children — and a check for the case that
+        // cannot happen is a border nothing reaches
         ArrayDeque<Node> stack = new ArrayDeque<>();
-        if (n != null) {
-            stack.push(n);
-        }
+        stack.push(document);
         while (!stack.isEmpty()) {
             Node cur = stack.pop();
             if (cur instanceof Heading h) {

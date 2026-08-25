@@ -47,7 +47,7 @@ public final class Md {
 
         private Builder(@Nullable String markdown) {
             this.b = Element.Descriptor.<Md>of("thymekit/md", "mdEl");
-            this.hasText = markdown != null && !markdown.isBlank();
+            this.hasText = !Guards.isNothing(markdown);
             if (hasText) {
                 b.with("markdown", markdown);
             }

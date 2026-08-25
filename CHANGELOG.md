@@ -32,6 +32,28 @@ carries it.
 - the reserved key that carries what an element said is `roles`, not `means`: the word a stored page
   shows is now a word the documentation uses.
 
+**Fixed.** Nothing at all is decided in one place and asked of every code point. Java offers two
+answers and neither is right: `String.isBlank` counts an en space and misses the non-breaking one,
+and a regex of `\s` in java is seven ASCII characters, so an ideographic space passes it as text. A
+heading of a zero width space, of a byte order mark, of a soft hyphen renders a box with nothing in
+it, and all of them are what a paste out of a spreadsheet or a CMS leaves behind. The same question
+now decides what an anchor may hold, since an anchor with a space of any width is one nobody can type
+into a link.
+
+**Fixed.** A non-breaking space counted as text where a programmer wrote it and as emptiness where
+somebody else's markdown carried it — the rule of this project upside down, since what is written by
+hand is held to the stricter standard. `Guards.isNothing(text)` is the one answer now, and a markdown
+block made of a field somebody emptied in a rich editor shows its empty state instead of an empty box.
+
+**Fixed.** An address that leaves the page carried spaces. `og:url` and a canonical are read by
+something that is not a browser and will not guess where the address ended, so a space of any width
+inside one is refused; an address that stays on the page keeps its spaces, because there the reader
+is a browser and a link of yours that has worked for years is not the kit's to refuse.
+
+**Fixed.** An address of `https://` with nothing after it passed as absolute. A scheme is not an
+address: a page would have handed a crawler a link to nowhere while looking exactly like a page that
+had one.
+
 **Fixed.** Three sentences of the readme described things that exist and described them wrongly, and
 two of its lists had not followed the kit as it grew
 ([#22](https://github.com/thymekit/thymekit/issues/22),
@@ -50,10 +72,10 @@ of them, and the topics inside them are the ones the text actually had rather th
 headings claimed. Seven pairs of sentences said the same thing twice and are now one each.
 
 Two things it said about itself were wrong, and both are now held by a rule: the core was announced as
-seven things and is eight, and the canon was announced as thirty rules with twenty-seven listed. Four more rules, thirty-four now: this list is as long as the number in front of it; the version the
+seven things and is eight, and the canon was announced as thirty rules with twenty-seven listed. Four more rules, thirty-five now: this list is as long as the number in front of it; the version the
 readme hands a consumer to copy is the version the build publishes, which was a release behind; the map
-at the top of the readme names every chapter of it, in order; and a class that publishes a reader over a
-descriptor names no adapter — which is the rule that would have stopped the outline growing blind to
+at the top of the readme names every chapter of it, in order; a class that publishes a reader over a
+descriptor names no adapter; and what counts as nothing at all is decided in one place — which is the rule that would have stopped the outline growing blind to
 everybody else's elements, and could not have been written before it happened.
 
 ## 0.4.0 — 2026-08-24

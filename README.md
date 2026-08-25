@@ -122,7 +122,8 @@ kit removes rather than checks for:
 | a new tab opened without `noopener` | `newTab()` carries it, in whatever order the two are written |
 | `href="javascript:…"` | refused where it is written, in every spelling a browser unpicks |
 | an anchor with a space in it, silently truncated by the attribute | refused: an anchor is one word |
-| a heading or a caption printed empty | refused: a page shows what it was given, and this is nothing |
+| a heading or a caption printed empty | refused: a page shows what it was given, and this is nothing — the non-breaking space a rich editor leaves behind, a zero width space out of a spreadsheet, a byte order mark at the head of a pasted file |
+| `og:url` or a canonical with a space in it | refused: whoever reads that is not a browser and cannot guess where the address ended |
 
 ### What a search engine reads is said once
 
@@ -223,7 +224,7 @@ Ten names, and you will meet all of them again in this document:
 | `thymekit/element` | **the dispatcher — a template, not a class.** One fragment renders everything: `render(e)` for one element, `renderAll(items)` for a flow, `slot(e, name)` for a slot, `scripts(items)` for behaviour. A container names no brick because it calls this |
 | `Outline` | the headings of a whole page: one title, no gap in the levels, none HTML does not have |
 | `Anchors` | the addresses inside a page: no two things answering to one name |
-| `Guards` | what a value must be before a page carries it — six refusals about text and about HTML, and not one of them knows what an element is: a heading that is blank, a language that is not a tag, an address that executes instead of navigating |
+| `Guards` | what a value must be before a page carries it — six refusals about text and about HTML, and not one of them knows what an element is: a heading that is blank, a language that is not a tag, an address that executes instead of navigating. `Guards.isNothing(text)` is the question they all begin with, and the kit's one answer to it |
 | `Roles` | what a page asks of an element: which key is a heading level, which is an address inside the page, what to call it in a message. An element says so where it puts the value; the two checks above read it back here, and so may a check of yours |
 | `Tree` | walking the tree of a page: the traversal the two checks above are written on, plus what a page yields — the scripts it depends on and what its elements say about themselves for machines |
 | `ElementContract` | the walk over a triple, taken by the kit over its own elements and handed to you for yours |
@@ -620,7 +621,7 @@ flowchart LR
 
 ### The canon
 
-The last of the four needs naming, because it is the part a reader cannot see in the code. Thirty-four
+The last of the four needs naming, because it is the part a reader cannot see in the code. Thirty-five
 rules state what this package is:
 
 - a class that hands out elements is final and cannot be instantiated;
@@ -657,6 +658,7 @@ rules state what this package is:
 - the version this document hands out is the version the build publishes;
 - the map at the top of this document names every chapter of it, in order;
 - a class that publishes a reader over a descriptor names no adapter;
+- what counts as nothing at all is decided in one place;
 - and no line of the sources ends in a space.
 
 None of them names a class: a rule that lists what it applies to is a list to forget, which is the
@@ -958,7 +960,7 @@ guards the elements are built from, published because your elements are built fr
 | — | `Outline` — the headings of a page and whether they add up: one H1, no level skipped, none HTML does not have. The canvas checks it before rendering | — | — |
 | — | `Anchors` — the addresses inside a page: no two things answering to one name. Checked by the canvas beside the outline | — | — |
 | — | `Tree` — walking the tree of a page: `Tree.walk(...)` hands every descriptor to a visitor that answers whether to go deeper, `Tree.assetsOf(...)` gathers the scripts a page depends on, `Tree.describedBy(...)` what its elements say about themselves for machines | — | — |
-| — | `Guards` — what a value must be before a page carries it: `Guards.required/text/tag/absolute/navigable/anchor(value, where)`, the six the kit's own elements make | — | — |
+| — | `Guards` — what a value must be before a page carries it: `Guards.required/text/tag/absolute/navigable/anchor(value, where)`, the six the kit's own elements make, and `Guards.isNothing(text)`, which is what all six mean by empty | — | — |
 | — | `Roles` — what a page asks of an element: `Roles.headingLevelIn/anchorIn/nameOf(...)`, answered by whatever said so, whosever element it is | — | — |
 | — | `Composable<K>` — whatever becomes an element; `ElementContract` — the walk over a triple, for your elements as much as ours | — | — |
 | — | `Rel` — what a link says about itself, with the policy that goes with it: `Rel.of(...)` guards and orders, `Rel.forNewTab(...)` cannot lose `noopener`, `Rel.tokens(...)` writes the attribute | — | — |

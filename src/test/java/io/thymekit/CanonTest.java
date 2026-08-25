@@ -1046,6 +1046,38 @@ class CanonTest {
             .isEmpty();
     }
 
+    /**
+     * What counts as nothing at all is decided in one place.
+     *
+     * <p>{@code String.isBlank} counts a non-breaking space as text, which it is — and which it also is
+     * not, nine times out of ten, because it is what a rich editor leaves behind when somebody empties
+     * a field. The kit answered that two ways: the markdown of somebody else's article knew that a line
+     * of one was empty, and a caption a programmer wrote did not, so the looser rule applied to what is
+     * written by hand and the stricter one to data. That is this project's own rule upside down.
+     *
+     * <p>The failure family is the one place that may still ask for itself: a guard's refusal is a
+     * member of that family, so a family that asked a guard would be asking the thing it is made of.
+     */
+    @Test
+    void whatCountsAsNothingIsDecidedInOnePlace() throws java.io.IOException {
+        var asking = java.util.regex.Pattern.compile("\\bisBlank\\(\\)");
+        java.util.List<String> answers = new java.util.ArrayList<>();
+        try (var files = java.nio.file.Files.walk(java.nio.file.Path.of("src/main/java/io/thymekit"))) {
+            for (var file : files.filter(f -> f.toString().endsWith(".java")).sorted().toList()) {
+                String name = file.getFileName().toString();
+                if (name.equals("Guards.java") || name.equals("ThymekitException.java")) {
+                    continue;
+                }
+                String source = java.nio.file.Files.readString(file)
+                    .replaceAll("(?s)/\\*.*?\\*/", " ").replaceAll("//.*", " ");
+                if (asking.matcher(source).find()) {
+                    answers.add(name);
+                }
+            }
+        }
+        assertThat(answers).as("classes deciding for themselves what nothing is").isEmpty();
+    }
+
     /** The model belongs to the canvas: one place writes it, so a document knows what to expect. */
     @Test
     void onlyTheCanvasWritesTheModel() {

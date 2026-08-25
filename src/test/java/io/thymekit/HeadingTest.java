@@ -74,7 +74,7 @@ class HeadingTest {
         for (String twoWords : List.of("two words", "with\ttab", "line\nbreak")) {
             assertThatThrownBy(() -> Heading.h2("x").id(twoWords)).isInstanceOf(MisuseException.class)
                 .hasMessageStartingWith("Heading.id(id): is not one word:")
-                .hasMessageContaining("keeps only what comes before the first space");
+                .hasMessageContaining("is typed into a link by hand");
         }
         assertThatThrownBy(() -> Heading.h2("x").id(null))
             .isInstanceOf(MisuseException.class).hasMessage("Heading.id(id): was not given");
