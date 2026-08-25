@@ -4,6 +4,7 @@
 package io.thymekit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import java.time.LocalDate;
@@ -291,5 +292,107 @@ class JsonTest {
         assertThatExceptionOfType(MisuseException.class)
             .isThrownBy(() -> Json.write(Map.of("a", List.of(List.of(LocalDate.EPOCH)))))
             .withMessageContaining("a[0][0]");
+    }
+
+    // ——— the other door ——————————————————————————————————————————————————————————————————
+
+    /**
+     * The writer has two doors and they answer alike. One is asked to write; the other is asked only
+     * whether it could, and is what {@code describes} calls when an element says something about
+     * itself — so a contribution is refused by the factory that wrote it rather than by a page months
+     * later. A door that judged differently from the one beside it would refuse at composition what
+     * renders at midnight, or the other way about.
+     */
+    @Test
+    void theDoorThatOnlyChecksJudgesTheSame() {
+        assertThatCode(() -> Json.check(Map.of("@type", "Thing", "name", "Baobab"), "Descriptor.describes"))
+            .doesNotThrowAnyException();
+
+        assertThatExceptionOfType(MisuseException.class)
+            .isThrownBy(() -> Json.check(Map.of("when", java.time.LocalDate.EPOCH), "Descriptor.describes"))
+            .withMessageStartingWith("Descriptor.describes.when: structured data carries a LocalDate");
+    }
+
+    /** And it names where it is asked from, so two contributions on a page are told apart. */
+    @Test
+    void theCheckingDoorNamesWhereItWasAskedFrom() {
+        assertThatExceptionOfType(MisuseException.class)
+            .isThrownBy(() -> Json.check(Map.of("x", 1.5), "MyCard.describes"))
+            .withMessageStartingWith("MyCard.describes.x:");
+    }
+
+    // ——— what a graph may not be —————————————————————————————————————————————————————————
+
+    /**
+     * A graph that contains itself is refused, and refused as this kit refuses things.
+     *
+     * <p>Nothing stops a caller building one: a map is a map, and {@code describes} hands its node
+     * here before it is copied, so the writer meets exactly what was passed. Walking it would recur
+     * until the stack ends — and a {@code StackOverflowError} is not a refusal. It kills the thread it
+     * lands on, says nothing about which element caused it, and is the one kind of failure this kit
+     * promises never to hand over unnamed.
+     */
+    @Test
+    void refusesAGraphThatContainsItself() {
+        var itself = new java.util.LinkedHashMap<String, Object>();
+        itself.put("@type", "Thing");
+        itself.put("about", itself);
+
+        assertThatExceptionOfType(MisuseException.class).isThrownBy(() -> Json.write(itself))
+            .withMessageContaining("nested too deeply");
+    }
+
+    /** A list that holds itself is the same mistake, and gets the same answer. */
+    @Test
+    void refusesAListThatHoldsItself() {
+        var itself = new java.util.ArrayList<Object>();
+        itself.add("first");
+        itself.add(itself);
+
+        assertThatExceptionOfType(MisuseException.class).isThrownBy(() -> Json.write(itself))
+            .withMessageContaining("nested too deeply");
+    }
+
+    /**
+     * What is deep but finite is written, because a description may be nested and usually is. The
+     * boundary is asked about from both sides: a limit nobody has stood on is a limit nobody has
+     * measured, and the difference between the last depth that works and the first that does not is
+     * the whole of what this number means.
+     */
+    @Test
+    void writesSomethingProperlyNested() {
+        assertThat(Json.write(nested(24)))
+            .isEqualTo("{\"in\":".repeat(24) + "\"bottom\"" + "}".repeat(24));
+
+        assertThatCode(() -> Json.write(nested(32)))
+            .as("the deepest a description may go is written like any other").doesNotThrowAnyException();
+        assertThatExceptionOfType(MisuseException.class).isThrownBy(() -> Json.write(nested(33)))
+            .as("and one deeper is not")
+            .withMessageContaining("nested too deeply")
+            .satisfies(refusal -> assertThat(refusal.where())
+                .as("named by the way down to it, which is how a graph that has no bottom is found")
+                .isEqualTo(String.join(".", java.util.Collections.nCopies(33, "in"))));
+    }
+
+    /** A description of a description of … , that many times over, with a word at the bottom. */
+    private static Object nested(int depth) {
+        Object deep = "bottom";
+        for (int i = 0; i < depth; i++) {
+            deep = Map.of("in", deep);
+        }
+        return deep;
+    }
+
+    // ——— text beyond the basic plane —————————————————————————————————————————————————————
+
+    /**
+     * Text that needs more than one char to hold one character comes out whole. The escaping walks
+     * chars rather than code points, which is right — every character it escapes is one char — but a
+     * pair split in half would be text nobody can read, in a block a machine parses.
+     */
+    @Test
+    void keepsWhatNeedsTwoCharsToHoldOneCharacter() {
+        assertThat(Json.write(Map.of("name", "Баобаб 🌳 растёт")))
+            .isEqualTo("{\"name\":\"Баобаб 🌳 растёт\"}");
     }
 }

@@ -32,6 +32,12 @@ carries it.
 - the reserved key that carries what an element said is `roles`, not `means`: the word a stored page
   shows is now a word the documentation uses.
 
+**Fixed.** A contribution that held itself walked until the stack ended. A map may hold itself,
+nothing stops a caller building one, and the writer meets a contribution before it is copied — so a
+`StackOverflowError` was reachable from `describes`, which is the failure that kills a thread, names
+no element and is the one kind the family of refusals exists to abolish. A description has a bottom
+now, thirty-two deep, and the refusal names the way down to what has none.
+
 **Fixed.** Nothing at all is decided in one place and asked of every code point. Java offers two
 answers and neither is right: `String.isBlank` counts an en space and misses the non-breaking one,
 and a regex of `\s` in java is seven ASCII characters, so an ideographic space passes it as text. A
