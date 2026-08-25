@@ -4,6 +4,7 @@
 package io.thymekit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.ArrayList;
@@ -146,5 +147,36 @@ class ElementDescriptorTest {
         assertThat(Element.raw("t", "frameEl").illustration().build().asMap())
             .containsEntry("illustration", true);
         assertThat(Element.raw("t", "frameEl").build().asMap()).doesNotContainKey("illustration");
+    }
+
+    /**
+     * An element is not the value of a key. It goes in a slot, which is the place made for it, or it
+     * goes in as its descriptor — which is what every element the kit ships does, and what the
+     * dispatcher can actually render.
+     *
+     * <p>Put the element itself and nothing tells you: the page renders without that part, because the
+     * dispatcher asks a descriptor for its address and an element is not one; the walk cannot compare
+     * it; and a page stored as data has an object in it that no reader can spell. A key holds data,
+     * and "an address and data" is the sentence this whole kit rests on.
+     */
+    @Test
+    void anElementIsNotTheValueOfAKey() {
+        var heading = Heading.h2("Composition").build();
+
+        assertThatThrownBy(() -> Element.raw("t", "cardEl").with("title", heading))
+            .isInstanceOf(MisuseException.class)
+            .hasMessage("Descriptor.with(value): an element is not the value of a key — put it in a slot,"
+                + " or put its descriptor with element.asMap() where the adapter renders it in place");
+        assertThatThrownBy(() -> Element.raw("t", "cardEl").with("title", Heading.h2("Composition")))
+            .as("nor is a maker of one")
+            .isInstanceOf(MisuseException.class)
+            .hasMessageStartingWith("Descriptor.with(value): an element is not the value of a key");
+        assertThatThrownBy(() -> Element.raw("t", "cardEl").with("rows", List.of(heading)))
+            .as("and hiding one inside a list does not make it data")
+            .isInstanceOf(MisuseException.class)
+            .hasMessageStartingWith("Descriptor.with(value): an element is not the value of a key");
+
+        assertThatCode(() -> Element.raw("t", "cardEl").with("title", heading.asMap()))
+            .as("its descriptor is data, and that is what goes in").doesNotThrowAnyException();
     }
 }

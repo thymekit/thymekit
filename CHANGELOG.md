@@ -32,6 +32,12 @@ carries it.
 - the reserved key that carries what an element said is `roles`, not `means`: the word a stored page
   shows is now a word the documentation uses.
 
+**Breaking.** A key of a descriptor holds data, and an element put under one is refused where it is
+written. It never rendered: the dispatcher asks a descriptor for its address and an element is not
+one, so that part of a page was simply absent, and nothing said why. An element goes in a slot, or in
+as `element.asMap()` where an adapter renders it in place — which is what every element the kit ships
+already did.
+
 **Breaking.** `Rel.forNewTab` and `Rel.tokens` take a `Set<Rel>` rather than any collection. A link
 saying `nofollow` twice is not wrong to a browser, which is exactly why nobody would ever notice it —
 and what cannot be written needs no guard. `Rel.of(...)` hands back a set, which is what both of them

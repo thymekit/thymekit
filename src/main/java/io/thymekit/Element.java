@@ -267,12 +267,20 @@ public final class Element<K> implements Composable<K> {
         /**
          * A value that cannot be changed from outside afterwards. Collections are copied and wrapped,
          * their contents with them; anything else is taken as it is, since a descriptor carries text,
-         * numbers and elements, and those are values already.
+         * numbers and booleans, and those are values already. An element is not one of them: it goes in
+         * a slot, or in as its descriptor, and both are what every element the kit ships does. Put the
+         * element itself and nothing would tell you — the dispatcher asks a descriptor for its address
+         * and an element is not one, so that part of the page would simply not be there.
          *
          * <p>Copied rather than handed to {@code List.copyOf}: a page may legitimately carry a list with
          * a hole in it, and refusing that here would turn a rendering decision into an exception.
          */
         private static @Nullable Object snapshot(@Nullable Object value) {
+            if (value instanceof Composable<?>) {
+                throw new MisuseException("Descriptor.with(value)", "an element is not the value of a"
+                    + " key — put it in a slot, or put its descriptor with element.asMap() where the"
+                    + " adapter renders it in place");
+            }
             if (value instanceof Map<?, ?> map) {
                 LinkedHashMap<Object, Object> copy = new LinkedHashMap<>();
                 map.forEach((k, v) -> copy.put(k, snapshot(v)));
