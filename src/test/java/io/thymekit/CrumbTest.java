@@ -91,8 +91,10 @@ class CrumbTest {
     void refusesALinkWithNoAddress() {
         assertThatExceptionOfType(MisuseException.class)
             .isThrownBy(() -> Crumb.link(" ", "X"))
-            .withMessage("Crumb.link(url): is blank — a page shows what it was given, and this is nothing");
+            .as("what the address is, the value itself decides")
+            .withMessage("Crumb(url): is blank — a page shows what it was given, and this is nothing");
         assertThatExceptionOfType(MisuseException.class).isThrownBy(() -> Crumb.link(null, "X"))
+            .as("that there is one at all, only this factory can know: absent is a crumb the page is on")
             .withMessage("Crumb.link(url): was not given");
     }
 
@@ -126,5 +128,37 @@ class CrumbTest {
     @Test
     void theCanonicalConstructorAllowsTheCurrentPage() {
         assertThat(new Crumb(null, "Aloe")).isEqualTo(Crumb.current("Aloe"));
+    }
+
+    /**
+     * Two doors, one value. A record hands its constructor out whether the factories exist or not, so
+     * the same step written either way is the same step — otherwise a trail built through the factory
+     * and a trail built by hand would print two different addresses from one input, and only one of
+     * them would be the one anybody meant.
+     */
+    @Test
+    void howItWasMadeDoesNotChangeWhatItIs() {
+        for (String around : java.util.List.of("/x", "  /x", "/x  ", "\t/x\n")) {
+            assertThat(Crumb.link(around, "Catalogue"))
+                .as("a step made by the factory and one made by hand are the same step")
+                .isEqualTo(new Crumb(around, "Catalogue"));
+        }
+    }
+
+    /**
+     * And an address keeps no space around it, whichever door it came through. Space at the end of an
+     * href is nobody's meaning: it is what a copied link brings with it, and two trails that differ by
+     * one would be two different pages to a crawler reading them.
+     */
+    @Test
+    void anAddressKeepsNoSpaceAroundIt() {
+        assertThat(Crumb.link("  /catalogue  ", "Catalogue").url()).isEqualTo("/catalogue");
+        assertThat(new Crumb("  /catalogue  ", "Catalogue").url()).isEqualTo("/catalogue");
+    }
+
+    /** The words are kept exactly, because a space inside a name belongs to whoever wrote it. */
+    @Test
+    void theWordsAreKeptExactly() {
+        assertThat(Crumb.current("  Catalogue  ").label()).isEqualTo("  Catalogue  ");
     }
 }
