@@ -107,4 +107,26 @@ class MarkdownExpressionObjectTest {
                 .filter(m -> Modifier.isPublic(m.getModifiers())).count())
             .isEqualTo(2);
     }
+
+    /**
+     * And it is safe to be the only one. The factory builds this once and hands the same object to
+     * every template of every request, so anything it held that changed would be two requests writing
+     * over each other — a race nobody would reproduce and everybody would blame on the renderer.
+     *
+     * <p>It holds a renderer and nothing else, and holds it finally. That is the whole reason one
+     * instance is enough, and it is worth a spec rather than a sentence, because the day somebody adds
+     * a field here the sentence stays true-looking and this does not.
+     */
+    @Test
+    void itHoldsNothingThatCouldChange() {
+        assertThat(Arrays.stream(MarkdownExpressionObject.class.getDeclaredFields())
+                // what coverage and mutation add to a class while they watch it is theirs, not ours
+                .filter(field -> !field.isSynthetic()).toList())
+            .as("one field, and it is the renderer")
+            .singleElement()
+            .satisfies(field -> {
+                assertThat(Modifier.isFinal(field.getModifiers())).as("final").isTrue();
+                assertThat(field.getType()).isEqualTo(MarkdownRenderer.class);
+            });
+    }
 }

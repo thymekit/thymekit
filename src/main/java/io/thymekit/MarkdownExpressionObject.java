@@ -20,6 +20,10 @@ import org.jspecify.annotations.Nullable;
  * <p>Both arguments may be absent, because a page carries absences: nothing written yet, no policy set.
  * They cross as they are — what an absence means is the renderer's to decide, and it decides the same
  * way for a template as for java.
+ *
+ * <p>One of these is built and handed to every template of every request, so it holds a renderer and
+ * nothing else, and holds it finally. A field here that changed would be two requests writing over
+ * each other — the kind of race nobody reproduces and everybody blames on the renderer.
  */
 public final class MarkdownExpressionObject {
 
@@ -44,7 +48,9 @@ public final class MarkdownExpressionObject {
      * Converts markdown source into safe HTML, marking the links that leave the site.
      *
      * @param source markdown text; {@code null} or blank yields an empty string
-     * @param linkRel value for the {@code rel} attribute of outgoing links; {@code null} marks nothing
+     * @param linkRel value for the {@code rel} attribute of outgoing links, written as it is given;
+     *        {@code null} marks nothing. {@code Rel.tokens(Rel.of(...))} is the same string with a
+     *        misspelling made impossible, for a page composed in java rather than in a template
      * @return sanitised HTML
      * @see MarkdownRenderer#toHtmlSafe(String, String)
      */
