@@ -63,7 +63,7 @@ repositories { mavenCentral() }
 
 dependencies {
     // Versions come from the Boot BOM, so the kit stays on one line with its consumers.
-    api platform('org.springframework.boot:spring-boot-dependencies:4.1.0')
+    api platform('org.springframework.boot:spring-boot-dependencies:4.1.1')
 
     // markdown: the #md dialect and XSS-safe rendering; thymeleaf is api because the dialect
     // extends its types and is therefore visible to consumers
@@ -83,7 +83,7 @@ dependencies {
     // turns META-INF/additional-spring-configuration-metadata.json into the metadata an ide reads, so
     // the one switch this kit has is described where a consumer types it. The platform is repeated
     // here because a bom does not reach the annotation processor path by itself
-    annotationProcessor platform('org.springframework.boot:spring-boot-dependencies:4.1.0')
+    annotationProcessor platform('org.springframework.boot:spring-boot-dependencies:4.1.1')
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 
     testImplementation platform('org.junit:junit-bom:6.1.3')
