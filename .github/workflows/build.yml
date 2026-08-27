@@ -76,11 +76,11 @@ jobs:
       - uses: actions/checkout@v7
       # Two artefacts, two destinations: an artefact built from a single path has that path as its
       # root, so it has to be unpacked back into the place the site assembler expects.
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: reports-build
           path: build
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: reports-mutation
           path: build/reports/pitest
