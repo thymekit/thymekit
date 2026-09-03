@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ThymekitAutoConfiguration.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">thymekit</a> &gt; <a href="index.source.html" class="el_package">io.thymekit</a> &gt; <span class="el_source">ThymekitAutoConfiguration.java</span></div><h1>ThymekitAutoConfiguration.java</h1><pre class="source lang-java linenums">/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+package io.thymekit;
+
+import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Bean;
+import org.thymeleaf.ITemplateEngine;
+
+/**
+ * Makes the kit work as promised right after the dependency is added, with no configuration on the
+ * consumer's side: the markdown renderer, the dialect that puts {@code #md} into templates and the
+ * tidy-render dialect are registered here, and Spring Boot feeds dialect beans into its template engine
+ * by itself.
+ *
+ * &lt;p&gt;Nothing at all is registered where there is no template engine to register it for
+ * ({@code @ConditionalOnClass}): a project that took the kit for its java and renders no pages gets no
+ * beans and no Thymeleaf.
+ *
+ * &lt;p&gt;Every bean is {@code @ConditionalOnMissingBean} — declare your own and yours wins, which is how a
+ * consumer changes the heading ceiling of the renderer or the meaning of {@code #md}. Tidy rendering can
+ * be switched off with {@code thymekit.tidy.enabled=false}, after which the output carries the
+ * formatting of the templates, like plain Thymeleaf. That switch is the only one the kit has, and it is
+ * described in {@code META-INF/additional-spring-configuration-metadata.json} so that it is spelled out
+ * where a consumer types it rather than only here.
+ *
+ * &lt;p&gt;Final: {@code @AutoConfiguration} carries {@code proxyBeanMethods = false}, so no container
+ * subclasses this — and a bean method calling its neighbour would get a plain call rather than the
+ * container's, which is why they do not call each other.
+ */
+@AutoConfiguration
+@ConditionalOnClass(ITemplateEngine.class)
+<span class="fc" id="L36">public final class ThymekitAutoConfiguration {</span>
+
+    /** Markdown to safe HTML; cached when the consumer has Spring Cache enabled. */
+    @Bean
+    @ConditionalOnMissingBean
+    public MarkdownRenderer thymekitMarkdownRenderer() {
+<span class="fc" id="L42">        return new MarkdownRenderer();</span>
+    }
+
+    /** The dialect that puts {@code #md} into templates. */
+    @Bean
+    @ConditionalOnMissingBean
+    public MarkdownDialect thymekitMarkdownDialect(MarkdownRenderer markdownRenderer) {
+<span class="fc" id="L49">        return new MarkdownDialect(markdownRenderer);</span>
+    }
+
+    /** Tidy rendering: output without traces of template formatting. */
+    @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnProperty(prefix = &quot;thymekit&quot;, name = &quot;tidy.enabled&quot;, matchIfMissing = true)
+    public TidyDialect thymekitTidyDialect() {
+<span class="fc" id="L57">        return new TidyDialect();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

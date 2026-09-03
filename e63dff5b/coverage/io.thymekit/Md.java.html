@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Md.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">thymekit</a> &gt; <a href="index.source.html" class="el_package">io.thymekit</a> &gt; <span class="el_source">Md.java</span></div><h1>Md.java</h1><pre class="source lang-java linenums">/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+package io.thymekit;
+
+import java.util.LinkedHashSet;
+import org.jspecify.annotations.Nullable;
+
+/**
+ * The text of a page: markdown rendered by the {@code #md} dialect and sanitised on the way out, or an
+ * empty state when nothing has been written yet. It is content — a heading and a section around it
+ * belong to {@link Section}, which this goes inside.
+ *
+ * &lt;p&gt;Its content is data, and that decides the shape of everything here. A caption refuses a blank
+ * text, because a blank caption is a programmer writing nothing on purpose; this element treats blank
+ * as an absence, because an empty column is not a mistake anybody made and a page falling over for it
+ * would be the kit punishing a consumer for their data. What the consumer writes — the hint, the
+ * affordance, the link policy — is code again, and held to the stricter rule.
+ *
+ * &lt;p&gt;The text belongs to whoever wrote it, and its headings keep their shape: {@link MarkdownRenderer}
+ * lowers the topmost authored level to a ceiling (h2 by default) and moves the rest by the same amount,
+ * so a {@code #} in the source becomes an h2 under the page rather than a second H1. What the author
+ * nested stays nested; what the author skipped stays skipped, and {@link Outline} never
+ * sees any of it.
+ */
+public final class Md {
+
+    private Md() {}
+
+    /**
+     * The text may be absent — nothing written yet — and blank counts as absent for the same reason.
+     * A column in a database is empty because of something nobody chose, and a page has no way to tell
+     * &quot;never filled&quot; from &quot;filled with nothing&quot;. Then the block shows its {@link Builder#emptyHint},
+     * and without a hint it is not rendered at all.
+     */
+    public static Builder of(@Nullable String markdown) {
+<span class="fc" id="L37">        return new Builder(markdown);</span>
+    }
+
+    public static final class Builder implements Composable&lt;Md&gt; {
+
+        private final Element.Descriptor&lt;Md&gt; b;
+<span class="fc" id="L43">        private final LinkedHashSet&lt;Rel&gt; linkRel = new LinkedHashSet&lt;&gt;();</span>
+        private final boolean hasText;
+        private boolean hasHint;
+        private boolean hasAction;
+
+<span class="fc" id="L48">        private Builder(@Nullable String markdown) {</span>
+<span class="fc" id="L49">            this.b = Element.Descriptor.&lt;Md&gt;of(&quot;thymekit/md&quot;, &quot;mdEl&quot;);</span>
+<span class="fc bfc" id="L50" title="All 4 branches covered.">            this.hasText = markdown != null &amp;&amp; !markdown.isBlank();</span>
+<span class="fc bfc" id="L51" title="All 2 branches covered.">            if (hasText) {</span>
+<span class="fc" id="L52">                b.with(&quot;markdown&quot;, markdown);</span>
+            }
+<span class="fc" id="L54">        }</span>
+
+        /**
+         * Empty-state text, shown instead of the block when there is no markdown. Written by whoever
+         * composes the page rather than taken from data, so it is held to the rule every written text
+         * is: a hint with nothing in it is an empty box where an explanation was meant to be.
+         */
+        public Builder emptyHint(String hint) {
+<span class="fc" id="L62">            b.with(&quot;emptyHint&quot;, Element.requireText(hint, &quot;Md.emptyHint(hint)&quot;));</span>
+<span class="fc" id="L63">            hasHint = true;</span>
+<span class="fc" id="L64">            return this;</span>
+        }
+
+        /**
+         * An affordance shown next to the empty state — any element, rendered through the dispatcher.
+         * The block does not know what it is, so the wording and the shape stay with the consumer.
+         */
+        public Builder addAction(Composable&lt;?&gt; action) {
+<span class="fc" id="L72">            b.with(&quot;addAction&quot;, Element.requireRenderableElement(</span>
+<span class="fc" id="L73">                Element.settle(action, &quot;Md.addAction(action)&quot;), &quot;Md.addAction(action)&quot;).asMap());</span>
+<span class="fc" id="L74">            hasAction = true;</span>
+<span class="fc" id="L75">            return this;</span>
+        }
+
+        /**
+         * What the links of this text say about themselves: {@code linkRel(UGC, NOFOLLOW)} for text a
+         * visitor wrote, nothing for text your own editors wrote. The kit has no opinion about whose
+         * text this is — only the consumer knows, and both defaults would be wrong for the other case.
+         *
+         * &lt;p&gt;Marked are the links that leave the site — anything carrying a scheme ({@code https://…})
+         * or an authority ({@code //host/…}). A path of your own ({@code /ingredients/baobab},
+         * {@code #composition}, {@code ../sibling}) keeps its weight, since holding that back would be
+         * a wound self-inflicted.
+         */
+        public Builder linkRel(Rel... values) {
+<span class="fc" id="L89">            linkRel.addAll(Rel.of(values));</span>
+<span class="fc" id="L90">            return this;</span>
+        }
+
+        @Override
+        public Element&lt;Md&gt; build() {
+<span class="fc bfc" id="L95" title="All 6 branches covered.">            if (hasAction &amp;&amp; (hasText || !hasHint)) {</span>
+<span class="fc" id="L96">                throw new MisuseException(&quot;Md.build&quot;, &quot;an affordance with nowhere to show it: it stands beside the &quot;</span>
+                    + &quot;empty state, which needs text that is absent and a hint that is not&quot;);
+            }
+<span class="fc bfc" id="L99" title="All 2 branches covered.">            if (!linkRel.isEmpty()) {</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">                if (!hasText) {</span>
+<span class="fc" id="L101">                    throw new MisuseException(&quot;Md.build&quot;, &quot;linkRel on a block with no text: the policy would apply to &quot;</span>
+                        + &quot;nothing — give the block its markdown, or drop the policy&quot;);
+                }
+<span class="fc" id="L104">                b.with(&quot;linkRel&quot;, Rel.tokens(linkRel));</span>
+            }
+<span class="fc" id="L106">            return b.build();</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

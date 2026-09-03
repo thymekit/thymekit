@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Breadcrumbs.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">thymekit</a> &gt; <a href="index.source.html" class="el_package">io.thymekit</a> &gt; <span class="el_source">Breadcrumbs.java</span></div><h1>Breadcrumbs.java</h1><pre class="source lang-java linenums">/* This Source Code Form is subject to the terms of the Mozilla Public
+   License, v. 2.0. If a copy of the MPL was not distributed with this
+   file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+package io.thymekit;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import org.jspecify.annotations.Nullable;
+
+/**
+ * The trail of a page: where it sits in the site, said twice — once for a person and once for a
+ * crawler — out of &lt;b&gt;one&lt;/b&gt; list of steps.
+ *
+ * &lt;p&gt;That the two halves come from one list is the point rather than a convenience. The rules a search
+ * engine publishes require markup to be a true representation of what a visitor sees, and a trail
+ * assembled twice is a trail that drifts: two sources, two chances to be edited, one of them silently.
+ * Here there is nothing to drift.
+ *
+ * &lt;p&gt;The name of the landmark is yours, because a screen reader says it out loud and it has to be in
+ * the language of your visitors. The kit will not invent it.
+ *
+ * &lt;p&gt;The visible links are written exactly as they were given, relative and all: absolute links in the
+ * page break the day the site moves to another host, to https, or onto a staging machine. Absolute
+ * addresses are wanted in the other half, where a crawler reads them, and {@link Builder#site} is where
+ * the origin is named — once, by whoever knows where the site lives.
+ *
+ * &lt;pre&gt;{@code
+ * Breadcrumbs.named(&quot;Breadcrumb&quot;)
+ *     .site(&quot;https://shop&quot;)
+ *     .add(&quot;/ingredients&quot;, &quot;Ingredients&quot;)
+ *     .current(&quot;Aloe&quot;)
+ * }&lt;/pre&gt;
+ *
+ * &lt;p&gt;{@code current(...)} both adds the last step and finishes, so nothing can follow the page you are
+ * on. A trail of ancestors alone is a trail too, and ends with {@code build()}.
+ */
+public final class Breadcrumbs {
+
+    private static final String TEMPLATE = &quot;thymekit/breadcrumbs&quot;;
+
+    private Breadcrumbs() {}
+
+    /**
+     * The trail, named as a screen reader will announce it.
+     *
+     * &lt;p&gt;Not {@code of(...)}: in this kit that name takes the thing an element is made of, and takes
+     * it as something that may be absent. What breadcrumbs are made of is steps, and their name is
+     * never absent.
+     */
+    public static Builder named(String label) {
+<span class="fc" id="L53">        return new Builder(label);</span>
+    }
+
+    /** Steps in the order they are walked, from the top of the site towards this page. */
+    public static final class Builder implements Composable&lt;Breadcrumbs&gt; {
+
+        private final String label;
+<span class="fc" id="L60">        private final List&lt;Crumb&gt; steps = new ArrayList&lt;&gt;();</span>
+        private @Nullable String origin;
+
+<span class="fc" id="L63">        private Builder(String label) {</span>
+<span class="fc" id="L64">            this.label = Element.requireText(label, &quot;Breadcrumbs.named(label)&quot;);</span>
+<span class="fc" id="L65">        }</span>
+
+        /**
+         * Where the site lives, used for the machine-readable half only. Given one, a step written as a
+         * path becomes an absolute address in the graph; the link on the page is untouched.
+         *
+         * &lt;p&gt;Only a step that starts at the root is joined to it. One that is already absolute is left
+         * alone, and one written relative to the current directory is left alone too — resolving that
+         * would need the address of the page, which is the one thing this element does not have.
+         */
+        public Builder site(String origin) {
+<span class="fc" id="L76">            String value = Element.requireAbsolute(origin, &quot;Breadcrumbs.site(origin)&quot;);</span>
+            // != -1 rather than &gt;= 0: the search starts past the scheme, so a zero is not a boundary
+            // this code can reach, and asking about one invites a question that has no answer
+<span class="fc bfc" id="L79" title="All 2 branches covered.">            if (value.indexOf('/', value.indexOf(&quot;//&quot;) + 2) != -1) {</span>
+<span class="fc" id="L80">                throw new MisuseException(&quot;Breadcrumbs.site(origin)&quot;, &quot;carries more than a site: \&quot;&quot; + value</span>
+                    + &quot;\&quot; — scheme and host only, with no path and no trailing slash. A step written from&quot;
+                    + &quot; the root is joined to this as it is, so a path here would end up inside it twice&quot;
+                    + &quot; and a slash would double&quot;);
+            }
+<span class="fc" id="L85">            this.origin = value;</span>
+<span class="fc" id="L86">            return this;</span>
+        }
+
+        /**
+         * A step above this page.
+         *
+         * &lt;p&gt;Guarded here as well as inside the step it becomes, and not because the check is in doubt:
+         * a crumb is a type of this package, and a refusal that pointed at one would name something the
+         * caller cannot look up. What they can open is the line they wrote, which is this one.
+         */
+        public Builder add(String url, String label) {
+<span class="fc" id="L97">            Element.requireNavigable(url, &quot;Breadcrumbs.add(url)&quot;);</span>
+<span class="fc" id="L98">            Element.requireText(label, &quot;Breadcrumbs.add(label)&quot;);</span>
+<span class="fc" id="L99">            return step(Crumb.link(url, label), &quot;Breadcrumbs.add&quot;);</span>
+        }
+
+        /** The page you are on: the last step, and the end of the trail. */
+        public Element&lt;Breadcrumbs&gt; current(String label) {
+<span class="fc" id="L104">            Element.requireText(label, &quot;Breadcrumbs.current(label)&quot;);</span>
+<span class="fc" id="L105">            return step(Crumb.current(label), &quot;Breadcrumbs.current&quot;).build();</span>
+        }
+
+        private Builder step(Crumb crumb, String where) {
+<span class="fc bfc" id="L109" title="All 4 branches covered.">            if (!steps.isEmpty() &amp;&amp; steps.get(steps.size() - 1).url() == null) {</span>
+<span class="fc" id="L110">                throw new MisuseException(where, &quot;the trail already ends at the page you are on&quot;);</span>
+            }
+<span class="fc" id="L112">            steps.add(crumb);</span>
+<span class="fc" id="L113">            return this;</span>
+        }
+
+        @Override
+        public Element&lt;Breadcrumbs&gt; build() {
+<span class="fc bfc" id="L118" title="All 2 branches covered.">            if (steps.isEmpty()) {</span>
+<span class="fc" id="L119">                throw new MisuseException(&quot;Breadcrumbs.build&quot;,</span>
+                    &quot;a trail with no steps is empty, and would print a landmark with nothing in it&quot;);
+            }
+<span class="fc" id="L122">            return Element.Descriptor.&lt;Breadcrumbs&gt;of(TEMPLATE, &quot;breadcrumbsEl&quot;)</span>
+<span class="fc" id="L123">                .with(&quot;label&quot;, label)</span>
+<span class="fc" id="L124">                .with(&quot;items&quot;, steps.stream().map(Builder::visible).toList())</span>
+<span class="fc" id="L125">                .describes(trail())</span>
+<span class="fc" id="L126">                .build();</span>
+        }
+
+        /** What the page shows: the address as written, and the name. */
+        private static Map&lt;String, Object&gt; visible(Crumb crumb) {
+<span class="fc" id="L131">            Map&lt;String, Object&gt; step = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L132" title="All 2 branches covered.">            if (crumb.url() != null) {</span>
+<span class="fc" id="L133">                step.put(&quot;url&quot;, crumb.url());</span>
+            }
+<span class="fc" id="L135">            step.put(&quot;label&quot;, crumb.label());</span>
+<span class="fc" id="L136">            return step;</span>
+        }
+
+        /**
+         * What a crawler reads. Positions count from one, as the schema says, and a step carries an
+         * address only if it goes somewhere: the address of the page you are on is the address of the
+         * page being read, which is the one a crawler can be sure of. No vocabulary is named here — the
+         * canvas names it once for the whole page.
+         */
+        private Map&lt;String, Object&gt; trail() {
+<span class="fc" id="L146">            List&lt;Map&lt;String, Object&gt;&gt; listed = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L147" title="All 2 branches covered.">            for (int i = 0; i &lt; steps.size(); i++) {</span>
+<span class="fc" id="L148">                Crumb crumb = steps.get(i);</span>
+<span class="fc" id="L149">                Map&lt;String, Object&gt; item = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L150">                item.put(&quot;@type&quot;, &quot;ListItem&quot;);</span>
+<span class="fc" id="L151">                item.put(&quot;position&quot;, i + 1);</span>
+<span class="fc" id="L152">                item.put(&quot;name&quot;, crumb.label());</span>
+<span class="fc bfc" id="L153" title="All 2 branches covered.">                if (crumb.url() != null) {</span>
+<span class="fc" id="L154">                    item.put(&quot;item&quot;, forACrawler(crumb.url()));</span>
+                }
+<span class="fc" id="L156">                listed.add(item);</span>
+            }
+<span class="fc" id="L158">            Map&lt;String, Object&gt; node = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L159">            node.put(&quot;@type&quot;, &quot;BreadcrumbList&quot;);</span>
+<span class="fc" id="L160">            node.put(&quot;itemListElement&quot;, listed);</span>
+<span class="fc" id="L161">            return node;</span>
+        }
+
+        /**
+         * Only a step written from the root of the site is joined to the origin. One that already names
+         * a host — with a scheme or without, since {@code //host/path} names one too — is left as it
+         * is, and so is one written relative to the current directory, because resolving that needs the
+         * address of the page and this element does not have it.
+         */
+        private String forACrawler(String url) {
+<span class="fc bfc" id="L171" title="All 4 branches covered.">            boolean fromTheRoot = url.startsWith(&quot;/&quot;) &amp;&amp; !url.startsWith(&quot;//&quot;);</span>
+<span class="fc bfc" id="L172" title="All 4 branches covered.">            return origin != null &amp;&amp; fromTheRoot ? origin + url : url;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TidyDialect.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">thymekit</a> &gt; <a href="index.source.html" class="el_package">io.thymekit</a> &gt; <span class="el_source">TidyDialect.java</span></div><h1>TidyDialect.java</h1><pre class="source lang-java linenums">/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+package io.thymekit;
+
+import java.util.Set;
+import org.thymeleaf.dialect.AbstractDialect;
+import org.thymeleaf.dialect.IPostProcessorDialect;
+import org.thymeleaf.postprocessor.IPostProcessor;
+import org.thymeleaf.postprocessor.PostProcessor;
+import org.thymeleaf.templatemode.TemplateMode;
+
+/**
+ * Tidy rendering: the HTML of a page should carry no trace of how the templates were formatted. This
+ * post-processing dialect turns formatting whitespace between tags into a single newline indented by
+ * nesting depth, and leaves {@code pre/textarea/script/style} alone.
+ *
+ * &lt;p&gt;Why it is needed: adapters are written to be read — indented, one condition per line — and
+ * Thymeleaf, after removing its own tags, leaves their indentation behind as text nodes. On a page of a
+ * hundred elements that is thousands of blank lines.
+ *
+ * &lt;p&gt;Why it is safe: whitespace is only ever collapsed where it already exists, never inserted, and a
+ * run of whitespace in HTML is equivalent to one. Between inline elements the newline is kept precisely
+ * because there the whitespace is significant.
+ *
+ * &lt;p&gt;What it therefore leaves alone: a node that carries words. Its indentation travels with it into the
+ * page, because a space beside a word may be the space between two words, and no rule that might change
+ * what a page says is worth a tidier source. Adapters are made of tags, which is where the thousands of
+ * blank lines came from; prose is written once and read as it stands.
+ *
+ * &lt;p&gt;HTML only: a template rendered in the text or javascript mode passes through untouched, since
+ * there whitespace is not a matter of formatting but of content.
+ *
+ * &lt;p&gt;Where it sits among other dialects: a post-processor of yours with a lower precedence than
+ * {@link #PRECEDENCE} is handed the template as it was written, one with a higher precedence is handed
+ * the page as it will be served. Both are worth having, so the choice is yours and the number is stated
+ * rather than hidden.
+ *
+ * &lt;p&gt;Which of the two numbers a post-processor carries decides that, checked by rendering rather than
+ * read off the interface: the chain is ordered by the precedence of the processor itself. The one this
+ * dialect declares orders dialects and is the same number, so the two cannot come to disagree about
+ * where the tidying happens.
+ */
+public final class TidyDialect extends AbstractDialect implements IPostProcessorDialect {
+
+    /**
+     * Two spaces per level. Not configurable: Thymeleaf instantiates the post-processor by class, so
+     * there is nowhere to pass a setting through.
+     */
+    static final int INDENT = 2;
+
+    /**
+     * The place this dialect takes in the chain: lower runs earlier, and 1000 is the ordinary place,
+     * the one Thymeleaf's own dialect takes. Said once and used for both orderings a post-processor
+     * has — among dialects, and among the processors they contribute — because they are one decision
+     * and two numbers would only drift.
+     */
+    public static final int PRECEDENCE = 1000;
+
+    public TidyDialect() {
+<span class="fc" id="L61">        super(&quot;thymekit-tidy&quot;);</span>
+<span class="fc" id="L62">    }</span>
+
+    @Override
+    public int getDialectPostProcessorPrecedence() {
+<span class="fc" id="L66">        return PRECEDENCE;</span>
+    }
+
+    @Override
+    public Set&lt;IPostProcessor&gt; getPostProcessors() {
+<span class="fc" id="L71">        return Set.of(new PostProcessor(TemplateMode.HTML, WhitespaceHandler.class, PRECEDENCE));</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+    <link rel="stylesheet" type="text/css" href="../style.css">
+</head>
+<body>
+
+
+<h1>ThymekitException.java</h1>
+
+<table class="src">
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_1'/>
+1
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_1'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>/* This Source Code Form is subject to the terms of the Mozilla Public</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_2'/>
+2
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_2'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>   License, v. 2.0. If a copy of the MPL was not distributed with this</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_3'/>
+3
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_3'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>   file, You can obtain one at https://mozilla.org/MPL/2.0/. */</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_4'/>
+4
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_4'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>package io.thymekit;</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_5'/>
+5
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_5'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''></span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_6'/>
+6
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_6'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>import org.jspecify.annotations.Nullable;</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_7'/>
+7
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_7'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''></span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_8'/>
+8
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_8'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>/**</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_9'/>
+9
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_9'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * What the kit refuses, in a shape somebody else&#39;s error handler can route.</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_10'/>
+10
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_10'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> *</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_11'/>
+11
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_11'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * &#60;p&#62;A consumer of this library may treat a five hundred as a programming error and something to be</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_12'/>
+12
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_12'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * woken up for. That rule works only when every refusal the kit makes &#60;b&#62;on purpose&#60;/b&#62; can be told</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_13'/>
+13
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_13'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * apart from their own code failing &#8212; then what is left uncaught really does mean nobody foresaw it,</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_14'/>
+14
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_14'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * which is worth waking up for. So the kit throws its own and never borrows: not</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_15'/>
+15
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_15'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * {@code IllegalArgumentException}, not {@code NullPointerException}, not the one an</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_16'/>
+16
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_16'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * {@code orElseThrow} hands out when it was given nothing to throw.</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_17'/>
+17
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_17'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> *</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_18'/>
+18
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_18'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * &#60;p&#62;Three kinds, and the difference between them is not what went wrong but &#60;b&#62;what to do about</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_19'/>
+19
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_19'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * it&#60;/b&#62;:</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_20'/>
+20
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_20'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> *</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_21'/>
+21
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_21'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * &#60;ul&#62;</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_22'/>
+22
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_22'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> *   &#60;li&#62;{@link MisuseException} &#8212; a call written wrong. It should never reach production, and an alert</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_23'/>
+23
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_23'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> *       is the right answer;&#60;/li&#62;</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_24'/>
+24
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_24'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> *   &#60;li&#62;{@link UnsoundPageException} &#8212; the page does not add up. This one can arrive from data, so the</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_25'/>
+25
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_25'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> *       answer is the consumer&#39;s to choose;&#60;/li&#62;</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_26'/>
+26
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_26'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> *   &#60;li&#62;{@link ContractBrokenException} &#8212; the walk over a triple did not agree, which happens in</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_27'/>
+27
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_27'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> *       tests.&#60;/li&#62;</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_28'/>
+28
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_28'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * &#60;/ul&#62;</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_29'/>
+29
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_29'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> *</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_30'/>
+30
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_30'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * &#60;p&#62;Every refusal names the place it was made at, and the place is in front of the message as well as</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_31'/>
+31
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_31'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * in {@link #where()} &#8212; a handler that logs nothing but the message is the common case, and it would</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_32'/>
+32
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_32'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * otherwise lose the one thing that says where to look.</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_33'/>
+33
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_33'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> *</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_34'/>
+34
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_34'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * &#60;p&#62;Abstract, because which of the three it is decides what a consumer does, and refusing without</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_35'/>
+35
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_35'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * saying which is refusing to answer the only question that matters.</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_36'/>
+36
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_36'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> *</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_37'/>
+37
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_37'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * &#60;p&#62;Three and no more: the constructors of this class are not visible outside the package, so the</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_38'/>
+38
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_38'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * family cannot be extended from a consumer&#39;s code. That is not a fence around the vocabulary but the</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_39'/>
+39
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_39'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * point of it &#8212; a fourth kind would be a fourth answer to &#34;what do I do about this&#34;, and there are only</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_40'/>
+40
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_40'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * three. An element of yours throws one of the three; a guard of yours refusing a bad argument is a</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_41'/>
+41
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_41'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * {@link MisuseException} exactly as ours is.</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_42'/>
+42
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_42'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> */</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_43'/>
+43
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_43'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>public abstract class ThymekitException extends RuntimeException {</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_44'/>
+44
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_44'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''></span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_45'/>
+45
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_45'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    /**</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_46'/>
+46
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_46'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * What stands in for a place that was left unnamed. Checking the place would mean throwing while</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_47'/>
+47
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_47'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * throwing, and the second failure would bury the first &#8212; the opposite of what any of this is for.</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_48'/>
+48
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_48'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     */</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_49'/>
+49
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_49'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    private static final String UNNAMED = &#34;somewhere in the kit&#34;;</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_50'/>
+50
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_50'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''></span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_51'/>
+51
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_51'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    private final String where;</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_52'/>
+52
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_52'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''></span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_53'/>
+53
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_53'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    ThymekitException(@Nullable String where, String detail) {</span></pre></td></tr>
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_54'/>
+54
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_54'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>        this(where, detail, null);</span></pre></td></tr>
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_55'/>
+55
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_55'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>    }</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_56'/>
+56
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_56'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''></span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_57'/>
+57
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_57'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    ThymekitException(@Nullable String where, String detail, @Nullable Throwable cause) {</span></pre></td></tr>
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_58'/>
+58
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_58'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>        super(named(where) + &#34;: &#34; + detail, cause);</span></pre></td></tr>
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_59'/>
+59
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_59'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>        this.where = named(where);</span></pre></td></tr>
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_60'/>
+60
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_60'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>    }</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_61'/>
+61
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_61'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''></span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_62'/>
+62
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_62'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    private static String named(@Nullable String where) {</span></pre></td></tr>
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_63'/>
+63
+</td>
+<td class='killed'>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_63'>3</a>
+<span>
+1. named : negated conditional &rarr; KILLED<br/>
+2. named : replaced return value with &#34;&#34; for io/thymekit/ThymekitException::named &rarr; KILLED<br/>
+3. named : negated conditional &rarr; KILLED<br/>
+
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class='killed'>        return where == null || where.isBlank() ? UNNAMED : where;</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_64'/>
+64
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_64'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    }</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_65'/>
+65
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_65'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''></span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_66'/>
+66
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_66'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    /**</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_67'/>
+67
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_67'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * Where the refusal was made: a short, stable name meant for searching a log, and always a</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_68'/>
+68
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_68'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * &#60;b&#62;call&#60;/b&#62; &#8212; {@code Heading.href(href)}, {@code Breadcrumbs.site(origin)},</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_69'/>
+69
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_69'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * {@code Rel.of(values) &#8212; one of them}, {@code Descriptor.describes.itemListElement[0].name}. A</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_70'/>
+70
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_70'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * noun would say what was wrong, which the message says anyway; a call says which line to open.</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_71'/>
+71
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_71'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     * Not a sentence for a person to read &#8212; that is the message.</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_72'/>
+72
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_72'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>     */</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_73'/>
+73
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_73'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    public String where() {</span></pre></td></tr>
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_74'/>
+74
+</td>
+<td class='killed'>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_74'>1</a>
+<span>
+1. where : replaced return value with &#34;&#34; for io/thymekit/ThymekitException::where &rarr; KILLED<br/>
+
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class='killed'>        return where;</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_75'/>
+75
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_75'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    }</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@684e8c9d_76'/>
+76
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_76'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>}</span></pre></td></tr>
+
+
+
+<tr><td></td><td></td><td><h2>Mutations</h2></td></tr>
+
+<tr>
+<td><a href='#org.pitest.mutationtest.report.html.SourceFile@684e8c9d_63'>63</a></td> 
+<td></td>
+<td>
+
+<a name='grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_63'/> 
+
+<p class='KILLED'><span class='pop'>1.<span><b>1</b><br/><b>Location : </b>named<br/><b>Killed by : </b>io.thymekit.ThymekitExceptionTest.[engine:junit-jupiter]/[class:io.thymekit.ThymekitExceptionTest]/[method:carriesThePlaceItRefusedAt()]</span></span> negated conditional &rarr; KILLED</span>
+</div> <p class='KILLED'><span class='pop'>2.<span><b>2</b><br/><b>Location : </b>named<br/><b>Killed by : </b>io.thymekit.ThymekitExceptionTest.[engine:junit-jupiter]/[class:io.thymekit.ThymekitExceptionTest]/[method:carriesThePlaceItRefusedAt()]</span></span> replaced return value with &#34;&#34; for io/thymekit/ThymekitException::named &rarr; KILLED</span>
+</div> <p class='KILLED'><span class='pop'>3.<span><b>3</b><br/><b>Location : </b>named<br/><b>Killed by : </b>io.thymekit.ThymekitExceptionTest.[engine:junit-jupiter]/[class:io.thymekit.ThymekitExceptionTest]/[method:carriesThePlaceItRefusedAt()]</span></span> negated conditional &rarr; KILLED</span>
+</div> 
+</td>
+</tr>
+<tr>
+<td><a href='#org.pitest.mutationtest.report.html.SourceFile@684e8c9d_74'>74</a></td> 
+<td></td>
+<td>
+
+<a name='grouporg.pitest.mutationtest.report.html.SourceFile@684e8c9d_74'/> 
+
+<p class='KILLED'><span class='pop'>1.<span><b>1</b><br/><b>Location : </b>where<br/><b>Killed by : </b>io.thymekit.ThymekitExceptionTest.[engine:junit-jupiter]/[class:io.thymekit.ThymekitExceptionTest]/[method:carriesThePlaceItRefusedAt()]</span></span> replaced return value with &#34;&#34; for io/thymekit/ThymekitException::where &rarr; KILLED</span>
+</div> 
+</td>
+</tr>
+
+</table>
+
+
+<h2>Active mutators</h2>
+<ul>
+<li class='mutator'>CONDITIONALS_BOUNDARY</li>
+<li class='mutator'>EMPTY_RETURNS</li>
+<li class='mutator'>FALSE_RETURNS</li>
+<li class='mutator'>INCREMENTS</li>
+<li class='mutator'>INVERT_NEGS</li>
+<li class='mutator'>MATH</li>
+<li class='mutator'>NEGATE_CONDITIONALS</li>
+<li class='mutator'>NULL_RETURNS</li>
+<li class='mutator'>PRIMITIVE_RETURNS</li>
+<li class='mutator'>TRUE_RETURNS</li>
+<li class='mutator'>VOID_METHOD_CALLS</li>
+
+</ul>
+
+<h2>Tests examined</h2>
+<ul>
+<li>io.thymekit.ThymekitExceptionTest.[engine:junit-jupiter]/[class:io.thymekit.ThymekitExceptionTest]/[method:carriesThePlaceItRefusedAt()] (0 ms)</li><li>io.thymekit.ThymekitExceptionTest.[engine:junit-jupiter]/[class:io.thymekit.ThymekitExceptionTest]/[method:reportsSomethingEvenWhenThePlaceWasNotNamed()] (0 ms)</li><li>io.thymekit.ContractBrokenExceptionTest.[engine:junit-jupiter]/[class:io.thymekit.ContractBrokenExceptionTest]/[method:isOneOfTheFamily()] (0 ms)</li><li>io.thymekit.MisuseExceptionTest.[engine:junit-jupiter]/[class:io.thymekit.MisuseExceptionTest]/[method:isOneOfTheFamily()] (0 ms)</li><li>io.thymekit.UnsoundPageExceptionTest.[engine:junit-jupiter]/[class:io.thymekit.UnsoundPageExceptionTest]/[method:isOneOfTheFamily()] (1 ms)</li><li>io.thymekit.MisuseExceptionTest.[engine:junit-jupiter]/[class:io.thymekit.MisuseExceptionTest]/[method:isWhatAHeadingWithNothingToSayThrows()] (0 ms)</li><li>io.thymekit.RelTest.[engine:junit-jupiter]/[class:io.thymekit.RelTest]/[method:aRefusalNamesTheCallThatMadeIt()] (0 ms)</li><li>io.thymekit.ElementDescribesTest.[engine:junit-jupiter]/[class:io.thymekit.ElementDescribesTest]/[method:refusesAValueItCouldNotWrite()] (3 ms)</li><li>io.thymekit.UnsoundPageExceptionTest.[engine:junit-jupiter]/[class:io.thymekit.UnsoundPageExceptionTest]/[method:isWhatAPageWithTwoTitlesThrows()] (2 ms)</li><li>io.thymekit.ContractBrokenExceptionTest.[engine:junit-jupiter]/[class:io.thymekit.ContractBrokenExceptionTest]/[method:isWhatAnAddressLeadingNowhereThrows()] (4 ms)</li><li>io.thymekit.ThymekitExceptionTest.[engine:junit-jupiter]/[class:io.thymekit.ThymekitExceptionTest]/[method:allThreeAreCaughtAsOne()] (0 ms)</li><li>io.thymekit.ThymekitExceptionTest.[engine:junit-jupiter]/[class:io.thymekit.ThymekitExceptionTest]/[method:putsThePlaceInFrontOfTheMessage()] (0 ms)</li><li>io.thymekit.ThymekitExceptionTest.[engine:junit-jupiter]/[class:io.thymekit.ThymekitExceptionTest]/[method:keepsWhatWentWrongUnderneath()] (0 ms)</li><li>io.thymekit.MisuseExceptionTest.[engine:junit-jupiter]/[class:io.thymekit.MisuseExceptionTest]/[method:carriesWhatWentWrongUnderneath()] (0 ms)</li><li>io.thymekit.UnsoundPageExceptionTest.[engine:junit-jupiter]/[class:io.thymekit.UnsoundPageExceptionTest]/[method:carriesWhatWentWrongUnderneath()] (0 ms)</li><li>io.thymekit.MarkdownDialectTest.[engine:junit-jupiter]/[class:io.thymekit.MarkdownDialectTest]/[method:aRendererIsRequired()] (0 ms)</li><li>io.thymekit.JsonTest.[engine:junit-jupiter]/[class:io.thymekit.JsonTest]/[method:refusesANullArgument()] (0 ms)</li><li>io.thymekit.MarkdownExpressionObjectTest.[engine:junit-jupiter]/[class:io.thymekit.MarkdownExpressionObjectTest]/[method:aRendererIsRequired()] (0 ms)</li><li>io.thymekit.CrumbTest.[engine:junit-jupiter]/[class:io.thymekit.CrumbTest]/[method:refusesACurrentPageWithNoName()] (0 ms)</li><li>io.thymekit.CrumbTest.[engine:junit-jupiter]/[class:io.thymekit.CrumbTest]/[method:refusesALinkWithNoAddress()] (0 ms)</li><li>io.thymekit.CrumbTest.[engine:junit-jupiter]/[class:io.thymekit.CrumbTest]/[method:theGuardsAreInTheValueAndNotOnlyInTheFactories()] (0 ms)</li><li>io.thymekit.TopbarTest.[engine:junit-jupiter]/[class:io.thymekit.TopbarTest]/[method:refusesABarWithNoTrail()] (0 ms)</li><li>io.thymekit.ElementContractTest.[engine:junit-jupiter]/[class:io.thymekit.ElementContractTest]/[method:aTemplateThatCannotBeReadIsNotMistakenForAnEmptyOne()] (0 ms)</li><li>io.thymekit.CrumbTest.[engine:junit-jupiter]/[class:io.thymekit.CrumbTest]/[method:refusesAnAddressThatExecutesInsteadOfNavigating()] (0 ms)</li><li>io.thymekit.TreeTest.[engine:junit-jupiter]/[class:io.thymekit.TreeTest]/[method:whatIsHandedToTheWalkIsRequired()] (0 ms)</li><li>io.thymekit.JsonTest.[engine:junit-jupiter]/[class:io.thymekit.JsonTest]/[method:refusesAMapWithANullKey()] (0 ms)</li><li>io.thymekit.ElementGuardsTest.[engine:junit-jupiter]/[class:io.thymekit.ElementGuardsTest]/[method:textAPageWillShowIsNotNothing()] (0 ms)</li><li>io.thymekit.ElementDescribesTest.[engine:junit-jupiter]/[class:io.thymekit.ElementDescribesTest]/[method:theKeyIsReserved()] (0 ms)</li><li>io.thymekit.CrumbTest.[engine:junit-jupiter]/[class:io.thymekit.CrumbTest]/[method:refusesALinkWithNoName()] (0 ms)</li><li>io.thymekit.RelTest.[engine:junit-jupiter]/[class:io.thymekit.RelTest]/[method:askingForNothingIsRefused()] (0 ms)</li><li>io.thymekit.ElementGuardsTest.[engine:junit-jupiter]/[class:io.thymekit.ElementGuardsTest]/[method:aLanguageTagIsATagAndNotASentence()] (0 ms)</li><li>io.thymekit.BreadcrumbsTest.[engine:junit-jupiter]/[class:io.thymekit.BreadcrumbsTest]/[method:refusesATrailWithNoName()] (2 ms)</li><li>io.thymekit.ElementDescribesTest.[engine:junit-jupiter]/[class:io.thymekit.ElementDescribesTest]/[method:refusesNothing()] (0 ms)</li><li>io.thymekit.BreadcrumbsTest.[engine:junit-jupiter]/[class:io.thymekit.BreadcrumbsTest]/[method:refusesAnOriginWithATrailingSlash()] (1 ms)</li><li>io.thymekit.CrumbTest.[engine:junit-jupiter]/[class:io.thymekit.CrumbTest]/[method:refusesANameThatIsNotThere()] (0 ms)</li><li>io.thymekit.MarkdownExpressionObjectFactoryTest.[engine:junit-jupiter]/[class:io.thymekit.MarkdownExpressionObjectFactoryTest]/[method:aRendererIsRequired()] (0 ms)</li><li>io.thymekit.BreadcrumbsTest.[engine:junit-jupiter]/[class:io.thymekit.BreadcrumbsTest]/[method:refusesAnOriginThatIsNotAbsolute()] (1 ms)</li><li>io.thymekit.RelTest.[engine:junit-jupiter]/[class:io.thymekit.RelTest]/[method:aNewTabCarriesNoopenerForWhoeverOpensIt()] (0 ms)</li><li>io.thymekit.BreadcrumbsTest.[engine:junit-jupiter]/[class:io.thymekit.BreadcrumbsTest]/[method:refusesATrailWithNoSteps()] (3 ms)</li><li>io.thymekit.MdTest.[engine:junit-jupiter]/[class:io.thymekit.MdTest]/[method:theHintIsWrittenByAPersonAndIsHeldToIt()] (0 ms)</li><li>io.thymekit.ElementDescriptorTest.[engine:junit-jupiter]/[class:io.thymekit.ElementDescriptorTest]/[method:theKeysTheEngineUsesAreNotOnOffer()] (0 ms)</li><li>io.thymekit.RelTest.[engine:junit-jupiter]/[class:io.thymekit.RelTest]/[method:theAttributeValueIsTheTokensInOrder()] (0 ms)</li><li>io.thymekit.BreadcrumbsTest.[engine:junit-jupiter]/[class:io.thymekit.BreadcrumbsTest]/[method:refusesAStepThatIsNotOne()] (1 ms)</li><li>io.thymekit.BreadcrumbsTest.[engine:junit-jupiter]/[class:io.thymekit.BreadcrumbsTest]/[method:refusesAnOriginThatCarriesAPath()] (2 ms)</li><li>io.thymekit.ElementDescribesTest.[engine:junit-jupiter]/[class:io.thymekit.ElementDescribesTest]/[method:refusesAnEmptyContribution()] (2 ms)</li><li>io.thymekit.JsonTest.[engine:junit-jupiter]/[class:io.thymekit.JsonTest]/[method:refusesATypeItDoesNotAccept()] (0 ms)</li><li>io.thymekit.CaptionTest.[engine:junit-jupiter]/[class:io.thymekit.CaptionTest]/[method:aCaptionWithNothingToSayIsRefused()] (0 ms)</li><li>io.thymekit.ElementDescribesTest.[engine:junit-jupiter]/[class:io.thymekit.ElementDescribesTest]/[method:refusesAContributionCarryingATemplate()] (0 ms)</li><li>io.thymekit.ElementDescribesTest.[engine:junit-jupiter]/[class:io.thymekit.ElementDescribesTest]/[method:refusesADescriptorKeyNestedUnderAKey()] (0 ms)</li><li>io.thymekit.ElementDescribesTest.[engine:junit-jupiter]/[class:io.thymekit.ElementDescribesTest]/[method:refusesAContributionThatLooksLikeADescriptor()] (0 ms)</li><li>io.thymekit.ElementGuardsTest.[engine:junit-jupiter]/[class:io.thymekit.ElementGuardsTest]/[method:aScriptElementIsNotPartOfTheFlow()] (0 ms)</li><li>io.thymekit.JsonTest.[engine:junit-jupiter]/[class:io.thymekit.JsonTest]/[method:refusesAMapWithNonStringKeys()] (3 ms)</li><li>io.thymekit.JsonTest.[engine:junit-jupiter]/[class:io.thymekit.JsonTest]/[method:namesThePathThroughNestedLists()] (0 ms)</li><li>io.thymekit.ElementDescribesTest.[engine:junit-jupiter]/[class:io.thymekit.ElementDescribesTest]/[method:refusesADescriptorKeyHiddenDeepInside()] (0 ms)</li><li>io.thymekit.ElementDescriptorTest.[engine:junit-jupiter]/[class:io.thymekit.ElementDescriptorTest]/[method:anAddressIsAPathAndANameAndNothingElse()] (1 ms)</li><li>io.thymekit.CaptionTest.[engine:junit-jupiter]/[class:io.thymekit.CaptionTest]/[method:aDayIsWrittenForMachinesBesideTheWordsForPeople()] (1 ms)</li><li>io.thymekit.MdTest.[engine:junit-jupiter]/[class:io.thymekit.MdTest]/[method:aPolicyWithoutATextAppliesToNothing()] (0 ms)</li><li>io.thymekit.HeadingTest.[engine:junit-jupiter]/[class:io.thymekit.HeadingTest]/[method:whatOnlyALinkCanSayIsRefusedWithoutOne()] (0 ms)</li><li>io.thymekit.JsonTest.[engine:junit-jupiter]/[class:io.thymekit.JsonTest]/[method:refusesANullInsideAndNamesWhereItIs()] (2 ms)</li><li>io.thymekit.SectionTest.[engine:junit-jupiter]/[class:io.thymekit.SectionTest]/[method:thereIsNoSectionWithoutAHeading()] (0 ms)</li><li>io.thymekit.JsonTest.[engine:junit-jupiter]/[class:io.thymekit.JsonTest]/[method:refusesADouble()] (4 ms)</li><li>io.thymekit.ElementGuardsTest.[engine:junit-jupiter]/[class:io.thymekit.ElementGuardsTest]/[method:aHostChecksTheAddressWhenTheMarkerIsGone()] (0 ms)</li><li>io.thymekit.ElementGuardsTest.[engine:junit-jupiter]/[class:io.thymekit.ElementGuardsTest]/[method:whateverBecomesAnElementIsSettledHere()] (1 ms)</li><li>io.thymekit.ElementTest.[engine:junit-jupiter]/[class:io.thymekit.ElementTest]/[method:slotsAreReadByName()] (0 ms)</li><li>io.thymekit.HeadingTest.[engine:junit-jupiter]/[class:io.thymekit.HeadingTest]/[method:aHeadingMayNameItsLanguageAndMayBeForScreenReadersOnly()] (0 ms)</li><li>io.thymekit.CaptionTest.[engine:junit-jupiter]/[class:io.thymekit.CaptionTest]/[method:aPhraseInAnotherLanguageSaysWhichOne()] (1 ms)</li><li>io.thymekit.HeadingTest.[engine:junit-jupiter]/[class:io.thymekit.HeadingTest]/[method:anAnchorIsAnAddressAndNotASentence()] (1 ms)</li><li>io.thymekit.ElementDescribesTest.[engine:junit-jupiter]/[class:io.thymekit.ElementDescribesTest]/[method:refusesASecondContribution()] (0 ms)</li><li>io.thymekit.MdTest.[engine:junit-jupiter]/[class:io.thymekit.MdTest]/[method:whatTheLinksOfSomebodyElsesTextSay()] (0 ms)</li><li>io.thymekit.HeadingTest.[engine:junit-jupiter]/[class:io.thymekit.HeadingTest]/[method:aHeadingWithNothingToSayIsRefused()] (3 ms)</li><li>io.thymekit.HeadingTest.[engine:junit-jupiter]/[class:io.thymekit.HeadingTest]/[method:aHeadingMayBeALinkButNotAScript()] (1 ms)</li><li>io.thymekit.SectionTest.[engine:junit-jupiter]/[class:io.thymekit.SectionTest]/[method:aScriptIsNotWhatGoesUnderAHeading()] (0 ms)</li><li>io.thymekit.CaptionTest.[engine:junit-jupiter]/[class:io.thymekit.CaptionTest]/[method:aMomentIsKeptAsPreciselyAsItWasGiven()] (4 ms)</li><li>io.thymekit.PageModelTest.[engine:junit-jupiter]/[class:io.thymekit.PageModelTest]/[method:aPageWithoutATitleDoesNotRender()] (1 ms)</li><li>io.thymekit.ElementDescriptorTest.[engine:junit-jupiter]/[class:io.thymekit.ElementDescriptorTest]/[method:aDependencyIsAScriptElement()] (1 ms)</li><li>io.thymekit.MdTest.[engine:junit-jupiter]/[class:io.thymekit.MdTest]/[method:anAffordanceStandsBesideTheEmptyStateOrNowhere()] (0 ms)</li><li>io.thymekit.CaptionTest.[engine:junit-jupiter]/[class:io.thymekit.CaptionTest]/[method:theGuardAHostUsesIsHandedOut()] (2 ms)</li><li>io.thymekit.AnchorsTest.[engine:junit-jupiter]/[class:io.thymekit.AnchorsTest]/[method:twoThingsMayNotAnswerToOneName()] (1 ms)</li><li>io.thymekit.OutlineTest.[engine:junit-jupiter]/[class:io.thymekit.OutlineTest]/[method:aPageHasOneTitleAtMost()] (0 ms)</li><li>io.thymekit.HeroTest.[engine:junit-jupiter]/[class:io.thymekit.HeroTest]/[method:anOptionCalledWithNothingIsRefused()] (0 ms)</li><li>io.thymekit.ElementDescriptorTest.[engine:junit-jupiter]/[class:io.thymekit.ElementDescriptorTest]/[method:aSlotHoldsWhateverBecomesAnElement()] (1 ms)</li><li>io.thymekit.MarkdownRendererTest.[engine:junit-jupiter]/[class:io.thymekit.MarkdownRendererTest]/[method:theCeilingIsALevelHtmlHas()] (4 ms)</li><li>io.thymekit.ElementContractTest.[engine:junit-jupiter]/[class:io.thymekit.ElementContractTest]/[method:anAddressThatPointsNowhereIsNamed()] (0 ms)</li><li>io.thymekit.PageModelTest.[engine:junit-jupiter]/[class:io.thymekit.PageModelTest]/[method:aDocumentOfYourOwnGetsTheSameModel()] (0 ms)</li><li>io.thymekit.HeroTest.[engine:junit-jupiter]/[class:io.thymekit.HeroTest]/[method:eachPlaceTakesACaptionInItsOwnRole()] (0 ms)</li><li>io.thymekit.OutlineTest.[engine:junit-jupiter]/[class:io.thymekit.OutlineTest]/[method:nestingHidesNothing()] (0 ms)</li><li>io.thymekit.HeroTest.[engine:junit-jupiter]/[class:io.thymekit.HeroTest]/[method:theBadgeAndTheActionsAreTheConsumersOwn()] (1 ms)</li><li>io.thymekit.PageModelTest.[engine:junit-jupiter]/[class:io.thymekit.PageModelTest]/[method:classesOfYourOwnStandBesideTheKitsMarker()] (0 ms)</li><li>io.thymekit.HeroTest.[engine:junit-jupiter]/[class:io.thymekit.HeroTest]/[method:theTitleOfAPageIsAnH1()] (2 ms)</li><li>io.thymekit.PageModelTest.[engine:junit-jupiter]/[class:io.thymekit.PageModelTest]/[method:whatAPageSaysAboutItselfIsTrimmed()] (0 ms)</li><li>io.thymekit.ElementContractTest.[engine:junit-jupiter]/[class:io.thymekit.ElementContractTest]/[method:aFragmentNamedOnlyInACommentIsNotAFragment()] (0 ms)</li><li>io.thymekit.OutlineTest.[engine:junit-jupiter]/[class:io.thymekit.OutlineTest]/[method:aLevelCountsHoweverItWasWritten()] (1 ms)</li><li>io.thymekit.AnchorsTest.[engine:junit-jupiter]/[class:io.thymekit.AnchorsTest]/[method:anIllustrationHidesNothingEither()] (2 ms)</li><li>io.thymekit.OutlineTest.[engine:junit-jupiter]/[class:io.thymekit.OutlineTest]/[method:htmlHasSixLevels()] (0 ms)</li><li>io.thymekit.PageModelTest.[engine:junit-jupiter]/[class:io.thymekit.PageModelTest]/[method:whatACrawlerMayDoIsSaidAsItWasSaid()] (0 ms)</li><li>io.thymekit.PageModelTest.[engine:junit-jupiter]/[class:io.thymekit.PageModelTest]/[method:thePageIsAskedTheTwoQuestionsNoElementCanAnswer()] (0 ms)</li><li>io.thymekit.ElementContractTest.[engine:junit-jupiter]/[class:io.thymekit.ElementContractTest]/[method:aTemplateThatDeclaresNoSuchFragmentIsNamed()] (4 ms)</li><li>io.thymekit.PageModelTest.[engine:junit-jupiter]/[class:io.thymekit.PageModelTest]/[method:anAddressThatLeavesThePageIsAbsolute()] (1 ms)</li><li>io.thymekit.ElementContractTest.[engine:junit-jupiter]/[class:io.thymekit.ElementContractTest]/[method:everythingWrongIsSaidAtOnce()] (2 ms)</li><li>io.thymekit.OutlineTest.[engine:junit-jupiter]/[class:io.thymekit.OutlineTest]/[method:theLevelsRunWithoutAGap()] (1 ms)</li><li>io.thymekit.AnchorsTest.[engine:junit-jupiter]/[class:io.thymekit.AnchorsTest]/[method:nestingHidesNothing()] (4 ms)</li><li>io.thymekit.ElementContractTest.[engine:junit-jupiter]/[class:io.thymekit.ElementContractTest]/[method:aDeclarationSpeaksForOneFragmentOnly()] (1 ms)</li><li>io.thymekit.ElementContractTest.[engine:junit-jupiter]/[class:io.thymekit.ElementContractTest]/[method:anAdapterThatShowsNothingIsNamedOnce()] (4 ms)</li><li>io.thymekit.TopbarTest.[engine:junit-jupiter]/[class:io.thymekit.TopbarTest]/[method:refusesAWayBackThatExecutesInsteadOfNavigating()] (0 ms)</li><li>io.thymekit.TopbarTest.[engine:junit-jupiter]/[class:io.thymekit.TopbarTest]/[method:refusesAWayBackWithNoAddress()] (0 ms)</li><li>io.thymekit.ElementContractTest.[engine:junit-jupiter]/[class:io.thymekit.ElementContractTest]/[method:anAdapterIsNamedLikeAnAdapter()] (2 ms)</li><li>io.thymekit.BreadcrumbsTest.[engine:junit-jupiter]/[class:io.thymekit.BreadcrumbsTest]/[method:refusesAStepAfterThePageYouAreOn()] (2 ms)</li><li>io.thymekit.ElementContractTest.[engine:junit-jupiter]/[class:io.thymekit.ElementContractTest]/[method:aKeyTheAdapterDoesNotReadIsNamed()] (4 ms)</li><li>io.thymekit.TopbarTest.[engine:junit-jupiter]/[class:io.thymekit.TopbarTest]/[method:refusesAWayBackWithNoWords()] (1 ms)</li><li>io.thymekit.ElementContractTest.[engine:junit-jupiter]/[class:io.thymekit.ElementContractTest]/[method:aSlotTheAdapterDoesNotRenderIsNamed()] (1 ms)</li><li>io.thymekit.ElementContractTest.[engine:junit-jupiter]/[class:io.thymekit.ElementContractTest]/[method:whatNothingReachesIsNamedWhenTheSamplesClaimToCoverIt()] (2 ms)</li><li>io.thymekit.PageModelTest.[engine:junit-jupiter]/[class:io.thymekit.PageModelTest]/[method:scriptsAreCollectedRatherThanAdded()] (3 ms)</li><li>io.thymekit.ElementContractTest.[engine:junit-jupiter]/[class:io.thymekit.ElementContractTest]/[method:templatesUnderARootOfYourOwn()] (3 ms)</li><li>io.thymekit.ElementContractTest.[engine:junit-jupiter]/[class:io.thymekit.ElementContractTest]/[method:aScriptIsCheckedAsADependencyAndRefusedAsAnElement()] (3 ms)</li><li>io.thymekit.ElementContractTest.[engine:junit-jupiter]/[class:io.thymekit.ElementContractTest]/[method:aSlotThatChangesNothingIsNamed()] (4 ms)</li><li>io.thymekit.ElementContractTest.[engine:junit-jupiter]/[class:io.thymekit.ElementContractTest]/[method:aClassWithNoRuleIsNamed()] (5 ms)</li><li>io.thymekit.AnchorsTest.[engine:junit-jupiter]/[class:io.thymekit.AnchorsTest]/[method:theSameHeadingTwiceIsTwice()] (42 ms)</li><li>io.thymekit.ElementContractTest.[engine:junit-jupiter]/[class:io.thymekit.ElementContractTest]/[method:anAdapterMayBeMadeOfSlotsAloneOrOfWordsAlone()] (16 ms)</li><li>io.thymekit.ElementContractTest.[engine:junit-jupiter]/[class:io.thymekit.ElementContractTest]/[method:aKeyThatChangesNothingIsNamed()] (130 ms)</li>
+</ul>
+
+<br/>
+
+Report generated by <a href='https://pitest.org'>PIT</a> 1.22.1
+
+</body>
+</html>

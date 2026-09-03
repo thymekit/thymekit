@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Demo.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">thymekit</a> &gt; <a href="index.source.html" class="el_package">io.thymekit.demo</a> &gt; <span class="el_source">Demo.java</span></div><h1>Demo.java</h1><pre class="source lang-java linenums">/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+package io.thymekit.demo;
+
+import io.thymekit.Breadcrumbs;
+import io.thymekit.Caption;
+import io.thymekit.Element;
+import io.thymekit.Heading;
+import io.thymekit.Hero;
+import io.thymekit.Md;
+import io.thymekit.PageModel;
+import io.thymekit.Rel;
+import io.thymekit.Section;
+import io.thymekit.Topbar;
+import java.time.LocalDate;
+import java.util.List;
+import org.springframework.ui.Model;
+
+/**
+ * The kit's showcase, shipped with the library. Mount it with one controller method and see the
+ * elements live, rendered by your engine and served by your static handling; the library knows neither
+ * the address you mounted it at nor your theme.
+ *
+ * &lt;p&gt;The showcase has a document of its own ({@code templates/thymekit/demo.html}, from the jar): no
+ * consumer layout decorates it, so the page shows exactly what the kit produced. Its two stylesheets
+ * are linked in the template itself — the kit ({@code /thymekit/ui.css}) and the showcase theme
+ * ({@code /thymekit/demo.css}). The theme only hands values to element handles, which is what makes
+ * the page a demonstration of theming rather than a page with a look of its own.
+ *
+ * &lt;h2&gt;Mounting&lt;/h2&gt;
+ * &lt;pre&gt;{@code
+ * @GetMapping(&quot;/thymekit-demo&quot;)
+ * String demo(Model model) {
+ *     return Demo.page(model);
+ * }
+ * }&lt;/pre&gt;
+ */
+public final class Demo {
+
+    private static final String VIEW = &quot;thymekit/demo&quot;;
+
+    /**
+     * How many elements the kit has, said on the page. A number the showcase states about itself is a
+     * claim like any other, so the snapshot test counts the adapters in the jar and holds this to it.
+     */
+    private static final int ELEMENTS = 7;
+
+    /**
+     * The version this page states about itself, taken from the build rather than written here. The
+     * count of elements above is checked against the templates by a spec; this one had nothing holding
+     * it and had drifted by two releases before anybody read it.
+     */
+    private static String version() {
+<span class="fc" id="L55">        var properties = new java.util.Properties();</span>
+<span class="fc" id="L56">        try (var in = Demo.class.getResourceAsStream(&quot;/thymekit/version.properties&quot;)) {</span>
+<span class="pc bpc" id="L57" title="1 of 2 branches missed.">            if (in == null) {</span>
+<span class="nc" id="L58">                throw new io.thymekit.MisuseException(&quot;Demo.version&quot;,</span>
+                    &quot;thymekit/version.properties is not on the classpath: the build writes it, &quot;
+                    + &quot;and a jar without it cannot say which version it is&quot;);
+            }
+<span class="fc" id="L62">            properties.load(in);</span>
+<span class="nc" id="L63">        } catch (java.io.IOException unreadable) {</span>
+<span class="nc" id="L64">            throw new java.io.UncheckedIOException(&quot;cannot read the version of the kit&quot;, unreadable);</span>
+<span class="fc" id="L65">        }</span>
+<span class="fc" id="L66">        return properties.getProperty(&quot;version&quot;);</span>
+    }
+
+    private Demo() {}
+
+    /**
+     * Address of the showcase's own furniture: frames, stand-ins for the consumer's elements, one
+     * script. It lives one level down, in {@code thymekit/demo/}, because the kit's own adapters live
+     * in {@code thymekit/} and every one of them owes the contract test a sample. Furniture owes
+     * nothing: it stands in for what a consumer writes.
+     */
+    private static final String PARTS = &quot;thymekit/demo/parts&quot;;
+
+    /**
+     * A frame in the stock scope, holding the same elements the page shows dressed. Marked as an
+     * illustration: what is inside is a sample, not the outline of this page, so the H1 in it does not
+     * count as a second one.
+     */
+    private static Element&lt;Demo&gt; stockSample() {
+<span class="fc" id="L85">        return Element.Descriptor.&lt;Demo&gt;of(PARTS, &quot;stockFrame&quot;).illustration()</span>
+<span class="fc" id="L86">            .slot(&quot;items&quot;, List.of(</span>
+<span class="fc" id="L87">                Caption.eyebrow(&quot;showcase&quot;),</span>
+<span class="fc" id="L88">                Heading.h2(&quot;thymekit, undressed&quot;),</span>
+<span class="fc" id="L89">                Caption.subtitle(&quot;the same elements, with nothing said about them&quot;)))</span>
+<span class="fc" id="L90">            .build();</span>
+    }
+
+    /**
+     * Everything a caption and a heading can carry, side by side: the four roles, a date a machine can
+     * read, a phrase in another language, a heading that is a link and one that only a screen reader
+     * meets. An illustration as well — the headings in it belong to the sample, not to the page.
+     */
+    private static Element&lt;Demo&gt; textSample() {
+<span class="fc" id="L99">        return Element.Descriptor.&lt;Demo&gt;of(PARTS, &quot;sampleFrame&quot;).illustration()</span>
+<span class="fc" id="L100">            .slot(&quot;items&quot;, List.of(</span>
+<span class="fc" id="L101">                Caption.eyebrow(&quot;eyebrow&quot;),</span>
+<span class="fc" id="L102">                Heading.h3(&quot;A heading that is a link&quot;).href(&quot;https://github.com/thymekit/thymekit&quot;)</span>
+<span class="fc" id="L103">                    .rel(Rel.NOFOLLOW).newTab(),</span>
+<span class="fc" id="L104">                Heading.h4(&quot;Only a screen reader meets this one&quot;).srOnly(),</span>
+<span class="fc" id="L105">                Caption.subtitle(&quot;subtitle — the line under a title&quot;),</span>
+<span class="fc" id="L106">                Caption.label(&quot;label&quot;),</span>
+<span class="fc" id="L107">                Caption.meta(&quot;meta · 21 August 2026&quot;).time(LocalDate.of(2026, 8, 21)),</span>
+<span class="fc" id="L108">                Caption.subtitle(&quot;Adansonia digitata&quot;).lang(&quot;la&quot;),</span>
+<span class="fc" id="L109">                Heading.h5(&quot;The fifth level, and the sixth below it&quot;),</span>
+<span class="fc" id="L110">                Heading.h6(&quot;Six is where html stops, and so does the scale&quot;)))</span>
+<span class="fc" id="L111">            .build();</span>
+    }
+
+    /** The kit's showcase, built the way a consumer builds a page. */
+    public static String page(Model model) {
+<span class="fc" id="L116">        return PageModel.of(model)</span>
+<span class="fc" id="L117">            .title(&quot;thymekit — element showcase&quot;)</span>
+<span class="fc" id="L118">            .description(&quot;Every element of the kit, rendered by the kit itself: the page you are &quot;</span>
+                + &quot;looking at is composed in Java and dressed by one stylesheet of handle values.&quot;)
+<span class="fc" id="L120">            .pageClass(&quot;page-showcase&quot;)</span>
+            // Absolute on purpose, unlike a trail inside an application: this page is meant to be
+            // mounted in somebody else's, where a path of ours would point at a page of theirs.
+<span class="fc" id="L123">            .add(Topbar.of(Breadcrumbs.named(&quot;Breadcrumb&quot;)</span>
+<span class="fc" id="L124">                    .add(&quot;https://github.com/thymekit/thymekit&quot;, &quot;thymekit&quot;)</span>
+<span class="fc" id="L125">                    .current(&quot;Showcase&quot;))</span>
+<span class="fc" id="L126">                .back(&quot;https://thymekit.github.io/thymekit/&quot;, &quot;All builds&quot;))</span>
+<span class="fc" id="L127">            .add(Hero.of(Heading.h1(&quot;thymekit&quot;))</span>
+<span class="fc" id="L128">                .eyebrow(Caption.eyebrow(&quot;showcase&quot;))</span>
+<span class="fc" id="L129">                .subtitle(Caption.subtitle(&quot;the elements on this page are composed in Java and rendered by the kit itself&quot;))</span>
+<span class="fc" id="L130">                .meta(Caption.meta(ELEMENTS + &quot; elements, a canvas and a head&quot;))</span>
+<span class="fc" id="L131">                .badge(Element.Descriptor.of(PARTS, &quot;statusBadgeEl&quot;).with(&quot;text&quot;, version()))</span>
+<span class="fc" id="L132">                .actions(Element.Descriptor.of(PARTS, &quot;actionsEl&quot;)</span>
+<span class="fc" id="L133">                    .with(&quot;text&quot;, &quot;the source, and every number on this page&quot;)</span>
+<span class="fc" id="L134">                    .with(&quot;href&quot;, &quot;https://github.com/thymekit/thymekit&quot;)))</span>
+<span class="fc" id="L135">            .add(Section.of(Heading.h2(&quot;What this page is&quot;))</span>
+<span class="fc" id="L136">                .add(Md.of(&quot;&quot;&quot;</span>
+                    This page is composed **declaratively in Java** and rendered by the kit. Its look
+                    comes from one stylesheet, `thymekit/demo.css`, which hands values to element
+                    handles and touches nothing else — no override of the kit's markup, no rule the kit
+                    knows about. Take that file away and the very same page renders as plain HTML.
+                    &quot;&quot;&quot;)))
+<span class="fc" id="L142">            .add(Section.of(Heading.h2(&quot;Who dresses whom&quot;).id(&quot;who-dresses-whom&quot;))</span>
+<span class="fc" id="L143">                .add(Md.of(&quot;&quot;&quot;</span>
+                Three headings on this page wear three different faces, and no stylesheet rule mentions
+                where any of them sits.
+
+                ### The title of the page
+                A serif display face, dressed by the hero — the element that hosts it. A page has exactly
+                one H1 and the canvas keeps it that way, so its own face is a decision about the hero
+                rather than about every heading on the site.
+
+                ### The titles of the sections
+                The heading above wears the site's own voice, set once in `:root`: small, tracked,
+                upper-case, gold. Every section title on every page follows it.
+
+                ### The headings of the text
+                These two lines are written by an author inside markdown, not by the page. The markdown
+                section hosts them, so it dresses them — quieter, in its own scale, through
+                `--tk-md-heading-*`. Where the theme says nothing, the site's values come through
+                untouched.
+                    &quot;&quot;&quot;)))
+<span class="fc" id="L162">            .add(Section.of(Heading.h2(&quot;What text can carry&quot;))</span>
+<span class="fc" id="L163">                .add(Md.of(&quot;&quot;&quot;</span>
+                    A caption comes in four roles and carries what a machine needs beside what a person
+                    reads: a date as `&lt;time datetime=&quot;…&quot;&gt;`, a phrase marked with the language it is in.
+                    A heading may be a link — this one says `rel=&quot;nofollow&quot;` and opens in a new tab,
+                    which is why it also says `noopener`, whichever order the two were written in. A
+                    heading may be there only for the outline: the frame below holds one no eye finds.
+                    And the scale has six levels, the last two of them here.
+                    &quot;&quot;&quot;))
+<span class="fc" id="L171">                .add(textSample()))</span>
+<span class="fc" id="L172">            .add(Section.of(Heading.h2(&quot;Whose text this is&quot;))</span>
+<span class="fc" id="L173">                .add(Md.of(&quot;&quot;&quot;</span>
+                    Text written by visitors says so. The link below carries `rel=&quot;ugc nofollow&quot;`
+                    because this block was told `linkRel(UGC, NOFOLLOW)`; a link of the site's own would
+                    keep its weight, since only what leaves the site is marked: [a stranger's
+                    page](https://example.com/somewhere) beside [a page of ours](/ingredients/baobab).
+<span class="fc" id="L178">                    &quot;&quot;&quot;).linkRel(Rel.UGC, Rel.NOFOLLOW)))</span>
+<span class="fc" id="L179">            .add(Section.of(Heading.h2(&quot;When there is nothing to show&quot;))</span>
+<span class="fc" id="L180">                .add(Md.of(null)</span>
+<span class="fc" id="L181">                    .emptyHint(&quot;Nothing written here yet&quot;)</span>
+<span class="fc" id="L182">                    .addAction(Element.Descriptor.of(PARTS, &quot;actionsEl&quot;)</span>
+<span class="fc" id="L183">                        .with(&quot;text&quot;, &quot;write it&quot;)</span>
+<span class="fc" id="L184">                        .with(&quot;href&quot;, &quot;https://github.com/thymekit/thymekit&quot;)</span>
+<span class="fc" id="L185">                        .requires(Element.script(PARTS, &quot;demoJs&quot;)))))</span>
+<span class="fc" id="L186">            .add(Section.of(Heading.h2(&quot;What this page cannot show&quot;))</span>
+<span class="fc" id="L187">                .add(Md.of(&quot;&quot;&quot;</span>
+                    Three things the canvas can say are missing here on purpose. `canonical(...)` and
+                    `image(...)` need an address this page cannot know — and this page is mounted inside
+                    somebody else's application, where declaring *our* address would send *their*
+                    crawler to *our* site; the copy published on the project's own pages gets its
+                    canonical from the script that hands the addresses out. `robots(...)` is missing for
+                    a simpler reason: every directive it can carry would be a false statement about a
+                    page that wants to be read. A showcase that lied in its own markup would be a poor
+                    argument for a kit whose whole claim is markup you can stand behind.
+                    &quot;&quot;&quot;))
+            )
+<span class="fc" id="L198">            .add(Section.of(Heading.h2(&quot;The theme, taken away&quot;))</span>
+<span class="fc" id="L199">                .add(Md.of(&quot;&quot;&quot;</span>
+                    Every element file resets its handles inside `.tk-defaults`, so a frame carrying
+                    that class is a place the theme cannot reach. The same elements are below, in it:
+                    this is the page with `demo.css` taken away, and the claim above stops being a
+                    promise. The heading in the frame is an h2 and not the page's H1, because a page has
+                    one of those and a sample of the stock is not it.
+                    &quot;&quot;&quot;))
+<span class="fc" id="L206">                .add(stockSample()))</span>
+<span class="fc" id="L207">            .render(VIEW);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

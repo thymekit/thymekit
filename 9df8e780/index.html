@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>thymekit — build reports</title>
+<style>
+  :root { --ink:#1d241b; --muted:#6b7a66; --line:#dfe6db; --accent:#3d5c3a; --paper:#f5f7f2; }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:48px 24px; background:var(--paper); color:var(--ink);
+         font:16px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 880px; margin: 0 auto; }
+  h1 { font-size:28px; margin:0 0 4px; letter-spacing:-.01em; }
+  p.lede { margin:0 0 36px; color:var(--muted); }
+  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; }
+  a.card { display:block; padding:20px; background:#fff; border:1px solid var(--line); border-radius:12px;
+           text-decoration:none; color:inherit; transition:border-color .15s, transform .15s; }
+  a.card:hover { border-color:var(--accent); transform:translateY(-2px); }
+  .label { font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+  .value { font-size:30px; font-weight:600; margin:6px 0 2px; color:var(--accent); }
+  .note { font-size:14px; color:var(--muted); }
+  footer { margin-top:40px; padding-top:20px; border-top:1px solid var(--line); font-size:14px; color:var(--muted); }
+  footer a { color:var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <h1>thymekit — build reports</h1>
+  <p class="lede">Published by the build itself on every push to <code>main</code>.</p>
+  <div class="cards">
+    <a class="card" href="showcase/index.html">
+      <div class="label">Showcase</div><div class="value">live</div><div class="note">the kit as it renders itself</div>
+    </a>
+    <a class="card" href="tests/index.html">
+      <div class="label">Tests</div><div class="value">345</div><div class="note">all passing in 7.0s</div>
+    </a>
+    <a class="card" href="coverage/index.html">
+      <div class="label">Coverage</div><div class="value">99.7%</div><div class="note">instructions · 99.8% branches</div>
+    </a>
+    <a class="card" href="mutation/index.html">
+      <div class="label">Mutation</div><div class="value">100%</div><div class="note">474 of 474 mutants killed</div>
+    </a>
+  </div>
+  <footer>
+    Source: <a href="https://github.com/thymekit/thymekit">github.com/thymekit/thymekit</a>
+  </footer>
+</main>
+</body>
+</html>

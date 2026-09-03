@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+    <link rel="stylesheet" type="text/css" href="../style.css">
+</head>
+<body>
+
+
+<h1>Crumb.java</h1>
+
+<table class="src">
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_1'/>
+1
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_1'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>/* This Source Code Form is subject to the terms of the Mozilla Public</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_2'/>
+2
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_2'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>   License, v. 2.0. If a copy of the MPL was not distributed with this</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_3'/>
+3
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_3'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>   file, You can obtain one at https://mozilla.org/MPL/2.0/. */</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_4'/>
+4
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_4'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>package io.thymekit;</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_5'/>
+5
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_5'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''></span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_6'/>
+6
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_6'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>import org.jspecify.annotations.Nullable;</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_7'/>
+7
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_7'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''></span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_8'/>
+8
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_8'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>/**</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_9'/>
+9
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_9'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * A step in a trail: a link to somewhere above, or the page the trail ends at.</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_10'/>
+10
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_10'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> *</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_11'/>
+11
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_11'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * &#60;p&#62;Not an element. It appears only inside a trail, never on its own, and nobody would put something</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_12'/>
+12
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_12'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * else in its place &#8212; so it is a value the caller writes rather than a triple with a fragment and a</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_13'/>
+13
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_13'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * stylesheet of its own.</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_14'/>
+14
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_14'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> *</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_15'/>
+15
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_15'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * &#60;p&#62;Two states, two factories, and the point of writing it that way is what cannot be written: there</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_16'/>
+16
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_16'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * is no call that produces the page you are on with a link in it. The page you are on has no address to</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_17'/>
+17
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_17'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * go to &#8212; its address is the address of the page it is printed on, which is why the trail does not</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_18'/>
+18
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_18'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * repeat it and the graph leaves it out.</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_19'/>
+19
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_19'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> *</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_20'/>
+20
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_20'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * &#60;p&#62;A record rather than a pair of types, because a crumb becomes data the moment it enters a</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_21'/>
+21
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_21'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * descriptor: a distinction held by the type system would vanish at that boundary anyway, and the two</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_22'/>
+22
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_22'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * factories carry it where it is read &#8212; at the call site.</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_23'/>
+23
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_23'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> *</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_24'/>
+24
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_24'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * &#60;p&#62;The guards sit in the canonical constructor rather than in front of it. A record hands its</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_25'/>
+25
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_25'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * constructor out whether the factories exist or not, so a check that lived only in a factory would be</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_26'/>
+26
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_26'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * a check with a door beside it. The address goes through the same guard as any other href the kit</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_27'/>
+27
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_27'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * prints: a step is a link on the page, and an href is the last place a scheme that executes instead of</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_28'/>
+28
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_28'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * navigating can be stopped.</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_29'/>
+29
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_29'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> *</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_30'/>
+30
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_30'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * &#60;p&#62;Not public. Nothing in the kit&#39;s public surface takes one or hands one back &#8212; a trail is written</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_31'/>
+31
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_31'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * as strings &#8212; and a type nobody outside can use is a promise nobody asked for. It becomes public the</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_32'/>
+32
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_32'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> * day something public accepts it.</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_33'/>
+33
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_33'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''> */</span></pre></td></tr>
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_34'/>
+34
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_34'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>record Crumb(@Nullable String url, String label) {</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_35'/>
+35
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_35'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''></span></pre></td></tr>
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_36'/>
+36
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_36'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>    Crumb {</span></pre></td></tr>
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_37'/>
+37
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_37'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>        Element.requireText(label, &#34;Crumb(label)&#34;);</span></pre></td></tr>
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_38'/>
+38
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_38'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>        if (url != null) {</span></pre></td></tr>
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_39'/>
+39
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_39'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>            Element.requireNavigable(url, &#34;Crumb(url)&#34;);</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_40'/>
+40
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_40'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>        }</span></pre></td></tr>
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_41'/>
+41
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_41'></a>
+<span>
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class=''>    }</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_42'/>
+42
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_42'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''></span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_43'/>
+43
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_43'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    /** A step above this page: where it goes, and what it is called. */</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_44'/>
+44
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_44'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    static Crumb link(String url, String label) {</span></pre></td></tr>
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_45'/>
+45
+</td>
+<td class='uncertain'>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_45'>1</a>
+<span>
+1. link : replaced return value with null for io/thymekit/Crumb::link &rarr; RUN_ERROR<br/>
+
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class='uncertain'>        return new Crumb(Element.requireNavigable(url, &#34;Crumb.link(url)&#34;), label);</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_46'/>
+46
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_46'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    }</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_47'/>
+47
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_47'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''></span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_48'/>
+48
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_48'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    /** The page the trail ends at: named, and going nowhere. */</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_49'/>
+49
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_49'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    static Crumb current(String label) {</span></pre></td></tr>
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_50'/>
+50
+</td>
+<td class='killed'>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_50'>1</a>
+<span>
+1. current : replaced return value with null for io/thymekit/Crumb::current &rarr; KILLED<br/>
+
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class='killed'>        return new Crumb(null, label);</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_51'/>
+51
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_51'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    }</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@19fd43da_52'/>
+52
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_52'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>}</span></pre></td></tr>
+
+
+
+<tr><td></td><td></td><td><h2>Mutations</h2></td></tr>
+
+<tr>
+<td><a href='#org.pitest.mutationtest.report.html.SourceFile@19fd43da_45'>45</a></td> 
+<td></td>
+<td>
+
+<a name='grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_45'/> 
+
+<p class='RUN_ERROR'><span class='pop'>1.<span><b>1</b><br/><b>Location : </b>link<br/><b>Killed by : </b>none</span></span> replaced return value with null for io/thymekit/Crumb::link &rarr; RUN_ERROR</span>
+</div> 
+</td>
+</tr>
+<tr>
+<td><a href='#org.pitest.mutationtest.report.html.SourceFile@19fd43da_50'>50</a></td> 
+<td></td>
+<td>
+
+<a name='grouporg.pitest.mutationtest.report.html.SourceFile@19fd43da_50'/> 
+
+<p class='KILLED'><span class='pop'>1.<span><b>1</b><br/><b>Location : </b>current<br/><b>Killed by : </b>io.thymekit.CrumbTest.[engine:junit-jupiter]/[class:io.thymekit.CrumbTest]/[method:theCanonicalConstructorAllowsTheCurrentPage()]</span></span> replaced return value with null for io/thymekit/Crumb::current &rarr; KILLED</span>
+</div> 
+</td>
+</tr>
+
+</table>
+
+
+<h2>Active mutators</h2>
+<ul>
+<li class='mutator'>CONDITIONALS_BOUNDARY</li>
+<li class='mutator'>EMPTY_RETURNS</li>
+<li class='mutator'>FALSE_RETURNS</li>
+<li class='mutator'>INCREMENTS</li>
+<li class='mutator'>INVERT_NEGS</li>
+<li class='mutator'>MATH</li>
+<li class='mutator'>NEGATE_CONDITIONALS</li>
+<li class='mutator'>NULL_RETURNS</li>
+<li class='mutator'>PRIMITIVE_RETURNS</li>
+<li class='mutator'>TRUE_RETURNS</li>
+<li class='mutator'>VOID_METHOD_CALLS</li>
+
+</ul>
+
+<h2>Tests examined</h2>
+<ul>
+<li>io.thymekit.CrumbTest.[engine:junit-jupiter]/[class:io.thymekit.CrumbTest]/[method:theCanonicalConstructorAllowsTheCurrentPage()] (0 ms)</li><li>io.thymekit.CrumbTest.[engine:junit-jupiter]/[class:io.thymekit.CrumbTest]/[method:theCurrentPageGoesNowhere()] (0 ms)</li><li>io.thymekit.CrumbTest.[engine:junit-jupiter]/[class:io.thymekit.CrumbTest]/[method:isAValue()] (0 ms)</li><li>io.thymekit.BreadcrumbsTest.[engine:junit-jupiter]/[class:io.thymekit.BreadcrumbsTest]/[method:leavesTheVocabularyToTheCanvas()] (0 ms)</li><li>io.thymekit.BreadcrumbsTest.[engine:junit-jupiter]/[class:io.thymekit.BreadcrumbsTest]/[method:withoutAnOriginTheGraphCarriesWhatItWasGiven()] (1 ms)</li><li>io.thymekit.BreadcrumbsTest.[engine:junit-jupiter]/[class:io.thymekit.BreadcrumbsTest]/[method:leavesAnAddressThatAlreadyNamesAHost()] (0 ms)</li><li>io.thymekit.BreadcrumbsTest.[engine:junit-jupiter]/[class:io.thymekit.BreadcrumbsTest]/[method:leavesTheVisibleAddressesAlone()] (0 ms)</li><li>io.thymekit.BreadcrumbsTest.[engine:junit-jupiter]/[class:io.thymekit.BreadcrumbsTest]/[method:onlyTheStepsThatGoSomewhereCarryAnAddress()] (1 ms)</li><li>io.thymekit.BreadcrumbsTest.[engine:junit-jupiter]/[class:io.thymekit.BreadcrumbsTest]/[method:isAValue()] (1 ms)</li><li>io.thymekit.BreadcrumbsTest.[engine:junit-jupiter]/[class:io.thymekit.BreadcrumbsTest]/[method:carriesTheStepsInOrder()] (2 ms)</li><li>io.thymekit.TopbarTest.[engine:junit-jupiter]/[class:io.thymekit.TopbarTest]/[method:takesAMakerOrWhatItMade()] (0 ms)</li><li>io.thymekit.TopbarTest.[engine:junit-jupiter]/[class:io.thymekit.TopbarTest]/[method:carriesNoWayBackWhenNoneWasGiven()] (0 ms)</li><li>io.thymekit.TopbarTest.[engine:junit-jupiter]/[class:io.thymekit.TopbarTest]/[method:carriesTheWayBack()] (0 ms)</li><li>io.thymekit.BreadcrumbsTest.[engine:junit-jupiter]/[class:io.thymekit.BreadcrumbsTest]/[method:refusesAStepAfterThePageYouAreOn()] (1 ms)</li><li>io.thymekit.TopbarTest.[engine:junit-jupiter]/[class:io.thymekit.TopbarTest]/[method:refusesAWayBackWithNoAddress()] (0 ms)</li><li>io.thymekit.BreadcrumbsTest.[engine:junit-jupiter]/[class:io.thymekit.BreadcrumbsTest]/[method:leavesAnAddressThatIsAlreadyAbsolute()] (2 ms)</li><li>io.thymekit.TopbarTest.[engine:junit-jupiter]/[class:io.thymekit.TopbarTest]/[method:printsNoShellWhereThereIsNoWayBack()] (0 ms)</li><li>io.thymekit.TopbarTest.[engine:junit-jupiter]/[class:io.thymekit.TopbarTest]/[method:refusesAWayBackThatExecutesInsteadOfNavigating()] (1 ms)</li><li>io.thymekit.TopbarTest.[engine:junit-jupiter]/[class:io.thymekit.TopbarTest]/[method:isAValue()] (0 ms)</li><li>io.thymekit.TopbarTest.[engine:junit-jupiter]/[class:io.thymekit.TopbarTest]/[method:refusesAWayBackWithNoWords()] (0 ms)</li><li>io.thymekit.BreadcrumbsTest.[engine:junit-jupiter]/[class:io.thymekit.BreadcrumbsTest]/[method:saysAsMuchAsItShows()] (3 ms)</li><li>io.thymekit.TopbarTest.[engine:junit-jupiter]/[class:io.thymekit.TopbarTest]/[method:carriesTheTrail()] (0 ms)</li><li>io.thymekit.TopbarTest.[engine:junit-jupiter]/[class:io.thymekit.TopbarTest]/[method:addsNoSecondLandmark()] (1 ms)</li><li>io.thymekit.BreadcrumbsTest.[engine:junit-jupiter]/[class:io.thymekit.BreadcrumbsTest]/[method:makesTheAddressesACrawlerReadsAbsolute()] (5 ms)</li><li>io.thymekit.TopbarTest.[engine:junit-jupiter]/[class:io.thymekit.TopbarTest]/[method:theWayBackStandsOutsideTheTrail()] (2 ms)</li><li>io.thymekit.BreadcrumbsTest.[engine:junit-jupiter]/[class:io.thymekit.BreadcrumbsTest]/[method:describesItselfAsATrail()] (7 ms)</li><li>io.thymekit.TopbarTest.[engine:junit-jupiter]/[class:io.thymekit.TopbarTest]/[method:doesNotComeBetweenTheTrailAndTheGraph()] (0 ms)</li><li>io.thymekit.TopbarTest.[engine:junit-jupiter]/[class:io.thymekit.TopbarTest]/[method:theMarkIsHiddenFromAssistiveTechnology()] (11 ms)</li><li>io.thymekit.BreadcrumbsTest.[engine:junit-jupiter]/[class:io.thymekit.BreadcrumbsTest]/[method:carriesTheNameOfTheLandmark()] (31 ms)</li><li>io.thymekit.ElementContractTest.[engine:junit-jupiter]/[class:io.thymekit.ElementContractTest]/[method:everyAdapterOfTheKitHasASample()] (11 ms)</li><li>io.thymekit.demo.DemoTest.[engine:junit-jupiter]/[class:io.thymekit.demo.DemoTest]/[method:everyInstrumentTheKitHasIsOnIt()] (48 ms)</li><li>io.thymekit.demo.DemoTest.[engine:junit-jupiter]/[class:io.thymekit.demo.DemoTest]/[method:theThemeCanBeTakenAway()] (51 ms)</li><li>io.thymekit.demo.DemoTest.[engine:junit-jupiter]/[class:io.thymekit.demo.DemoTest]/[method:thePageHasOneTitle()] (51 ms)</li><li>io.thymekit.demo.DemoTest.[engine:junit-jupiter]/[class:io.thymekit.demo.DemoTest]/[method:theVersionThePageStatesAboutItselfIsTrue()] (56 ms)</li><li>io.thymekit.demo.DemoTest.[engine:junit-jupiter]/[class:io.thymekit.demo.DemoTest]/[method:theShowcaseRendersToAFileAnybodyCanOpen()] (75 ms)</li><li>io.thymekit.demo.DemoTest.[engine:junit-jupiter]/[class:io.thymekit.demo.DemoTest]/[method:theNumberThePageStatesAboutItselfIsTrue()] (75 ms)</li><li>io.thymekit.ElementContractTest.[engine:junit-jupiter]/[class:io.thymekit.ElementContractTest]/[method:theKitKeepsTheWalkItHandsOut()] (139 ms)</li><li>io.thymekit.demo.DemoTest.[engine:junit-jupiter]/[class:io.thymekit.demo.DemoTest]/[method:aPageThatCannotKnowItsAddressClaimsNone()] (174 ms)</li><li>io.thymekit.CrumbTest.[engine:junit-jupiter]/[class:io.thymekit.CrumbTest]/[method:keepsWhatItWasGiven()] (0 ms)</li><li>io.thymekit.CrumbTest.[engine:junit-jupiter]/[class:io.thymekit.CrumbTest]/[method:aLinkKnowsWhereItGoes()] (0 ms)</li><li>io.thymekit.BreadcrumbsTest.[engine:junit-jupiter]/[class:io.thymekit.BreadcrumbsTest]/[method:endsWithoutACurrentPageIfThatIsWhatWasWritten()] (17 ms)</li>
+</ul>
+
+<br/>
+
+Report generated by <a href='https://pitest.org'>PIT</a> 1.22.1
+
+</body>
+</html>

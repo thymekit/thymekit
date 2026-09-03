@@ -1,0 +1,30 @@
+[
+  {
+    "slot": "e63dff5b",
+    "sha": "e63dff5b",
+    "branch": "dependabot/gradle/org.jsoup-jsoup-1.23.2",
+    "subject": "Bump org.jsoup:jsoup from 1.23.1 to 1.23.2",
+    "date": "2026-09-03 04:27"
+  },
+  {
+    "slot": "9df8e780",
+    "sha": "9df8e780",
+    "branch": "dependabot/gradle/gradle-wrapper-9.7.1",
+    "subject": "Bump gradle-wrapper from 9.7.0 to 9.7.1",
+    "date": "2026-08-27 04:40"
+  },
+  {
+    "slot": "7d3ef868",
+    "sha": "7d3ef868",
+    "branch": "dependabot/gradle/gradle-wrapper-9.7.1",
+    "subject": "Bump gradle-wrapper from 9.7.0 to 9.7.1",
+    "date": "2026-08-27 04:34"
+  },
+  {
+    "slot": "main",
+    "sha": "9871edf7",
+    "branch": "main",
+    "subject": "Merge pull request #21 from thymekit/feature/readme",
+    "date": "2026-08-24 16:10"
+  }
+]

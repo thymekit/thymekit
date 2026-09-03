@@ -1,0 +1,42 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+   License, v. 2.0. If a copy of the MPL was not distributed with this
+   file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+/* =============================================================================
+   thymekit — base CSS of the elements, served from the jar as /thymekit/ui.css.
+
+   Contract: structure lives here, appearance lives in per-element handles
+   --tk-<element>-* with minimal fallbacks, so the stock look is close to plain
+   HTML. There are no shared tokens: an element is tuned only through its own
+   handles, listed at the top of its file. A consumer maps them in its theme:
+
+     :root {
+         --tk-heading-font: 'Cormorant', serif;
+         --tk-caption-meta-color: #8a8a8a;
+     }
+
+   A look is declared once, for the element, and reused — never restated per place.
+   The four rules a theme keeps are in the README, chapter "Theming"; demo.css is the
+   worked example.
+
+   What this file may contain, and what it may not:
+     · containment — an image that would overflow, a code block that would push the
+       page sideways: the kit's business, always;
+     · anatomy — which part of an element sits above which, and how far apart: also
+       the kit's, since it is what the element is;
+     · the space around an element: not the kit's. Whoever places it decides that;
+     · a look: not the kit's either. It is a handle, or it is the browser's.
+
+   And one open surface: inside .rich-content the markup is the author's, so a theme
+   styles it directly. That is the single place where a rule against a kit class is
+   the right answer rather than a missing handle.
+
+   Manifest: one file per element (Java factory, fragment and CSS are a triple).
+   ============================================================================= */
+@import url("canvas.css");
+@import url("section.css");
+@import url("hero.css");
+@import url("heading.css");
+@import url("caption.css");
+@import url("breadcrumbs.css");
+@import url("topbar.css");
+@import url("md.css");
