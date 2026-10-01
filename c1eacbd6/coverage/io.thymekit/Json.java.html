@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Json.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">thymekit</a> &gt; <a href="index.source.html" class="el_package">io.thymekit</a> &gt; <span class="el_source">Json.java</span></div><h1>Json.java</h1><pre class="source lang-java linenums">/* This Source Code Form is subject to the terms of the Mozilla Public
+   License, v. 2.0. If a copy of the MPL was not distributed with this
+   file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+package io.thymekit;
+
+import java.util.Collection;
+import java.util.Map;
+import org.jspecify.annotations.Nullable;
+
+/**
+ * Writes a value as JSON for embedding in a {@code &lt;script type=&quot;application/ld+json&quot;&gt;} element.
+ *
+ * &lt;p&gt;The accepted set of types is closed on purpose: {@code String}, {@code Integer}, {@code Long},
+ * {@code Boolean}, a {@code Map} with string keys, and a {@code Collection}. Anything else is refused
+ * rather than serialised as best it can be — a structured-data contribution that carries a date, a
+ * double or an element is a mistake at the point it was written, and saying so there is cheaper than
+ * shipping a page whose machine-readable half quietly means something else. Widening the set later
+ * breaks nobody; having guessed once is a page that means something other than it says.
+ *
+ * &lt;p&gt;Escaping goes beyond what JSON requires, and the reason is the element the text lands in.
+ * {@code &lt;} is written as {@code &lt;} so the sequence {@code &lt;/script&gt;} cannot close the block;
+ * {@code &amp;} as {@code &amp;} because a document served as XML parses script content and decodes
+ * entities, where HTML does not. The line and paragraph separators go the same way — legal in JSON and
+ * illegal in a javascript string literal, so a consumer who re-embeds this output somewhere stricter
+ * does not discover the difference on their own data.
+ *
+ * &lt;p&gt;A refusal names the path that reaches the trouble, not only the fact of it: the person who has to
+ * fix a bad key is whoever wrote that key, and {@code Descriptor.describes.itemListElement[0].name} tells them
+ * where to look. A {@code null} argument is a different failure — a mistake at the call site — and is
+ * named as one.
+ *
+ * &lt;p&gt;Two duties, named apart at the door because they happen at different moments: a contribution is
+ * &lt;b&gt;checked&lt;/b&gt; when an element is built, so that the factory which wrote a bad value is the one on
+ * the stack, and the page is &lt;b&gt;written&lt;/b&gt; when the canvas prints it. Neither is public. What an
+ * element author needs of this policy they get through {@code describes}, which applies it for them;
+ * publishing the writer would be publishing a JSON library, which this kit is not.
+ */
+final class Json {
+
+    /** Where a refusal points when the trouble is the value handed in, rather than something inside it. */
+    private static final String ROOT = &quot;&lt;root&gt;&quot;;
+
+    private Json() {}
+
+    /**
+     * The value as JSON, compact — no spaces, no newlines. Key order is the caller's: in a graph the
+     * order carries meaning to a reader, and sorting would take that away.
+     */
+    static String write(Object value) {
+<span class="fc" id="L50">        StringBuilder out = new StringBuilder();</span>
+<span class="fc" id="L51">        write(Element.required(value, &quot;Json.write(value)&quot;), &quot;&quot;, out);</span>
+<span class="fc" id="L52">        return out.toString();</span>
+    }
+
+    /**
+     * Refuses a value the kit could not write, without writing it anywhere a page will see. The check
+     * &lt;b&gt;is&lt;/b&gt; the writing, thrown away: what may be contributed then has one definition rather than
+     * two that drift apart. The name given is what a refusal reads under — a path inside the value is
+     * written beneath it, so the reader is told both which faculty took the value and where in it the
+     * trouble sits.
+     */
+    static void check(Object value, String where) {
+<span class="fc" id="L63">        write(value, where, new StringBuilder());</span>
+<span class="fc" id="L64">    }</span>
+
+    private static void write(@Nullable Object value, String path, StringBuilder out) {
+<span class="fc bfc" id="L67" title="All 8 branches covered.">        switch (value) {</span>
+<span class="fc" id="L68">            case null -&gt; throw refuse(path, &quot;nothing at all&quot;);</span>
+<span class="fc" id="L69">            case String text -&gt; writeText(text, out);</span>
+<span class="fc" id="L70">            case Integer number -&gt; out.append(number.intValue());</span>
+<span class="fc" id="L71">            case Long number -&gt; out.append(number.longValue());</span>
+<span class="fc" id="L72">            case Boolean flag -&gt; out.append(flag.booleanValue());</span>
+<span class="fc" id="L73">            case Map&lt;?, ?&gt; map -&gt; writeMap(map, path, out);</span>
+<span class="fc" id="L74">            case Collection&lt;?&gt; items -&gt; writeList(items, path, out);</span>
+<span class="fc" id="L75">            default -&gt; throw refuse(path, &quot;a &quot; + value.getClass().getSimpleName());</span>
+        }
+<span class="fc" id="L77">    }</span>
+
+    private static void writeMap(Map&lt;?, ?&gt; map, String path, StringBuilder out) {
+<span class="fc" id="L80">        out.append('{');</span>
+<span class="fc" id="L81">        boolean first = true;</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">        for (Map.Entry&lt;?, ?&gt; entry : map.entrySet()) {</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">            if (!first) {</span>
+<span class="fc" id="L84">                out.append(',');</span>
+            }
+<span class="fc" id="L86">            first = false;</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">            if (!(entry.getKey() instanceof String key)) {</span>
+<span class="fc" id="L88">                throw refuse(path, &quot;a key of type &quot;</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">                    + (entry.getKey() == null ? &quot;null&quot; : entry.getKey().getClass().getSimpleName()));</span>
+            }
+<span class="fc" id="L91">            writeText(key, out);</span>
+<span class="fc" id="L92">            out.append(':');</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">            write(entry.getValue(), path.isEmpty() ? key : path + &quot;.&quot; + key, out);</span>
+<span class="fc" id="L94">        }</span>
+<span class="fc" id="L95">        out.append('}');</span>
+<span class="fc" id="L96">    }</span>
+
+    private static void writeList(Collection&lt;?&gt; items, String path, StringBuilder out) {
+<span class="fc" id="L99">        out.append('[');</span>
+<span class="fc" id="L100">        int index = 0;</span>
+<span class="fc bfc" id="L101" title="All 2 branches covered.">        for (Object item : items) {</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">            if (index &gt; 0) {</span>
+<span class="fc" id="L103">                out.append(',');</span>
+            }
+<span class="fc" id="L105">            write(item, path + &quot;[&quot; + index + &quot;]&quot;, out);</span>
+<span class="fc" id="L106">            index++;</span>
+<span class="fc" id="L107">        }</span>
+<span class="fc" id="L108">        out.append(']');</span>
+<span class="fc" id="L109">    }</span>
+
+    private static void writeText(String text, StringBuilder out) {
+<span class="fc" id="L112">        out.append('&quot;');</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">        for (int i = 0; i &lt; text.length(); i++) {</span>
+<span class="fc" id="L114">            char c = text.charAt(i);</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">            if (c == '&quot;') {</span>
+<span class="fc" id="L116">                out.append(&quot;\\\&quot;&quot;);</span>
+<span class="fc bfc" id="L117" title="All 2 branches covered.">            } else if (c == '\\') {</span>
+<span class="fc" id="L118">                out.append(&quot;\\\\&quot;);</span>
+<span class="fc bfc" id="L119" title="All 10 branches covered.">            } else if (c == '&lt;' || c == '&amp;' || c == 0x2028 || c == 0x2029 || c &lt; ' ') {</span>
+<span class="fc" id="L120">                out.append(&quot;\\u&quot;).append(&quot;%04X&quot;.formatted((int) c));</span>
+            } else {
+<span class="fc" id="L122">                out.append(c);</span>
+            }
+        }
+<span class="fc" id="L125">        out.append('&quot;');</span>
+<span class="fc" id="L126">    }</span>
+
+    private static MisuseException refuse(String path, String what) {
+<span class="fc bfc" id="L129" title="All 2 branches covered.">        String where = path.isEmpty() ? ROOT : path;</span>
+<span class="fc" id="L130">        return new MisuseException(where, &quot;structured data carries &quot; + what</span>
+            + &quot;; a contribution holds text, whole numbers, true or false, maps and lists&quot;);
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

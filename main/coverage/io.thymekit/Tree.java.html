@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Tree.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">thymekit</a> &gt; <a href="index.source.html" class="el_package">io.thymekit</a> &gt; <span class="el_source">Tree.java</span></div><h1>Tree.java</h1><pre class="source lang-java linenums">/* This Source Code Form is subject to the terms of the Mozilla Public
+   License, v. 2.0. If a copy of the MPL was not distributed with this
+   file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+package io.thymekit;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import org.jspecify.annotations.Nullable;
+
+/**
+ * A page is a tree of elements, and this is what can be learned by walking it.
+ *
+ * &lt;p&gt;Its own class for the reason {@link Outline} and {@link Anchors} are theirs: a question about a
+ * whole page is not a property of an element, and an element that answers one has been taught
+ * something it has no business knowing. The traversal lived on the currency for a while, which is how
+ * the outline came to live there too before it moved out; a third tenant made the pattern impossible
+ * to keep calling an exception.
+ *
+ * &lt;p&gt;Written once because it is the kind of code that goes subtly wrong in a copy: a walk that misses
+ * a branch finds nothing there and says nothing about it, which is the quietest way for a check to
+ * stop checking. Public for the reason the guards are — a check of your own over a page of yours is
+ * written the way the kit writes its own, and {@code Outline} and {@code Anchors} are the two worked
+ * examples.
+ */
+public final class Tree {
+
+    private Tree() {}
+
+    /**
+     * Every descriptor of a tree, whatever the tree is made of: elements, the maps they are, and
+     * collections of either, at any depth. The visitor is handed each descriptor and answers whether to
+     * go deeper into it — an illustration is a place one walker stops and another does not.
+     *
+     * &lt;p&gt;What is handed over is required, both of it: a walk over nothing finds nothing and says so to
+     * nobody, and a check written over that passes while checking nothing. A hole &lt;b&gt;inside&lt;/b&gt; a tree
+     * is a different matter and is walked past — a page is entitled to carry a list with a gap in it,
+     * and refusing to walk one would be this class deciding what a page may be made of.
+     *
+     * &lt;pre&gt;{@code
+     * Tree.walk(page, descriptor -&gt; {
+     *     if (myKit.isPicture(descriptor) &amp;&amp; descriptor.get(&quot;alt&quot;) == null) {
+     *         throw new MisuseException(&quot;myKit.picture&quot;, &quot;nothing said about it&quot;);
+     *     }
+     *     return true;
+     * });
+     * }&lt;/pre&gt;
+     */
+    public static void walk(Object node, java.util.function.Predicate&lt;Map&lt;?, ?&gt;&gt; visit) {
+<span class="fc" id="L52">        Element.required(node, &quot;Tree.walk(node)&quot;);</span>
+<span class="fc" id="L53">        Element.required(visit, &quot;Tree.walk(visit)&quot;);</span>
+<span class="fc" id="L54">        descend(node, visit);</span>
+<span class="fc" id="L55">    }</span>
+
+    /**
+     * The walk itself, guarded once at the door rather than at every node: what is asked here is asked
+     * of each map, each list and each element of a page, and a check that cannot fail after the first
+     * node is a check paid for at every one of them.
+     */
+    private static void descend(@Nullable Object node, java.util.function.Predicate&lt;Map&lt;?, ?&gt;&gt; visit) {
+<span class="fc bfc" id="L63" title="All 2 branches covered.">        if (node instanceof Element&lt;?&gt; element) {</span>
+<span class="fc" id="L64">            descend(element.asMap(), visit);</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">        } else if (node instanceof Map&lt;?, ?&gt; map) {</span>
+            // a descriptor is a map that names an adapter; the others a tree holds — the slots of an
+            // element, data of your own — are passed through rather than offered to the visitor
+<span class="fc bfc" id="L68" title="All 4 branches covered.">            if (!map.containsKey(&quot;fragment&quot;) || visit.test(map)) {</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">                for (Object value : map.values()) {</span>
+<span class="fc" id="L70">                    descend(value, visit);</span>
+<span class="fc" id="L71">                }</span>
+            }
+<span class="fc bfc" id="L73" title="All 2 branches covered.">        } else if (node instanceof Collection&lt;?&gt; items) {</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">            for (Object item : items) {</span>
+<span class="fc" id="L75">                descend(item, visit);</span>
+<span class="fc" id="L76">            }</span>
+        }
+<span class="fc" id="L78">    }</span>
+
+    /**
+     * Script dependencies of a tree — every {@code requires} in it, deduplicated by address in
+     * traversal order. The canvas collects them and renders each once, so a consumer never wires a
+     * script by hand.
+     */
+    public static List&lt;Element&lt;Element.Script&gt;&gt; assetsOf(Collection&lt;?&gt; roots) {
+<span class="fc" id="L86">        Element.required(roots, &quot;Tree.assetsOf(roots)&quot;);</span>
+<span class="fc" id="L87">        LinkedHashMap&lt;String, Element&lt;Element.Script&gt;&gt; found = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L88">        collectAssets(roots, found);</span>
+<span class="fc" id="L89">        return List.copyOf(found.values());</span>
+    }
+
+    /**
+     * What the elements of a tree say about themselves for machines, in the order the page carries
+     * them, each thing said once: a page that shows the same trail twice does not describe it twice,
+     * and a reader of the graph could not tell which copy was meant.
+     */
+    @SuppressWarnings(&quot;unchecked&quot;)
+    public static List&lt;Map&lt;String, Object&gt;&gt; describedBy(Collection&lt;?&gt; roots) {
+<span class="fc" id="L99">        Element.required(roots, &quot;Tree.describedBy(roots)&quot;);</span>
+<span class="fc" id="L100">        List&lt;Map&lt;String, Object&gt;&gt; found = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L101">        walk(roots, descriptor -&gt; {</span>
+<span class="fc bfc" id="L102" title="All 4 branches covered.">            if (descriptor.get(&quot;describes&quot;) instanceof Map&lt;?, ?&gt; node &amp;&amp; !found.contains(node)) {</span>
+<span class="fc" id="L103">                found.add((Map&lt;String, Object&gt;) node);</span>
+            }
+<span class="fc" id="L105">            return true;</span>
+        });
+<span class="fc" id="L107">        return List.copyOf(found);</span>
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    private static void collectAssets(Object node, Map&lt;String, Element&lt;Element.Script&gt;&gt; found) {
+<span class="fc" id="L112">        walk(node, descriptor -&gt; {</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">            if (descriptor.get(&quot;assets&quot;) instanceof List&lt;?&gt; declared) {</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">                for (Object a : declared) {</span>
+<span class="fc" id="L115">                    Map&lt;String, Object&gt; d = (Map&lt;String, Object&gt;) a;</span>
+<span class="fc" id="L116">                    String template = (String) d.get(&quot;template&quot;);</span>
+<span class="fc" id="L117">                    String fragment = (String) d.get(&quot;fragment&quot;);</span>
+<span class="fc" id="L118">                    found.putIfAbsent(template + &quot; :: &quot; + fragment, Element.script(template, fragment));</span>
+<span class="fc" id="L119">                }</span>
+            }
+<span class="fc" id="L121">            return true;</span>
+        });
+<span class="fc" id="L123">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

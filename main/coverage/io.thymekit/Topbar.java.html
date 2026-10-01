@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Topbar.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">thymekit</a> &gt; <a href="index.source.html" class="el_package">io.thymekit</a> &gt; <span class="el_source">Topbar.java</span></div><h1>Topbar.java</h1><pre class="source lang-java linenums">/* This Source Code Form is subject to the terms of the Mozilla Public
+   License, v. 2.0. If a copy of the MPL was not distributed with this
+   file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+package io.thymekit;
+
+import org.jspecify.annotations.Nullable;
+
+/**
+ * The bar above a page: a way back, and where you are.
+ *
+ * &lt;p&gt;An element rather than something a consumer assembles, and the justification is what it
+ * guarantees rather than what it saves. Assembled by hand, the way back lands inside the trail's
+ * landmark — and then a navigation announced as &quot;breadcrumb&quot; contains a step that is in neither the
+ * visible trail nor the graph. Here it cannot: the way back is printed before the trail is rendered,
+ * the bar itself is a plain wrapper rather than a second landmark, and the mark beside the words is
+ * marked as decoration so it is not read out.
+ *
+ * &lt;p&gt;The way back is keys rather than a slot. It has one host and one shape; widening keys into a slot
+ * later takes nothing away from anybody, while narrowing a slot into keys would.
+ *
+ * &lt;p&gt;The bar says nothing about itself for machines and does not stand between the trail and the page:
+ * what the trail contributes is collected through the bar exactly as it would be without it.
+ */
+public final class Topbar {
+
+    private static final String TEMPLATE = &quot;thymekit/topbar&quot;;
+
+    private Topbar() {}
+
+    /** The bar around a trail. The trail is what the bar is for, so there is no bar without one. */
+    public static Builder of(Composable&lt;Breadcrumbs&gt; crumbs) {
+<span class="fc" id="L32">        return new Builder(Element.settle(crumbs, &quot;Topbar.of(crumbs)&quot;));</span>
+    }
+
+    /**
+     * Where to go back to, and what to call it — one value rather than two fields. They are written
+     * together or not at all, and holding them apart made that a thing to remember: a branch asking
+     * whether the second arrived, which nothing could reach, and then an assertion in its place.
+     */
+<span class="fc" id="L40">    private record Back(String href, String label) {}</span>
+
+    /** The trail, and optionally the way back. */
+    public static final class Builder implements Composable&lt;Topbar&gt; {
+
+        private final Element&lt;Breadcrumbs&gt; crumbs;
+        private @Nullable Back back;
+
+<span class="fc" id="L48">        private Builder(Element&lt;Breadcrumbs&gt; crumbs) {</span>
+<span class="fc" id="L49">            this.crumbs = crumbs;</span>
+<span class="fc" id="L50">        }</span>
+
+        /**
+         * Where to go back to, and what to call it. The address is often taken from where the visitor
+         * came from, which makes it the least trusted string on the page — so it goes through the guard
+         * that refuses a scheme which executes instead of navigating.
+         *
+         * &lt;p&gt;The words matter as much: &quot;Back&quot; says nothing about where, and a name of the place —
+         * &quot;All ingredients&quot; — is what somebody hears who cannot see the trail beside it.
+         */
+        public Builder back(String href, String label) {
+<span class="fc" id="L61">            this.back = new Back(Element.requireNavigable(href, &quot;Topbar.back(href)&quot;),</span>
+<span class="fc" id="L62">                Element.requireText(label, &quot;Topbar.back(label)&quot;));</span>
+<span class="fc" id="L63">            return this;</span>
+        }
+
+        @Override
+        public Element&lt;Topbar&gt; build() {
+<span class="fc" id="L68">            Element.Descriptor&lt;Topbar&gt; bar = Element.Descriptor.&lt;Topbar&gt;of(TEMPLATE, &quot;topbarEl&quot;)</span>
+<span class="fc" id="L69">                .with(&quot;crumbs&quot;, crumbs.asMap());</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">            if (back != null) {</span>
+<span class="fc" id="L71">                bar.with(&quot;backHref&quot;, back.href()).with(&quot;backLabel&quot;, back.label());</span>
+            }
+<span class="fc" id="L73">            return bar.build();</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

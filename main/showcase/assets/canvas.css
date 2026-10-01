@@ -1,0 +1,30 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+   License, v. 2.0. If a copy of the MPL was not distributed with this
+   file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+/* =============================================================================
+   canvas — the page itself: the <main> landmark and the column the flow of elements
+   lives in. Not an element in the flow, which is why it lives in base/; but it is a
+   triple all the same — PageModel builds it, canvas.html renders it, this file is
+   the only place its column is described.
+
+   Classes: .page-canvas (the kit's own marker) + whatever pageClass(...) added
+
+   Handles:
+      --tk-page-width     max-width of the column       stock: none (full width)
+      --tk-page-padding   padding of the column         stock: 0
+      --tk-page-gap       space between the elements    stock: 0 (the browser's own)
+
+   The gap lives here because the space around an element is not the element's business:
+   an element does not know what follows it. The page does, and the page is this.
+   ============================================================================= */
+.page-canvas {
+    box-sizing: border-box;   /* both are handles of this box: a width of 760 with 24 of padding is 760
+                                 on the screen, not 808. A handle that lies is worse than no handle. */
+    max-width: var(--tk-page-width, none);
+    margin-inline: auto;
+    padding: var(--tk-page-padding, 0);
+}
+.page-canvas > * + * { margin-top: var(--tk-page-gap, 0); }
+
+/* Stock scope: the column is a plain block, as the browser would draw it. */
+.tk-defaults { --tk-page-width: initial; --tk-page-padding: initial; --tk-page-gap: initial; }

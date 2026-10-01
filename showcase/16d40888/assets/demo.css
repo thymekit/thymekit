@@ -1,0 +1,12 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+   License, v. 2.0. If a copy of the MPL was not distributed with this
+   file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+/* =============================================================================
+   thymekit/demo.css — theme of the showcase, served from the jar.
+
+   Empty on purpose. The showcase shows the kit's stock: plain HTML with correct
+   markup and element handles at their defaults. Everything branded is moved here
+   deliberately, one handle at a time, exactly the way a consumer themes the kit —
+   so that while this file is empty the page answers one question honestly: what do
+   you get out of the box?
+   ============================================================================= */

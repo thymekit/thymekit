@@ -1,0 +1,25 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+   License, v. 2.0. If a copy of the MPL was not distributed with this
+   file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+/* =============================================================================
+   section — the shared wrapper for page sections: the section itself, its heading
+   (a heading element; here only the rhythm around it) and a quiet empty state.
+   Not an element but shared structure.
+
+   Classes: .tk-related · .tk-related > .tk-heading · .detail-empty-hint
+
+   Handles:
+      --tk-section-empty-fg   --tk-section-link-fg
+   ============================================================================= */
+.tk-related { margin-bottom: 24px; }
+.tk-related > .tk-heading { margin: 0 0 10px; }
+.detail-empty-hint {
+    margin: 0;
+    color: var(--tk-section-empty-fg, inherit);
+    font-size: 13px;
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.detail-empty-hint a { color: var(--tk-section-link-fg, inherit); text-decoration: none; }
+.detail-empty-hint a:hover { text-decoration: underline; }
+
+.tk-defaults { --tk-section-empty-fg: initial; --tk-section-link-fg: initial; }

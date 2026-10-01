@@ -1,0 +1,45 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+   License, v. 2.0. If a copy of the MPL was not distributed with this
+   file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+/* =============================================================================
+   hero — the page hero: a heading group (<hgroup> with eyebrow, H1, subtitle and
+   meta lines, all of them elements), a divider, an optional status line and an
+   optional action row. The look of the heading and captions belongs to their own
+   handles; here live the structure of the hero and the rhythm of its group.
+
+   Classes: .page-hero · .page-hero-group · .page-hero-divider ·
+            .hero-status-line · .page-hero-actions
+
+   Handles:
+      --tk-hero-align            stock: left
+      --tk-hero-divider-width    stock: auto
+      --tk-hero-divider-color    stock: currentColor
+   ============================================================================= */
+
+.page-hero { text-align: var(--tk-hero-align, left); margin-bottom: 32px; position: relative; }
+
+/* Heading group: rhythm of the lines; their look belongs to the caption and heading elements. */
+.page-hero-group { margin: 0; }
+.page-hero-group > .tk-caption--eyebrow  { margin-bottom: 16px; }
+.page-hero-group > .tk-heading           { margin: 0; line-height: 1.2; }
+.page-hero-group > .tk-caption--subtitle { margin-top: 12px; }
+.page-hero-group > .tk-caption--meta     { margin-top: 4px; }
+
+/* Divider: stock is a full-width rule; a short branded dash is a matter of the width handle. */
+.page-hero-divider {
+    width: var(--tk-hero-divider-width, auto); height: 1px;
+    background: var(--tk-hero-divider-color, currentColor);
+    margin: 16px auto;
+    flex-shrink: 0;
+}
+
+/* Footer lines of the hero are part of the element contract: stock must carry all of them. */
+.hero-status-line { margin: 0 0 12px; }
+.page-hero-actions { margin-top: 16px; }   /* the row itself is the actions element */
+
+/* Stock scope: inside .tk-defaults the handles fall back to the library defaults. */
+.tk-defaults {
+    --tk-hero-align: initial;
+    --tk-hero-divider-width: initial;
+    --tk-hero-divider-color: initial;
+}

@@ -1,0 +1,30 @@
+[
+  {
+    "slot": "9eea12b1",
+    "sha": "9eea12b1",
+    "branch": "dependabot/gradle/gradle-wrapper-9.8.0",
+    "subject": "Bump gradle-wrapper from 9.7.1 to 9.8.0",
+    "date": "2026-10-01 04:48"
+  },
+  {
+    "slot": "c86921a8",
+    "sha": "c86921a8",
+    "branch": "dependabot/gradle/gradle-wrapper-9.8.0",
+    "subject": "Bump gradle-wrapper from 9.7.1 to 9.8.0",
+    "date": "2026-10-01 04:42"
+  },
+  {
+    "slot": "c1eacbd6",
+    "sha": "c1eacbd6",
+    "branch": "dependabot/gradle/com.tngtech.archunit-archunit-junit5-1.5.1",
+    "subject": "Bump com.tngtech.archunit:archunit-junit5 from 1.5.0 to 1.5.1",
+    "date": "2026-10-01 04:42"
+  },
+  {
+    "slot": "main",
+    "sha": "9871edf7",
+    "branch": "main",
+    "subject": "Merge pull request #21 from thymekit/feature/readme",
+    "date": "2026-08-24 16:10"
+  }
+]

@@ -1,0 +1,70 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+   License, v. 2.0. If a copy of the MPL was not distributed with this
+   file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+/* =============================================================================
+   hero — the page hero: a heading group (<hgroup> with eyebrow, H1, subtitle and
+   meta lines, all of them elements), a divider, an optional status line and an
+   optional action row. The look of the heading and captions belongs to their own
+   handles; here live the structure of the hero and the rhythm of its group.
+
+   Classes: .page-hero · .page-hero-group · .page-hero-status · .page-hero-actions
+
+   Handles:
+      --tk-hero-align            stock: left
+      --tk-hero-divider-width    stock: auto
+      --tk-hero-divider-color    stock: currentColor
+
+   The hero hosts the title of the page, so it may dress it — that is the one heading
+   a page has, and a display face for it is a decision about the hero, not about every
+   heading on the site. It dresses it only from these handles; where a theme is silent
+   the site's own scale comes through untouched:
+      --tk-hero-heading-font     --tk-hero-heading-weight  --tk-hero-heading-color
+      --tk-hero-heading-tracking --tk-hero-heading-transform
+
+   Size is not among them on purpose: the title's size is already the site's own
+   --tk-heading-size-1, since the page has exactly one H1 and the canvas keeps it so.
+   ============================================================================= */
+
+/* The space below the hero belongs to the page, not to the hero: an element does not decide what
+   follows it. */
+.page-hero { text-align: var(--tk-hero-align, left); }
+
+/* Heading group: rhythm of the lines; their look belongs to the caption and heading elements. */
+.page-hero-group { margin: 0; }
+
+/* The hero dressing its title: every value comes from a hero handle, and falls through to
+   the site scale when the theme did not set one. No literal of the library's own. */
+.page-hero-group > .tk-heading {
+    margin: 0;
+    --tk-heading-host-font:      var(--tk-hero-heading-font,      var(--tk-heading-font, inherit));
+    --tk-heading-host-weight:    var(--tk-hero-heading-weight,    var(--tk-heading-weight, bold));
+    --tk-heading-host-color:     var(--tk-hero-heading-color,     var(--tk-heading-color, inherit));
+    --tk-heading-host-tracking:  var(--tk-hero-heading-tracking,  var(--tk-heading-tracking, normal));
+    --tk-heading-host-transform: var(--tk-hero-heading-transform, var(--tk-heading-transform, none));
+}
+.page-hero-group > .tk-caption--eyebrow  { margin-bottom: 16px; }
+.page-hero-group > .tk-caption--subtitle { margin-top: 12px; }
+.page-hero-group > .tk-caption--meta     { margin-top: 4px; }
+
+/* The rule under the heading group: drawn, not marked up. Stock is a full-width line; a short branded
+   dash is a matter of the width handle. */
+.page-hero-group::after {
+    content: "";
+    display: block;
+    width: var(--tk-hero-divider-width, auto); height: 1px;
+    background: var(--tk-hero-divider-color, currentColor);
+    margin: 16px auto;
+}
+
+/* Footer lines of the hero are part of the element contract: stock must carry all of them. */
+.page-hero-status { margin: 0 0 12px; }
+.page-hero-actions { margin-top: 16px; }   /* the row itself is the actions element */
+
+/* Stock scope: inside .tk-defaults the handles fall back to the library defaults. */
+.tk-defaults {
+    --tk-hero-align: initial;
+    --tk-hero-divider-width: initial;
+    --tk-hero-divider-color: initial;
+    --tk-hero-heading-font: initial; --tk-hero-heading-weight: initial;
+    --tk-hero-heading-color: initial; --tk-hero-heading-tracking: initial; --tk-hero-heading-transform: initial;
+}

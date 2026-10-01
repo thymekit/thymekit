@@ -1,0 +1,64 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+   License, v. 2.0. If a copy of the MPL was not distributed with this
+   file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+/* =============================================================================
+   heading — h1..h6, owner of the heading concept. Ships with the browser's own look;
+   the handles are what any theme tunes: size per level, family, weight, colour, and
+   the two that make a heading branded — tracking and case. Rhythm around a heading
+   belongs to whoever places it: the hero, a section, the consumer's theme.
+
+   The level is the look: a theme sets the six sizes once and every heading on the site
+   follows. There is no separate design for "the H1 in the hero" — a page has one H1.
+
+   Classes: .tk-heading · .tk-heading--1 … --6 · .tk-heading > a · .tk-sr-only
+
+   Handles of the site — what a theme sets once, in :root:
+      --tk-heading-size-1  --tk-heading-size-2  --tk-heading-size-3
+      --tk-heading-size-4  --tk-heading-size-5  --tk-heading-size-6
+      --tk-heading-font    --tk-heading-weight  --tk-heading-color
+      --tk-heading-tracking (letter-spacing, stock: normal)
+      --tk-heading-transform (text-transform, stock: none)
+      --tk-heading-link-color --tk-heading-link-decoration (a heading that is a link)
+
+   Handles of the host — what an element that hosts headings sets in its own CSS,
+   and only from a value its own handle was given (see README, "Theming"):
+      --tk-heading-host-size      (any level inside that host)
+      --tk-heading-host-font      --tk-heading-host-weight  --tk-heading-host-color
+      --tk-heading-host-tracking  --tk-heading-host-transform
+
+   The order is fixed here, once: the host wins over the site, the site over the
+   browser. A host never invents a value of its own — silence falls through to the
+   site, so a theme that said nothing about heroes still dresses the heading in it.
+   ============================================================================= */
+.tk-heading {
+    font-family:    var(--tk-heading-host-font,      var(--tk-heading-font, inherit));
+    font-weight:    var(--tk-heading-host-weight,    var(--tk-heading-weight, bold));
+    color:          var(--tk-heading-host-color,     var(--tk-heading-color, inherit));
+    letter-spacing: var(--tk-heading-host-tracking,  var(--tk-heading-tracking, normal));
+    text-transform: var(--tk-heading-host-transform, var(--tk-heading-transform, none));
+}
+/* A heading that is a link is a link: the browser's underline stays unless a theme says otherwise.
+   The colour is the heading's, which is the one thing a heading-link may take from its heading. */
+.tk-heading > a {
+    color: var(--tk-heading-link-color, inherit);
+    text-decoration: var(--tk-heading-link-decoration, underline);
+}
+.tk-heading--1 { font-size: var(--tk-heading-host-size, var(--tk-heading-size-1, 2em));    }
+.tk-heading--2 { font-size: var(--tk-heading-host-size, var(--tk-heading-size-2, 1.5em));  }
+.tk-heading--3 { font-size: var(--tk-heading-host-size, var(--tk-heading-size-3, 1.17em)); }
+.tk-heading--4 { font-size: var(--tk-heading-host-size, var(--tk-heading-size-4, 1em));    }
+.tk-heading--5 { font-size: var(--tk-heading-host-size, var(--tk-heading-size-5, .83em));  }
+.tk-heading--6 { font-size: var(--tk-heading-host-size, var(--tk-heading-size-6, .67em));  }
+.tk-sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden;
+              clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0; }
+
+/* Stock scope: element handles reset, so the element renders as the browser would. */
+.tk-defaults {
+    --tk-heading-size-1: initial; --tk-heading-size-2: initial; --tk-heading-size-3: initial;
+    --tk-heading-size-4: initial; --tk-heading-size-5: initial; --tk-heading-size-6: initial;
+    --tk-heading-font: initial; --tk-heading-weight: initial; --tk-heading-color: initial;
+    --tk-heading-tracking: initial; --tk-heading-transform: initial;
+    --tk-heading-host-size: initial; --tk-heading-host-font: initial; --tk-heading-host-weight: initial;
+    --tk-heading-host-color: initial; --tk-heading-host-tracking: initial; --tk-heading-host-transform: initial;
+    --tk-heading-link-color: initial; --tk-heading-link-decoration: initial;
+}

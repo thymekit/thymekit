@@ -1,0 +1,135 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+   License, v. 2.0. If a copy of the MPL was not distributed with this
+   file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+/* =============================================================================
+   md-section — a markdown block: the section heading plus sanitised output and its
+   typography. The section wrapper and the empty state live in base/section.css.
+
+   Classes: .rich-content
+
+   Handles:
+      --tk-md-fg        --tk-md-max-width   --tk-md-accent   --tk-md-strong-fg
+      --tk-md-radius    --tk-md-muted       --tk-md-rule
+
+   Content headings reuse the heading handles:
+      --tk-heading-size-1  --tk-heading-size-2  --tk-heading-size-3
+      --tk-heading-size-4  --tk-heading-size-5  --tk-heading-size-6
+      --tk-heading-font    --tk-heading-weight  --tk-heading-color
+   ============================================================================= */
+
+.rich-content {
+    font-size: 13px;
+    line-height: 1.8;
+    color: var(--tk-md-fg, inherit);
+    max-width: var(--tk-md-max-width, none);   /* stock spans the full width; a narrow column is a handle */
+    margin: 0 auto;
+}
+.rich-content > *:first-child { margin-top: 0; }
+.rich-content > *:last-child  { margin-bottom: 0; }
+.rich-content p {
+    margin: 0 0 1em;
+}
+/* Content headings share the typography of the heading element — the same handles, browser stock;
+   a theme may scope its own values to .rich-content, since content is not page structure. */
+.rich-content h1,
+.rich-content h2,
+.rich-content h3,
+.rich-content h4,
+.rich-content h5,
+.rich-content h6 {
+    font-family: var(--tk-heading-font, inherit);
+    font-weight: var(--tk-heading-weight, bold);
+    color: var(--tk-heading-color, inherit);
+    line-height: 1.25;
+    margin: 1.2em 0 .5em;
+}
+.rich-content h1 { font-size: var(--tk-heading-size-1, 2em); }
+.rich-content h2 { font-size: var(--tk-heading-size-2, 1.5em); }
+.rich-content h3 { font-size: var(--tk-heading-size-3, 1.17em); }
+.rich-content h4 { font-size: var(--tk-heading-size-4, 1em); }
+.rich-content h5 { font-size: var(--tk-heading-size-5, .83em); }
+.rich-content h6 { font-size: var(--tk-heading-size-6, .67em); }
+.rich-content ul,
+.rich-content ol {
+    margin: 0 0 1em;
+    padding-left: 1.5em;
+}
+.rich-content li { margin-bottom: 0.3em; }
+.rich-content a {
+    color: var(--tk-md-accent, inherit);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+}
+.rich-content a:hover { text-decoration-thickness: 2px; }
+.rich-content strong { font-weight: 600; color: var(--tk-md-strong-fg, inherit); }
+.rich-content em { font-style: italic; }
+.rich-content code {
+    font-family: 'Menlo', 'Monaco', monospace;
+    font-size: 0.92em;
+    background: rgba(0, 0, 0, 0.05);
+    padding: 0.15em 0.4em;
+    border-radius: 3px;
+}
+.rich-content pre {
+    background: rgba(0, 0, 0, 0.05);
+    padding: 12px 14px;
+    border-radius: var(--tk-md-radius, 0);
+    overflow-x: auto;
+    margin: 0 0 1em;
+    font-family: 'Menlo', 'Monaco', monospace;
+    font-size: 12px;
+    line-height: 1.5;
+}
+.rich-content pre code { background: none; padding: 0; }
+.rich-content blockquote {
+    border-left: 3px solid var(--tk-md-accent, inherit);
+    margin: 0 0 1em;
+    padding: 0.2em 0 0.2em 14px;
+    color: var(--tk-md-muted, inherit);
+    font-style: italic;
+}
+.rich-content hr {
+    border: 0;
+    border-top: 1px solid var(--tk-md-rule, currentColor);
+    margin: 1.6em 0;
+}
+.rich-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0 0 1em;
+    font-size: 13px;
+}
+.rich-content th,
+.rich-content td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--tk-md-rule, currentColor);
+    text-align: left;
+}
+.rich-content th {
+    font-weight: 500;
+    color: var(--tk-md-accent, inherit);
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+.rich-content img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 1em 0;
+    border-radius: var(--tk-md-radius, 0);
+}
+
+/* Stock scope: inside .tk-defaults the handles are reset to the library fallbacks.
+   Add a handle to the element — reset it here as well. */
+.tk-defaults {
+    --tk-md-radius: initial;
+    --tk-md-max-width: initial;
+    --tk-md-fg: initial;
+    --tk-md-strong-fg: initial;
+    --tk-md-accent: initial;
+    --tk-md-muted: initial;
+    --tk-md-rule: initial;
+    --tk-heading-font: initial;
+}

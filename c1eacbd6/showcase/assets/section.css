@@ -1,0 +1,18 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+   License, v. 2.0. If a copy of the MPL was not distributed with this
+   file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+/* =============================================================================
+   section — a titled part of a page: the section itself and the rhythm around its
+   heading. What goes under the heading is a slot, so it is whatever is an element.
+
+   Classes: .tk-section · .tk-section > .tk-heading
+
+   Handles:
+      --tk-section-heading-gap  (between the heading and what stands under it)
+   ============================================================================= */
+/* Between the parts of the section — its own business. Around it — the page's, so no outer margin. */
+.tk-section > .tk-heading { margin: 0 0 var(--tk-section-heading-gap, 10px); }
+
+/* Stock scope: inside .tk-defaults the handles are reset to the library fallbacks.
+   Add a handle to the element — reset it here as well. */
+.tk-defaults { --tk-section-heading-gap: initial; }
