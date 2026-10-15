@@ -1,0 +1,36 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+   License, v. 2.0. If a copy of the MPL was not distributed with this
+   file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+/* =============================================================================
+   heading — h1..h6, owner of the heading concept. Ships with the browser's own look;
+   the handles are what any theme tunes: size per level, family, weight, colour.
+   Branding (case, tracking, rhythm) belongs to the consumer's theme, outside the
+   stock scope (`:not(.tk-defaults *)`).
+
+   Classes: .tk-heading · .tk-heading--1 … --6 · .tk-heading > a · .tk-sr-only
+
+   Handles (stock is the browser's own):
+      --tk-heading-size-1  --tk-heading-size-2  --tk-heading-size-3
+      --tk-heading-size-4  --tk-heading-size-5  --tk-heading-size-6
+      --tk-heading-font    --tk-heading-weight  --tk-heading-color
+   ============================================================================= */
+.tk-heading {
+    font-family: var(--tk-heading-font, inherit);
+    font-weight: var(--tk-heading-weight, bold);
+    color:       var(--tk-heading-color, inherit);
+}
+.tk-heading > a { color: inherit; text-decoration: none; }
+.tk-heading--1 { font-size: var(--tk-heading-size-1, 2em);    }
+.tk-heading--2 { font-size: var(--tk-heading-size-2, 1.5em);  }
+.tk-heading--3 { font-size: var(--tk-heading-size-3, 1.17em); }
+.tk-heading--4 { font-size: var(--tk-heading-size-4, 1em);    }
+.tk-heading--5 { font-size: var(--tk-heading-size-5, .83em);  }
+.tk-heading--6 { font-size: var(--tk-heading-size-6, .67em);  }
+.tk-sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* Stock scope: element handles reset, so the element renders as the browser would. */
+.tk-defaults {
+    --tk-heading-size-1: initial; --tk-heading-size-2: initial; --tk-heading-size-3: initial;
+    --tk-heading-size-4: initial; --tk-heading-size-5: initial; --tk-heading-size-6: initial;
+    --tk-heading-font: initial; --tk-heading-weight: initial; --tk-heading-color: initial;
+}
