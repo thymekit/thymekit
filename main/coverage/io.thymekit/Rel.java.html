@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Rel.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">thymekit</a> &gt; <a href="index.source.html" class="el_package">io.thymekit</a> &gt; <span class="el_source">Rel.java</span></div><h1>Rel.java</h1><pre class="source lang-java linenums">/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+package io.thymekit;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+/**
+ * What a link says about itself, and what every element that links does with it.
+ *
+ * &lt;p&gt;Five values, because these are the ones a search engine acts on and a browser protects with;
+ * anything rarer is added when something actually needs it, not in advance.
+ *
+ * &lt;p&gt;The vocabulary comes with its policy, and both are public. An element of yours links exactly as the
+ * kit's own does:
+ *
+ * &lt;pre&gt;{@code
+ * public Builder rel(Rel... values) {          // guarded, ordered, said once
+ *     this.rel.addAll(Rel.of(values));
+ *     return this;
+ * }
+ *
+ * public Element&lt;Card&gt; build() {
+ *     Set&lt;Rel&gt; values = newTab ? Rel.forNewTab(rel) : rel;      // noopener cannot be forgotten
+ *     return b.with(&quot;rel&quot;, Rel.tokens(values)).build();
+ * }
+ * }&lt;/pre&gt;
+ *
+ * &lt;p&gt;That the policy is public is the point. A kit that handed out the five words and kept the guards,
+ * the order and the one safety rule for its own two elements would be telling every consumer to write
+ * the rule again — and the second spelling of a rule is where the two of them start to differ.
+ *
+ * &lt;p&gt;{@link #of} takes what an option was given, {@link #forNewTab} is asked at build time by whoever
+ * opens a tab, and {@link #tokens} writes the attribute. What a link may not say — {@code rel} on
+ * something that is not a link at all — belongs to the element, which alone knows whether it made one.
+ */
+<span class="fc" id="L42">public enum Rel {</span>
+
+    /** Do not pass any ranking to this address — a link the page does not vouch for. */
+<span class="fc" id="L45">    NOFOLLOW(&quot;nofollow&quot;),</span>
+
+    /** A paid or sponsored placement. */
+<span class="fc" id="L48">    SPONSORED(&quot;sponsored&quot;),</span>
+
+    /** Written by a visitor: a comment, a review, anything user-generated. */
+<span class="fc" id="L51">    UGC(&quot;ugc&quot;),</span>
+
+    /** The opened page gets no handle on the one that opened it. Always present with a new tab. */
+<span class="fc" id="L54">    NOOPENER(&quot;noopener&quot;),</span>
+
+    /** The opened page is not told where the visitor came from. */
+<span class="fc" id="L57">    NOREFERRER(&quot;noreferrer&quot;);</span>
+
+    private final String token;
+
+<span class="fc" id="L61">    Rel(String token) {</span>
+<span class="fc" id="L62">        this.token = token;</span>
+<span class="fc" id="L63">    }</span>
+
+    /** The token as it is written in the attribute. */
+    public String token() {
+<span class="fc" id="L67">        return token;</span>
+    }
+
+    /**
+     * What an element's {@code rel(Rel...)} option was given, made into a value: the order the author
+     * wrote, each thing said once, and nothing that can be changed afterwards. Asking for no values is
+     * refused — an option called with nothing to say is a line that meant something and lost it.
+     */
+    public static Set&lt;Rel&gt; of(Rel... values) {
+<span class="fc" id="L76">        Element.required(values, &quot;Rel.of(values)&quot;);</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">        if (values.length == 0) {</span>
+<span class="fc" id="L78">            throw new MisuseException(&quot;Rel.of(values)&quot;,</span>
+                &quot;no value was named — name at least one, or do not ask for one at all&quot;);
+        }
+<span class="fc" id="L81">        return Collections.unmodifiableSet(guarded(Arrays.asList(values), &quot;Rel.of(values) — one of them&quot;));</span>
+    }
+
+    /**
+     * The values a link opening a new tab says about itself: whatever it already said, plus
+     * {@code noopener}. Without it the opened page can reach back into this one through
+     * {@code window.opener}, and remembering that by hand at every link is exactly the kind of vigilance
+     * the kit exists to remove — from a consumer's element as much as from its own.
+     *
+     * &lt;p&gt;Asked at build time rather than as the options are said, so the order of the calls cannot
+     * change the result, and asking twice says the same thing as asking once.
+     */
+    public static Set&lt;Rel&gt; forNewTab(Collection&lt;Rel&gt; values) {
+<span class="fc" id="L94">        Element.required(values, &quot;Rel.forNewTab(values)&quot;);</span>
+<span class="fc" id="L95">        Set&lt;Rel&gt; withSafety = guarded(values, &quot;Rel.forNewTab(values) — one of them&quot;);</span>
+<span class="fc" id="L96">        withSafety.add(NOOPENER);</span>
+<span class="fc" id="L97">        return Collections.unmodifiableSet(withSafety);</span>
+    }
+
+    /**
+     * The attribute value: the tokens in the order given, one space between them. Nothing to say gives
+     * nothing at all, so an element can ask without checking first — and then print the attribute only
+     * when what comes back is not empty.
+     */
+    public static String tokens(Collection&lt;Rel&gt; values) {
+<span class="fc" id="L106">        Element.required(values, &quot;Rel.tokens(values)&quot;);</span>
+<span class="fc" id="L107">        return values.stream()</span>
+<span class="fc" id="L108">            .map(value -&gt; Element.required(value, &quot;Rel.tokens(values) — one of them&quot;).token())</span>
+<span class="fc" id="L109">            .collect(Collectors.joining(&quot; &quot;));</span>
+    }
+
+    /**
+     * The values as a set, in the order given, each said once — and each of them refused if it is not
+     * there. Guarding the members and not only the collection is the point: a hole among them would be
+     * dereferenced later, and what reaches the caller then is the machine's failure rather than a
+     * refusal of ours. Both entrances need that, and one spelling of it is how the two stay agreed.
+     */
+    private static Set&lt;Rel&gt; guarded(Collection&lt;Rel&gt; values, String each) {
+<span class="fc" id="L119">        Set&lt;Rel&gt; unique = new LinkedHashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">        for (Rel value : values) {</span>
+<span class="fc" id="L121">            unique.add(Element.required(value, each));</span>
+<span class="fc" id="L122">        }</span>
+<span class="fc" id="L123">        return unique;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

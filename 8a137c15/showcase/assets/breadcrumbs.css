@@ -1,0 +1,78 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+   License, v. 2.0. If a copy of the MPL was not distributed with this
+   file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+/* =============================================================================
+   breadcrumbs — the trail of a page: a row of steps, and the page you are on.
+
+   Classes: .tk-breadcrumbs · .tk-breadcrumbs-list · .tk-breadcrumbs-step ·
+            .tk-breadcrumbs-current
+
+   Handles:
+      --tk-breadcrumbs-gap             (between a step and its separator)
+      --tk-breadcrumbs-size
+      --tk-breadcrumbs-separator       (what stands between two steps)
+      --tk-breadcrumbs-separator-color
+      --tk-breadcrumbs-separator-size
+      --tk-breadcrumbs-link-color
+      --tk-breadcrumbs-link-hover-color
+      --tk-breadcrumbs-link-decoration
+      --tk-breadcrumbs-current-color
+      --tk-breadcrumbs-current-font
+      --tk-breadcrumbs-current-style
+      --tk-breadcrumbs-current-size
+      --tk-breadcrumbs-current-tracking
+   ============================================================================= */
+/* Anatomy: the steps sit on one line and wrap when the line runs out. Nothing about the space around
+   the trail — whoever places it decides that. */
+.tk-breadcrumbs { font-size: var(--tk-breadcrumbs-size, inherit); overflow-wrap: anywhere; }
+
+.tk-breadcrumbs-list {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--tk-breadcrumbs-gap, 8px);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+/* The separator is drawn, not written: text here would be announced between every two steps. */
+.tk-breadcrumbs-step + .tk-breadcrumbs-step::before {
+    content: var(--tk-breadcrumbs-separator, "/");
+    color: var(--tk-breadcrumbs-separator-color, inherit);
+    font-size: var(--tk-breadcrumbs-separator-size, inherit);
+    margin-right: var(--tk-breadcrumbs-gap, 8px);
+}
+
+.tk-breadcrumbs-step > a {
+    color: var(--tk-breadcrumbs-link-color, inherit);
+    text-decoration: var(--tk-breadcrumbs-link-decoration, underline);
+}
+
+.tk-breadcrumbs-step > a:hover { color: var(--tk-breadcrumbs-link-hover-color, inherit); }
+
+.tk-breadcrumbs-current {
+    color: var(--tk-breadcrumbs-current-color, inherit);
+    font-family: var(--tk-breadcrumbs-current-font, inherit);
+    font-style: var(--tk-breadcrumbs-current-style, inherit);
+    font-size: var(--tk-breadcrumbs-current-size, inherit);
+    letter-spacing: var(--tk-breadcrumbs-current-tracking, inherit);
+}
+
+/* Stock scope: inside .tk-defaults the handles are reset to the library fallbacks.
+   Add a handle to the element — reset it here as well. */
+.tk-defaults {
+    --tk-breadcrumbs-gap: initial;
+    --tk-breadcrumbs-size: initial;
+    --tk-breadcrumbs-separator: initial;
+    --tk-breadcrumbs-separator-color: initial;
+    --tk-breadcrumbs-separator-size: initial;
+    --tk-breadcrumbs-link-color: initial;
+    --tk-breadcrumbs-link-hover-color: initial;
+    --tk-breadcrumbs-link-decoration: initial;
+    --tk-breadcrumbs-current-color: initial;
+    --tk-breadcrumbs-current-font: initial;
+    --tk-breadcrumbs-current-style: initial;
+    --tk-breadcrumbs-current-size: initial;
+    --tk-breadcrumbs-current-tracking: initial;
+}
