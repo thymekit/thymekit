@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>WhitespaceHandler.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">thymekit</a> &gt; <a href="index.source.html" class="el_package">io.thymekit</a> &gt; <span class="el_source">WhitespaceHandler.java</span></div><h1>WhitespaceHandler.java</h1><pre class="source lang-java linenums">/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+package io.thymekit;
+
+import java.util.Locale;
+import java.util.Set;
+import org.thymeleaf.engine.AbstractTemplateHandler;
+import org.thymeleaf.model.AttributeValueQuotes;
+import org.thymeleaf.model.IAttribute;
+import org.thymeleaf.model.ICloseElementTag;
+import org.thymeleaf.model.IComment;
+import org.thymeleaf.model.IOpenElementTag;
+import org.thymeleaf.model.IProcessableElementTag;
+import org.thymeleaf.model.IStandaloneElementTag;
+import org.thymeleaf.model.IText;
+
+/**
+ * The stream handler behind {@link TidyDialect}: a whitespace node (or a run of them) becomes one
+ * newline indented by the current nesting depth. Inside {@code pre/textarea/script/style} nothing is
+ * touched.
+ *
+ * &lt;p&gt;Newlines inside a tag — attributes written across several lines in a template — are removed by
+ * rebuilding the tag, since whitespace between attributes is insignificant. The rebuild only happens
+ * when it is provably safe: every attribute value in double quotes, no minimised attributes. And only
+ * when the spanning can be seen at all — an attribute a processor made carries no place in any file, so
+ * a tag built entirely of those is left as it stands rather than rebuilt on a guess.
+ *
+ * &lt;p&gt;What the handler sees, checked by rendering rather than assumed: Thymeleaf builds one of these for
+ * one render and gives it the whole of it, nested templates included — a {@code &lt;pre&gt;} in one file whose
+ * content comes from another keeps that content untouched, which only happens if the same handler is
+ * still counting. Nothing is carried between renders because there is nothing to carry it in: the
+ * counters are ordinary fields of an object that is used once and dropped, so a render that dies on an
+ * expression error leaves nothing behind by construction rather than by cleanup. Both facts are pinned
+ * in {@code WhitespaceHandlerTest}, being promises this class makes to a page.
+ *
+ * &lt;p&gt;The class is public because Thymeleaf builds the post-processor by class name, not because a
+ * consumer has any use for it.
+ */
+<span class="fc" id="L40">public final class WhitespaceHandler extends AbstractTemplateHandler {</span>
+
+<span class="fc" id="L42">    private static final Set&lt;String&gt; PRESERVE = Set.of(&quot;pre&quot;, &quot;textarea&quot;, &quot;script&quot;, &quot;style&quot;);</span>
+
+    /** Deeper than this the indent stops growing: a page nested that far needs no wider margin. */
+    private static final int MAX_INDENT_DEPTH = 24;
+
+    /** How many preserved zones are open, how deep the nesting is, and whether a newline is held. */
+    private int preserveDepth;
+    private int depth;
+    private boolean pending;
+
+    @Override
+    public void handleOpenElement(IOpenElementTag tag) {
+<span class="fc" id="L54">        flush(depth);</span>
+<span class="fc bfc" id="L55" title="All 2 branches covered.">        if (isPreserved(tag.getElementCompleteName())) {</span>
+<span class="fc" id="L56">            preserveDepth++;</span>
+        }
+<span class="fc" id="L58">        depth++;</span>
+<span class="fc" id="L59">        super.handleOpenElement(normalize(tag));</span>
+<span class="fc" id="L60">    }</span>
+
+    @Override
+    public void handleCloseElement(ICloseElementTag tag) {
+<span class="fc" id="L64">        depth--;</span>
+<span class="fc" id="L65">        flush(depth);</span>
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        if (isPreserved(tag.getElementCompleteName())) {</span>
+<span class="fc" id="L67">            preserveDepth--;</span>
+        }
+<span class="fc" id="L69">        super.handleCloseElement(tag);</span>
+<span class="fc" id="L70">    }</span>
+
+    @Override
+    public void handleStandaloneElement(IStandaloneElementTag tag) {
+<span class="fc" id="L74">        flush(depth);</span>
+<span class="fc" id="L75">        super.handleStandaloneElement(normalize(tag));</span>
+<span class="fc" id="L76">    }</span>
+
+    @Override
+    public void handleComment(IComment comment) {
+<span class="fc" id="L80">        flush(depth);</span>
+<span class="fc" id="L81">        super.handleComment(comment);</span>
+<span class="fc" id="L82">    }</span>
+
+    @Override
+    public void handleText(IText text) {
+<span class="fc bfc" id="L86" title="All 4 branches covered.">        if (preserveDepth == 0 &amp;&amp; isFormattingWhitespace(text)) {</span>
+<span class="fc" id="L87">            pending = true;        // held: the indent depends on what comes next, an open or a close</span>
+<span class="fc" id="L88">            return;</span>
+        }
+<span class="fc" id="L90">        flush(depth);</span>
+<span class="fc" id="L91">        super.handleText(text);</span>
+<span class="fc" id="L92">    }</span>
+
+    /** A tag whose attributes span lines becomes the same tag on one line, when that is safe. */
+    private IOpenElementTag normalize(IOpenElementTag tag) {
+<span class="fc bfc" id="L96" title="All 4 branches covered.">        return spansLines(tag) &amp;&amp; rebuildable(tag)</span>
+<span class="fc" id="L97">            ? getContext().getModelFactory().createOpenElementTag(</span>
+<span class="fc" id="L98">                tag.getElementCompleteName(), tag.getAttributeMap(), AttributeValueQuotes.DOUBLE, tag.isSynthetic())</span>
+<span class="fc" id="L99">            : tag;</span>
+    }
+
+    private IStandaloneElementTag normalize(IStandaloneElementTag tag) {
+<span class="fc bfc" id="L103" title="All 4 branches covered.">        return spansLines(tag) &amp;&amp; rebuildable(tag)</span>
+<span class="fc" id="L104">            ? getContext().getModelFactory().createStandaloneElementTag(</span>
+<span class="fc" id="L105">                tag.getElementCompleteName(), tag.getAttributeMap(), AttributeValueQuotes.DOUBLE,</span>
+<span class="fc" id="L106">                tag.isSynthetic(), tag.isMinimized())</span>
+<span class="fc" id="L107">            : tag;</span>
+    }
+
+    /** An attribute placed on another line than the tag means the tag spans lines in the template. */
+    private static boolean spansLines(IProcessableElementTag tag) {
+<span class="fc bfc" id="L112" title="All 2 branches covered.">        for (IAttribute a : tag.getAllAttributes()) {</span>
+<span class="fc bfc" id="L113" title="All 4 branches covered.">            if (a.hasLocation() &amp;&amp; a.getLine() != tag.getLine()) {</span>
+<span class="fc" id="L114">                return true;</span>
+            }
+        }
+<span class="fc" id="L117">        return false;</span>
+    }
+
+    /** Rebuilding must not change meaning: minimised attributes and other quoting are left alone. */
+    private static boolean rebuildable(IProcessableElementTag tag) {
+<span class="fc bfc" id="L122" title="All 2 branches covered.">        for (IAttribute a : tag.getAllAttributes()) {</span>
+<span class="fc bfc" id="L123" title="All 4 branches covered.">            if (a.getValue() == null || a.getValueQuotes() != AttributeValueQuotes.DOUBLE) {</span>
+<span class="fc" id="L124">                return false;</span>
+            }
+        }
+<span class="fc" id="L127">        return true;</span>
+    }
+
+    /** Emits the held newline, indented to {@code depth}. */
+    private void flush(int depth) {
+<span class="fc bfc" id="L132" title="All 2 branches covered.">        if (!pending) {</span>
+<span class="fc" id="L133">            return;</span>
+        }
+<span class="fc" id="L135">        pending = false;</span>
+<span class="fc" id="L136">        super.handleText(getContext().getModelFactory().createText(indent(depth)));</span>
+<span class="fc" id="L137">    }</span>
+
+    private static String indent(int depth) {
+<span class="fc" id="L140">        return &quot;\n&quot; + &quot; &quot;.repeat(Math.min(depth, MAX_INDENT_DEPTH) * TidyDialect.INDENT);</span>
+    }
+
+    private static boolean isPreserved(String name) {
+<span class="fc" id="L144">        return PRESERVE.contains(name.toLowerCase(Locale.ROOT));</span>
+    }
+
+    /** Whitespace-only and containing a newline: template indentation rather than significant space. */
+    private static boolean isFormattingWhitespace(IText text) {
+<span class="fc" id="L149">        boolean newline = false;</span>
+<span class="fc bfc" id="L150" title="All 2 branches covered.">        for (int i = 0; i &lt; text.length(); i++) {</span>
+<span class="fc" id="L151">            char c = text.charAt(i);</span>
+<span class="fc bfc" id="L152" title="All 2 branches covered.">            if (c == '\n') {</span>
+<span class="fc" id="L153">                newline = true;</span>
+<span class="fc bfc" id="L154" title="All 2 branches covered.">            } else if (!Character.isWhitespace(c)) {</span>
+<span class="fc" id="L155">                return false;</span>
+            }
+        }
+<span class="fc" id="L158">        return newline;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

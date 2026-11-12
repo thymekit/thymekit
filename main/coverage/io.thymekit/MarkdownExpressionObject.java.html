@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MarkdownExpressionObject.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">thymekit</a> &gt; <a href="index.source.html" class="el_package">io.thymekit</a> &gt; <span class="el_source">MarkdownExpressionObject.java</span></div><h1>MarkdownExpressionObject.java</h1><pre class="source lang-java linenums">/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+package io.thymekit;
+
+import org.jspecify.annotations.Nullable;
+
+/**
+ * The object behind {@code #md} in templates: {@code &lt;div th:utext=&quot;${#md.toHtmlSafe(text)}&quot;&gt;}.
+ *
+ * &lt;p&gt;Two methods wide, and deliberately. A template could have been handed the renderer itself, and
+ * then the surface a page is written against would be whatever the renderer happens to hold — today a
+ * ceiling to read, tomorrow whatever else it grows. What crosses this bridge is the text and what the
+ * links of that text say about themselves; the rest stays on the other side.
+ *
+ * &lt;p&gt;Methods are instance methods because Thymeleaf calls them reflectively, and the renderer is
+ * injected rather than created so that a Spring proxy — and with it {@code @Cacheable} — stays in the
+ * call path. Final, unlike the renderer: nothing proxies this one, so nothing needs to extend it.
+ *
+ * &lt;p&gt;Both arguments may be absent, because a page carries absences: nothing written yet, no policy set.
+ * They cross as they are — what an absence means is the renderer's to decide, and it decides the same
+ * way for a template as for java.
+ */
+public final class MarkdownExpressionObject {
+
+    private final MarkdownRenderer markdownRenderer;
+
+<span class="fc" id="L28">    public MarkdownExpressionObject(MarkdownRenderer markdownRenderer) {</span>
+<span class="fc" id="L29">        this.markdownRenderer = Element.required(markdownRenderer, &quot;MarkdownExpressionObject(markdownRenderer)&quot;);</span>
+<span class="fc" id="L30">    }</span>
+
+    /**
+     * Converts markdown source into safe HTML.
+     *
+     * @param source markdown text; {@code null} or blank yields an empty string
+     * @return sanitised HTML
+     * @see MarkdownRenderer#toHtmlSafe(String)
+     */
+    public String toHtmlSafe(@Nullable String source) {
+<span class="fc" id="L40">        return markdownRenderer.toHtmlSafe(source);</span>
+    }
+
+    /**
+     * Converts markdown source into safe HTML, marking the links that leave the site.
+     *
+     * @param source markdown text; {@code null} or blank yields an empty string
+     * @param linkRel value for the {@code rel} attribute of outgoing links; {@code null} marks nothing
+     * @return sanitised HTML
+     * @see MarkdownRenderer#toHtmlSafe(String, String)
+     */
+    public String toHtmlSafe(@Nullable String source, @Nullable String linkRel) {
+<span class="fc" id="L52">        return markdownRenderer.toHtmlSafe(source, linkRel);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

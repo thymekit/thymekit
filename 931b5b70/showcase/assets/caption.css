@@ -1,0 +1,81 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+   License, v. 2.0. If a copy of the MPL was not distributed with this
+   file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+/* =============================================================================
+   caption — short text attached to something, in one of four roles: eyebrow,
+   subtitle, label, meta. Ships as a plain paragraph.
+
+   Classes: .tk-caption · .tk-caption--eyebrow · --subtitle · --label · --meta
+
+   Handles. Family is set for all roles at once; the other four exist twice — once
+   for all roles, once per role, and the role wins where it is set:
+
+      all roles   --tk-caption-font
+                  --tk-caption-weight  --tk-caption-tracking  --tk-caption-transform
+      eyebrow     --tk-caption-eyebrow-size   --tk-caption-eyebrow-color
+                  --tk-caption-eyebrow-weight --tk-caption-eyebrow-tracking
+                  --tk-caption-eyebrow-transform
+      subtitle    --tk-caption-subtitle-size   --tk-caption-subtitle-color
+                  --tk-caption-subtitle-weight --tk-caption-subtitle-tracking
+                  --tk-caption-subtitle-transform
+      label       --tk-caption-label-size   --tk-caption-label-color
+                  --tk-caption-label-weight --tk-caption-label-tracking
+                  --tk-caption-label-transform
+      meta        --tk-caption-meta-size   --tk-caption-meta-color
+                  --tk-caption-meta-weight --tk-caption-meta-tracking
+                  --tk-caption-meta-transform
+
+   Stock: size and colour inherit, weight inherits, tracking is normal, case is none —
+   so an untuned caption is a paragraph and nothing more. Tracking and case are here
+   because they are what turns a caption into a brand label: an uppercase tracked
+   eyebrow is a theme's decision, not markup's.
+   ============================================================================= */
+.tk-caption {
+    font-family: var(--tk-caption-font, inherit);
+    font-weight: var(--tk-caption-weight, inherit);
+    letter-spacing: var(--tk-caption-tracking, normal);
+    text-transform: var(--tk-caption-transform, none);
+    margin: 0;
+}
+.tk-caption--eyebrow {
+    font-size:      var(--tk-caption-eyebrow-size, inherit);
+    color:          var(--tk-caption-eyebrow-color, inherit);
+    font-weight:    var(--tk-caption-eyebrow-weight, var(--tk-caption-weight, inherit));
+    letter-spacing: var(--tk-caption-eyebrow-tracking, var(--tk-caption-tracking, normal));
+    text-transform: var(--tk-caption-eyebrow-transform, var(--tk-caption-transform, none));
+}
+.tk-caption--subtitle {
+    font-size:      var(--tk-caption-subtitle-size, inherit);
+    color:          var(--tk-caption-subtitle-color, inherit);
+    font-weight:    var(--tk-caption-subtitle-weight, var(--tk-caption-weight, inherit));
+    letter-spacing: var(--tk-caption-subtitle-tracking, var(--tk-caption-tracking, normal));
+    text-transform: var(--tk-caption-subtitle-transform, var(--tk-caption-transform, none));
+}
+.tk-caption--label {
+    font-size:      var(--tk-caption-label-size, inherit);
+    color:          var(--tk-caption-label-color, inherit);
+    font-weight:    var(--tk-caption-label-weight, var(--tk-caption-weight, inherit));
+    letter-spacing: var(--tk-caption-label-tracking, var(--tk-caption-tracking, normal));
+    text-transform: var(--tk-caption-label-transform, var(--tk-caption-transform, none));
+}
+.tk-caption--meta {
+    font-size:      var(--tk-caption-meta-size, inherit);
+    color:          var(--tk-caption-meta-color, inherit);
+    font-weight:    var(--tk-caption-meta-weight, var(--tk-caption-weight, inherit));
+    letter-spacing: var(--tk-caption-meta-tracking, var(--tk-caption-tracking, normal));
+    text-transform: var(--tk-caption-meta-transform, var(--tk-caption-transform, none));
+}
+
+/* Stock scope: element handles reset, so the element renders as the browser would. */
+.tk-defaults {
+    --tk-caption-font: initial; --tk-caption-weight: initial;
+    --tk-caption-tracking: initial; --tk-caption-transform: initial;
+    --tk-caption-eyebrow-size: initial; --tk-caption-eyebrow-color: initial;
+    --tk-caption-eyebrow-weight: initial; --tk-caption-eyebrow-tracking: initial; --tk-caption-eyebrow-transform: initial;
+    --tk-caption-subtitle-size: initial; --tk-caption-subtitle-color: initial;
+    --tk-caption-subtitle-weight: initial; --tk-caption-subtitle-tracking: initial; --tk-caption-subtitle-transform: initial;
+    --tk-caption-label-size: initial; --tk-caption-label-color: initial;
+    --tk-caption-label-weight: initial; --tk-caption-label-tracking: initial; --tk-caption-label-transform: initial;
+    --tk-caption-meta-size: initial; --tk-caption-meta-color: initial;
+    --tk-caption-meta-weight: initial; --tk-caption-meta-tracking: initial; --tk-caption-meta-transform: initial;
+}

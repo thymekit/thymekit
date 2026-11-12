@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>thymekit — showcase snapshots</title>
+<style>
+  :root { --ink:#1d241b; --muted:#6b7a66; --line:#dfe6db; --accent:#3d5c3a; --paper:#f5f7f2; }
+  body { margin:0; padding:48px 24px; background:var(--paper); color:var(--ink);
+          font:16px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width:880px; margin:0 auto; }
+  h1 { font-size:28px; margin:0 0 4px; }
+  p.lede { margin:0 0 32px; color:var(--muted); }
+  a.row { display:grid; grid-template-columns:90px 1fr auto; gap:16px; align-items:baseline;
+           padding:14px 16px; background:#fff; border:1px solid var(--line); border-radius:10px;
+           margin-bottom:8px; text-decoration:none; color:inherit; }
+  a.row:hover { border-color:var(--accent); }
+  .slot { font-family:ui-monospace, SFMono-Regular, Menlo, monospace; color:var(--accent); font-weight:600; }
+  .meta { font-size:13px; color:var(--muted); white-space:nowrap; }
+  footer { margin-top:32px; font-size:14px; color:var(--muted); }
+  footer a { color:var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Showcase snapshots</h1>
+  <p class="lede">The showcase as it was rendered at each commit — main plus the last 10 elsewhere.</p>
+      <a class="row" href="16d40888/">
+        <span class="slot">16d40888</span>
+        <span class="subject">Site: a snapshot of the showcase for every commit</span>
+        <span class="meta">feature/showcase-previews · 2026-08-20 16:52</span>
+      </a>
+  <footer><a href="../">Build reports</a> · <a href="https://github.com/thymekit/thymekit">Source</a></footer>
+</main>
+</body>
+</html>

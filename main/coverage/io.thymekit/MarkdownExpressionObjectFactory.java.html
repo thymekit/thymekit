@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MarkdownExpressionObjectFactory.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">thymekit</a> &gt; <a href="index.source.html" class="el_package">io.thymekit</a> &gt; <span class="el_source">MarkdownExpressionObjectFactory.java</span></div><h1>MarkdownExpressionObjectFactory.java</h1><pre class="source lang-java linenums">/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+package io.thymekit;
+
+import java.util.Set;
+import org.jspecify.annotations.Nullable;
+import org.thymeleaf.context.IExpressionContext;
+import org.thymeleaf.expression.IExpressionObjectFactory;
+
+/**
+ * The registry entry behind {@code #md}: one name, and one object to hand out under it.
+ *
+ * &lt;p&gt;The name is the smallest and longest-lived promise the kit makes — every template ever written
+ * against it says {@code #md}, and nothing but a page failing to render would notice if that changed.
+ * A consumer who wants {@code #md} to mean something else declares their own dialect bean, which wins
+ * over the kit's by {@code @ConditionalOnMissingBean}.
+ *
+ * &lt;p&gt;The object is built once here and handed out on every ask: it holds a renderer and nothing else,
+ * so a second instance would have nothing to hold differently. The renderer comes from outside rather
+ * than being built here, so whatever a container wrapped it in stays in the call path.
+ */
+public final class MarkdownExpressionObjectFactory implements IExpressionObjectFactory {
+
+    private static final String MARKDOWN_EXPRESSION_OBJECT_NAME = &quot;md&quot;;
+<span class="fc" id="L26">    private static final Set&lt;String&gt; ALL_EXPRESSION_OBJECT_NAMES =</span>
+<span class="fc" id="L27">            Set.of(MARKDOWN_EXPRESSION_OBJECT_NAME);</span>
+
+    private final MarkdownExpressionObject markdown;
+
+<span class="fc" id="L31">    public MarkdownExpressionObjectFactory(MarkdownRenderer markdownRenderer) {</span>
+<span class="fc" id="L32">        this.markdown = new MarkdownExpressionObject(markdownRenderer);</span>
+<span class="fc" id="L33">    }</span>
+
+    @Override
+    public Set&lt;String&gt; getAllExpressionObjectNames() {
+<span class="fc" id="L37">        return ALL_EXPRESSION_OBJECT_NAMES;</span>
+    }
+
+    /** The one name this factory answers to; anything else is somebody else's entry, and gets nothing. */
+    @Override
+    public @Nullable Object buildObject(IExpressionContext context, String expressionObjectName) {
+<span class="fc bfc" id="L43" title="All 2 branches covered.">        if (MARKDOWN_EXPRESSION_OBJECT_NAME.equals(expressionObjectName)) {</span>
+<span class="fc" id="L44">            return markdown;</span>
+        }
+<span class="fc" id="L46">        return null;</span>
+    }
+
+    /**
+     * The flag asks whether a context should keep the object it was handed for the rest of a render. It
+     * should not: there is one object for the whole application, and remembering it costs a context more
+     * than asking for it again. Nothing here is said about the html — that cache lives in the renderer,
+     * keyed by the text, the link policy and the ceiling.
+     */
+    @Override
+    public boolean isCacheable(String expressionObjectName) {
+<span class="fc" id="L57">        return false;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
