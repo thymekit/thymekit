@@ -1,0 +1,86 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+   License, v. 2.0. If a copy of the MPL was not distributed with this
+   file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+/* =============================================================================
+   topbar — the bar above a page: a way back, and the trail.
+
+   Classes: .tk-topbar · .tk-topbar-back · .tk-topbar-back-mark
+
+   Handles:
+      --tk-topbar-gap             (between the way back and the trail)
+      --tk-topbar-direction       (row, or column to put the trail under the way back)
+      --tk-topbar-align
+      --tk-topbar-accent          (a stripe down one side)
+      --tk-topbar-bg
+      --tk-topbar-padding
+      --tk-topbar-radius
+      --tk-topbar-border
+      --tk-topbar-divider         (a rule between the way back and the trail)
+      --tk-topbar-back-color
+      --tk-topbar-back-size
+      --tk-topbar-back-weight
+      --tk-topbar-back-tracking
+      --tk-topbar-back-transform
+      --tk-topbar-back-mark       (the glyph before the words)
+      --tk-topbar-back-mark-gap   (between that glyph and the words)
+   ============================================================================= */
+/* Anatomy: the two parts sit on one line and wrap when the line runs out. Nothing about the space
+   around the bar — whoever places it decides that. Everything visible is a handle whose fallback is
+   nothing at all, so the stock bar is two things on a line. */
+.tk-topbar {
+    display: flex;
+    flex-direction: var(--tk-topbar-direction, row);
+    flex-wrap: wrap;
+    align-items: var(--tk-topbar-align, baseline);
+    gap: var(--tk-topbar-gap, 16px);
+    background: var(--tk-topbar-bg, transparent);
+    padding: var(--tk-topbar-padding, 0);
+    border: var(--tk-topbar-border, none);
+    border-left: var(--tk-topbar-accent, var(--tk-topbar-border, none));
+    border-radius: var(--tk-topbar-radius, 0);
+}
+
+.tk-topbar-back {
+    color: var(--tk-topbar-back-color, inherit);
+    font-size: var(--tk-topbar-back-size, inherit);
+    font-weight: var(--tk-topbar-back-weight, inherit);
+    letter-spacing: var(--tk-topbar-back-tracking, inherit);
+    text-transform: var(--tk-topbar-back-transform, none);
+    white-space: nowrap;
+}
+
+/* The host dresses what it hosts, under its own name: a rule between the two parts belongs to the bar
+   rather than to the trail standing in it. */
+.tk-topbar-back + .tk-breadcrumbs {
+    border-left: var(--tk-topbar-divider, none);
+    padding-left: var(--tk-topbar-divider-gap, 0);
+}
+
+/* Decoration, drawn rather than written: the element that carries it is hidden from assistive
+   technology by the adapter, so what is put here is never read out. */
+.tk-topbar-back-mark::before {
+    content: var(--tk-topbar-back-mark, "\2190");
+    margin-right: var(--tk-topbar-back-mark-gap, 6px);
+}
+
+/* Stock scope: inside .tk-defaults the handles are reset to the library fallbacks.
+   Add a handle to the element — reset it here as well. */
+.tk-defaults {
+    --tk-topbar-gap: initial;
+    --tk-topbar-direction: initial;
+    --tk-topbar-align: initial;
+    --tk-topbar-accent: initial;
+    --tk-topbar-bg: initial;
+    --tk-topbar-padding: initial;
+    --tk-topbar-radius: initial;
+    --tk-topbar-border: initial;
+    --tk-topbar-divider: initial;
+    --tk-topbar-divider-gap: initial;
+    --tk-topbar-back-color: initial;
+    --tk-topbar-back-size: initial;
+    --tk-topbar-back-weight: initial;
+    --tk-topbar-back-tracking: initial;
+    --tk-topbar-back-transform: initial;
+    --tk-topbar-back-mark: initial;
+    --tk-topbar-back-mark-gap: initial;
+}

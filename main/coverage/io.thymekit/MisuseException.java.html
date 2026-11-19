@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MisuseException.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">thymekit</a> &gt; <a href="index.source.html" class="el_package">io.thymekit</a> &gt; <span class="el_source">MisuseException.java</span></div><h1>MisuseException.java</h1><pre class="source lang-java linenums">/* This Source Code Form is subject to the terms of the Mozilla Public
+   License, v. 2.0. If a copy of the MPL was not distributed with this
+   file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+package io.thymekit;
+
+/**
+ * The call was written wrong: a value the kit will not take, an argument that was not there, a state it
+ * will not go into.
+ *
+ * &lt;p&gt;It should never reach production, and a consumer who treats a five hundred as something to be
+ * woken up for is right to alert on this one — the fix is a line of their code, and the place says
+ * which. Public, and meant to be thrown: a guard of yours refusing a bad argument is the same kind of
+ * event as a guard of ours, and routes the same way for whoever handles it.
+ */
+public final class MisuseException extends ThymekitException {
+
+    public MisuseException(String where, String detail) {
+<span class="fc" id="L18">        super(where, detail);</span>
+<span class="fc" id="L19">    }</span>
+
+    public MisuseException(String where, String detail, Throwable cause) {
+<span class="fc" id="L22">        super(where, detail, cause);</span>
+<span class="fc" id="L23">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
