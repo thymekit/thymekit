@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ThymekitException.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">thymekit</a> &gt; <a href="index.source.html" class="el_package">io.thymekit</a> &gt; <span class="el_source">ThymekitException.java</span></div><h1>ThymekitException.java</h1><pre class="source lang-java linenums">/* This Source Code Form is subject to the terms of the Mozilla Public
+   License, v. 2.0. If a copy of the MPL was not distributed with this
+   file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+package io.thymekit;
+
+import org.jspecify.annotations.Nullable;
+
+/**
+ * What the kit refuses, in a shape somebody else's error handler can route.
+ *
+ * &lt;p&gt;A consumer of this library may treat a five hundred as a programming error and something to be
+ * woken up for. That rule works only when every refusal the kit makes &lt;b&gt;on purpose&lt;/b&gt; can be told
+ * apart from their own code failing — then what is left uncaught really does mean nobody foresaw it,
+ * which is worth waking up for. So the kit throws its own and never borrows: not
+ * {@code IllegalArgumentException}, not {@code NullPointerException}, not the one an
+ * {@code orElseThrow} hands out when it was given nothing to throw.
+ *
+ * &lt;p&gt;Three kinds, and the difference between them is not what went wrong but &lt;b&gt;what to do about
+ * it&lt;/b&gt;:
+ *
+ * &lt;ul&gt;
+ *   &lt;li&gt;{@link MisuseException} — a call written wrong. It should never reach production, and an alert
+ *       is the right answer;&lt;/li&gt;
+ *   &lt;li&gt;{@link UnsoundPageException} — the page does not add up. This one can arrive from data, so the
+ *       answer is the consumer's to choose;&lt;/li&gt;
+ *   &lt;li&gt;{@link ContractBrokenException} — the walk over a triple did not agree, which happens in
+ *       tests.&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * &lt;p&gt;Every refusal names the place it was made at, and the place is in front of the message as well as
+ * in {@link #where()} — a handler that logs nothing but the message is the common case, and it would
+ * otherwise lose the one thing that says where to look.
+ *
+ * &lt;p&gt;Abstract, because which of the three it is decides what a consumer does, and refusing without
+ * saying which is refusing to answer the only question that matters.
+ *
+ * &lt;p&gt;Three and no more: the constructors of this class are not visible outside the package, so the
+ * family cannot be extended from a consumer's code. That is not a fence around the vocabulary but the
+ * point of it — a fourth kind would be a fourth answer to &quot;what do I do about this&quot;, and there are only
+ * three. An element of yours throws one of the three; a guard of yours refusing a bad argument is a
+ * {@link MisuseException} exactly as ours is.
+ */
+public abstract class ThymekitException extends RuntimeException {
+
+    /**
+     * What stands in for a place that was left unnamed. Checking the place would mean throwing while
+     * throwing, and the second failure would bury the first — the opposite of what any of this is for.
+     */
+    private static final String UNNAMED = &quot;somewhere in the kit&quot;;
+
+    private final String where;
+
+    ThymekitException(@Nullable String where, String detail) {
+<span class="fc" id="L54">        this(where, detail, null);</span>
+<span class="fc" id="L55">    }</span>
+
+    ThymekitException(@Nullable String where, String detail, @Nullable Throwable cause) {
+<span class="fc" id="L58">        super(named(where) + &quot;: &quot; + detail, cause);</span>
+<span class="fc" id="L59">        this.where = named(where);</span>
+<span class="fc" id="L60">    }</span>
+
+    private static String named(@Nullable String where) {
+<span class="fc bfc" id="L63" title="All 4 branches covered.">        return where == null || where.isBlank() ? UNNAMED : where;</span>
+    }
+
+    /**
+     * Where the refusal was made: a short, stable name meant for searching a log, and always a
+     * &lt;b&gt;call&lt;/b&gt; — {@code Heading.href(href)}, {@code Breadcrumbs.site(origin)},
+     * {@code Rel.of(values) — one of them}, {@code Descriptor.describes.itemListElement[0].name}. A
+     * noun would say what was wrong, which the message says anyway; a call says which line to open.
+     * Not a sentence for a person to read — that is the message.
+     */
+    public String where() {
+<span class="fc" id="L74">        return where;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

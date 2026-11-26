@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Anchors.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">thymekit</a> &gt; <a href="index.source.html" class="el_package">io.thymekit</a> &gt; <span class="el_source">Anchors.java</span></div><h1>Anchors.java</h1><pre class="source lang-java linenums">/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+package io.thymekit;
+
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+/**
+ * The anchors of a page: the addresses inside it, and whether any two things answer to the same one.
+ *
+ * &lt;p&gt;A section takes its accessible name from the id of its heading, and a table of contents links to
+ * that same id. Two headings sharing one turn a name into a guess — a screen reader announces the wrong
+ * section, a link lands on whichever the browser met first, and the html is invalid besides. Checked by
+ * the canvas before a page is rendered, like {@link Outline}.
+ *
+ * &lt;p&gt;Unlike the outline, an illustration hides nothing here. A sample framed for display is not the
+ * structure of a page, so its headings stay out of the outline — but an id inside it is a second node
+ * in the document with the same address, and a link cannot tell a demonstration from the real thing.
+ *
+ * &lt;p&gt;What is &lt;b&gt;not&lt;/b&gt; checked is as deliberate as what is. Any element may carry a key called
+ * {@code id}, and the kit does not own what that word means in somebody else's element: a card
+ * carrying the id of a product in a database is carrying data, not an address. Only the anchors the kit
+ * itself puts on a page are counted — today, the ones a heading was given — because a guard that fired
+ * on two products sharing a number would be the kit inventing a rule nobody agreed to.
+ *
+ * &lt;p&gt;Today that means &lt;b&gt;headings and nothing else&lt;/b&gt;, including yours: the reader this asks refuses
+ * to answer for any adapter but its own, so an element of yours carrying an anchor is not counted here
+ * however it carries it, and two of them may quietly answer to one name. There is no way for it to
+ * join from outside, and saying otherwise would be a promise this code does not keep. Closing it means
+ * letting an element declare what a key of it &lt;i&gt;means&lt;/i&gt;, which is the direction the readme names in
+ * its last chapter.
+ */
+public final class Anchors {
+
+    private Anchors() {}
+
+    /** Refuses a page where two things answer to one name, and says which name and what they are. */
+    public static void requireDistinct(Collection&lt;?&gt; roots) {
+<span class="fc" id="L41">        Map&lt;String, String&gt; byAnchor = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L42">        Tree.walk(roots, descriptor -&gt; {</span>
+<span class="fc" id="L43">            String anchor = Heading.idIn(descriptor);</span>
+<span class="fc bfc" id="L44" title="All 2 branches covered.">            if (anchor != null) {</span>
+<span class="fc" id="L45">                String first = byAnchor.putIfAbsent(anchor, Heading.textIn(descriptor));</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">                if (first != null) {</span>
+<span class="fc" id="L47">                    throw new UnsoundPageException(&quot;Anchors.requireDistinct&quot;,</span>
+                        &quot;two things on the page answer to the anchor \&quot;&quot;
+<span class="fc" id="L49">                        + anchor + &quot;\&quot;: \&quot;&quot; + first + &quot;\&quot; and \&quot;&quot; + Heading.textIn(descriptor)</span>
+                        + &quot;\&quot; — a name a page uses twice is a name it cannot use&quot;);
+                }
+            }
+<span class="fc" id="L53">            return true;                            // an illustration hides nothing from a document</span>
+        });
+<span class="fc" id="L55">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

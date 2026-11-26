@@ -1,0 +1,23 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+   License, v. 2.0. If a copy of the MPL was not distributed with this
+   file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+/* =============================================================================
+   thymekit — base CSS of the elements, served from the jar as /thymekit/ui.css.
+
+   Contract: structure lives here, appearance lives in per-element handles
+   --tk-<element>-* with minimal fallbacks, so the stock look is close to plain
+   HTML. There are no shared tokens: an element is tuned only through its own
+   handles, listed at the top of its file. A consumer maps them in its theme:
+
+     :root {
+         --tk-heading-font: 'Cormorant', serif;
+         --tk-caption-meta-color: #8a8a8a;
+     }
+
+   Manifest: one file per element (Java factory, fragment and CSS are a triple).
+   ============================================================================= */
+@import url("base/section.css");
+@import url("elements/hero.css");
+@import url("elements/heading.css");
+@import url("elements/caption.css");
+@import url("elements/md-section.css");
